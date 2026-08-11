@@ -814,7 +814,7 @@
   }
 
   /* Inside the dock the swatches are a single scrollable row. */
-  .dock .sw-list {
+  .dock-sw .sw-list {
     grid-template-columns: none;
     grid-auto-flow: column;
     grid-auto-columns: max-content;
@@ -826,8 +826,8 @@
     scrollbar-width: thin;
     overscroll-behavior-x: contain;
   }
-  .dock .sw { padding: 6px 9px; font-size: 8.5px; }
-  .dock .sw-chip { width: 20px; height: 13px; }
+  .dock-sw .sw { padding: 6px 9px; font-size: 8.5px; }
+  .dock-sw .sw-chip { width: 20px; height: 13px; }
 
   .theme-cue {
     font-family: var(--mono);
@@ -848,38 +848,61 @@
      the start so revealing the rail never shifts the page; only the rail
      itself animates. Body padding also pushes the nav and dock clear of it. */
   @media (min-width: 1100px) {
-    body { padding-left: 168px; }
+    body { padding-left: 132px; }
 
     .dock-sw {
       position: fixed;
       left: 0;
       top: 0;
       bottom: 0;
-      width: 168px;
+      width: 132px;
       display: block;
       grid-template-rows: none;
-      padding: 16px 11px;
-      overflow-y: auto;
-      overflow-x: hidden;
+      padding: 12px 7px;
+      /* The swatches are sized to fit the viewport exactly, so the rail must
+         never scroll — a scrollbar here would be pure noise. */
+      overflow: hidden;
       border-right: 1px solid var(--line);
       border-top: none;
       background: color-mix(in srgb, var(--void) 86%, transparent);
       backdrop-filter: blur(16px);
       transition: background-color 0.45s ease, border-color 0.45s ease;
-      scrollbar-width: thin;
     }
 
-    /* Stacked, one per row, filling the rail's width. */
-    .dock .sw-list {
+    /* The rail is a column: hint on top, swatches taking the rest. */
+    .dock-sw {
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Twenty equal rows filling whatever height the viewport gives us, so the
+       set always spans top to bottom instead of clustering at the top. */
+    .dock-sw .sw-list {
+      flex: 1 1 auto;
+      min-height: 0;
       grid-auto-flow: row;
       grid-auto-columns: auto;
       grid-template-columns: 1fr;
+      grid-template-rows: repeat(20, minmax(0, 1fr));
       overflow: visible;
       margin: 0;
       padding-bottom: 0;
-      gap: 5px;
+      gap: 4px;
     }
-    .dock .sw { padding: 7px 9px; font-size: 8.5px; }
+    /* Rows are tall now, so the chip grows with them and the pill centres. */
+    .dock-sw .sw {
+      padding: 0 6px;
+      gap: 6px;
+      font-size: 8.5px;
+      min-height: 0;
+    }
+    .dock-sw .sw-chip {
+      width: 20px;
+      height: 20px;
+      border-radius: 4px;
+    }
+    .dock-sw .sw-chip::before { inset: 3px 3px 7px 3px; }
+    .dock-sw .sw-chip::after { left: 3px; bottom: 3px; width: 10px; height: 3px; }
 
     .dock-hint {
       display: block;
@@ -890,6 +913,81 @@
       color: var(--dim);
       margin-bottom: 10px;
       padding-left: 2px;
+      animation: railHint 0.7s ease both;
+    }
+
+    /* ─── Rail entrance ───────────────────────────────────────────────────
+       The rail assembles itself: the edge draws down, the swatches cascade in,
+       and a single accent sweep passes over them. One orchestrated moment on
+       load rather than perpetual motion. */
+    .dock-sw {
+      animation: railEdge 0.75s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+    }
+
+    .dock-sw .sw {
+      animation: railSwatch 0.55s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+      animation-delay: calc(180ms + var(--i, 0) * 26ms);
+    }
+
+    /* The sweep is fixed rather than absolute so it cannot lengthen the rail's
+       scrollable area while it travels. */
+    .dock-sw::after {
+      content: '';
+      position: fixed;
+      left: 0;
+      top: 0;
+      width: 132px;
+      height: 160px;
+      pointer-events: none;
+      background: linear-gradient(
+        180deg,
+        transparent,
+        color-mix(in srgb, var(--accent) 20%, transparent),
+        transparent
+      );
+      animation: railSweep 1.5s cubic-bezier(0.4, 0, 0.3, 1) 0.25s both;
+    }
+
+    /* The selected swatch keeps a faint accent halo. */
+    .dock-sw .sw[aria-checked="true"] {
+      box-shadow:
+        inset 0 0 0 1px color-mix(in srgb, var(--sw-accent) 30%, transparent),
+        0 0 14px -3px color-mix(in srgb, var(--sw-accent) 55%, transparent);
+    }
+
+    @keyframes railEdge {
+      from { clip-path: inset(0 0 100% 0); }
+      to   { clip-path: inset(0 0 0 0); }
+    }
+    @keyframes railHint {
+      from { opacity: 0; letter-spacing: 0.5em; }
+      to   { opacity: 1; letter-spacing: 0.24em; }
+    }
+    @keyframes railSwatch {
+      from { opacity: 0; transform: translateX(-16px); }
+      to   { opacity: 1; transform: none; }
+    }
+    @keyframes railSweep {
+      from { transform: translateY(-180px); opacity: 0; }
+      25%  { opacity: 1; }
+      to   { transform: translateY(105vh); opacity: 0; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .dock-sw, .dock-sw .sw, .dock-hint { animation: none; }
+      .dock-sw::after { display: none; }
+    }
+
+    /* Short viewports cannot give 20 rows enough height for a readable label,
+       so the rail collapses to chips only. The name still reaches the reader
+       via the title attribute and the active theme shown in the dock. */
+    @media (max-height: 720px) {
+      body { padding-left: 52px; }
+      .dock-sw { width: 52px; padding: 10px 6px; }
+      .dock-sw::after { width: 52px; }
+      .dock-sw .sw-name { display: none; }
+      .dock-sw .sw { padding: 0; justify-content: center; gap: 0; }
+      .dock-hint { display: none; }
     }
   }
 
@@ -1699,6 +1797,9 @@
       // breaking the picker over.
       try { localStorage.setItem(STORE_KEY, btn.dataset.theme); } catch (e) {}
     }
+
+    // Index drives the staggered entrance animation in CSS.
+    buttons.forEach(function (b, n) { b.style.setProperty('--i', n); });
 
     buttons.forEach(function (btn, i) {
       btn.addEventListener('click', function () { select(btn); });
