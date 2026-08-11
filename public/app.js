@@ -3635,7 +3635,7 @@
     selectRow.innerHTML = `
       <svg class="w-3.5 h-3.5" style="color:var(--accent)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
       <span class="text-xs font-mono font-semibold" style="color:var(--accent)">Use this folder</span>
-      <span class="text-[9px] ml-auto truncate max-w-[120px]" style="color:var(--text-muted)">${currentPath || '/ (root)'}</span>
+      <span class="text-[9px] ml-auto truncate max-w-[120px]" style="color:var(--text-muted)">${escHtml(currentPath) || '/ (root)'}</span>
     `;
     selectRow.addEventListener('click', () => {
       selectedSubdir = currentPath;
