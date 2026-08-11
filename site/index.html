@@ -53,7 +53,12 @@
     font-size: clamp(15px, 0.55vw + 13px, 17px);
     line-height: 1.65;
     -webkit-font-smoothing: antialiased;
-    overflow-x: hidden;
+    /* clip, not hidden: `overflow-x: hidden` forces the computed overflow-y to
+       `auto`, which makes body itself the scroll container. The viewport then
+       never scrolls — window scroll events stop firing and viewport-rooted
+       IntersectionObservers mis-measure. `clip` contains horizontal overflow
+       without creating a scroll container. */
+    overflow-x: clip;
   }
 
   a { color: inherit; }
@@ -751,6 +756,147 @@
     background: var(--m-accent);
   }
 
+
+  /* ─── Fixed dock ────────────────────────────────────────────────────────
+     Palette-aware like the rest of the page, so it retints with whatever the
+     reader picks. Collapsed to just the meta line until the themes section
+     comes into view. */
+  .dock {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 60;
+    background: color-mix(in srgb, var(--void) 86%, transparent);
+    backdrop-filter: blur(16px);
+    border-top: 1px solid var(--line);
+    transition: background-color 0.45s ease, border-color 0.45s ease;
+  }
+  .dock-in { padding-block: 9px; }
+
+  .dock-meta {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    font-family: var(--mono);
+    font-size: 9.5px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--dim);
+  }
+  .dock-meta a { text-decoration: none; transition: color 0.2s; white-space: nowrap; }
+  .dock-meta a:hover { color: var(--ice); }
+  .dock-sp { flex: 1; }
+  .dock-brand { white-space: nowrap; }
+  .dock-now { color: var(--accent); white-space: nowrap; }
+  @media (max-width: 620px) {
+    .dock-meta a:not(:last-child) { display: none; }
+  }
+
+  /* Narrow screens: a horizontal strip pinned just above the dock. It lives
+     outside .dock in the markup, because a fixed element nested inside it would
+     be contained by the dock's backdrop-filter rather than the viewport. */
+  .dock-sw {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 44px;
+    z-index: 59;
+    padding: 8px var(--gut) 4px;
+    background: color-mix(in srgb, var(--void) 88%, transparent);
+    backdrop-filter: blur(14px);
+    border-top: 1px solid var(--line);
+    transition: background-color 0.45s ease, border-color 0.45s ease;
+  }
+
+  .dock-hint {
+    display: none;
+  }
+
+  /* Inside the dock the swatches are a single scrollable row. */
+  .dock .sw-list {
+    grid-template-columns: none;
+    grid-auto-flow: column;
+    grid-auto-columns: max-content;
+    overflow-x: auto;
+    overflow-y: hidden;
+    gap: 6px;
+    margin: 0 0 9px;
+    padding-bottom: 4px;
+    scrollbar-width: thin;
+    overscroll-behavior-x: contain;
+  }
+  .dock .sw { padding: 6px 9px; font-size: 8.5px; }
+  .dock .sw-chip { width: 20px; height: 13px; }
+
+  .theme-cue {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--dim);
+    margin: 0 0 14px;
+  }
+
+  /* Keep the dock from covering the end of the page. */
+  body { padding-bottom: 92px; }
+  @media (max-width: 620px) { body { padding-bottom: 108px; } }
+
+  /* ─── Wide screens: the picker becomes a fixed left rail ────────────────
+     Same element as the dock strip, repositioned — 20 themes read far better
+     stacked than crammed into a horizontal row. The gutter is reserved from
+     the start so revealing the rail never shifts the page; only the rail
+     itself animates. Body padding also pushes the nav and dock clear of it. */
+  @media (min-width: 1100px) {
+    body { padding-left: 168px; }
+
+    .dock-sw {
+      position: fixed;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 168px;
+      display: block;
+      grid-template-rows: none;
+      padding: 16px 11px;
+      overflow-y: auto;
+      overflow-x: hidden;
+      border-right: 1px solid var(--line);
+      border-top: none;
+      background: color-mix(in srgb, var(--void) 86%, transparent);
+      backdrop-filter: blur(16px);
+      transition: background-color 0.45s ease, border-color 0.45s ease;
+      scrollbar-width: thin;
+    }
+
+    /* Stacked, one per row, filling the rail's width. */
+    .dock .sw-list {
+      grid-auto-flow: row;
+      grid-auto-columns: auto;
+      grid-template-columns: 1fr;
+      overflow: visible;
+      margin: 0;
+      padding-bottom: 0;
+      gap: 5px;
+    }
+    .dock .sw { padding: 7px 9px; font-size: 8.5px; }
+
+    .dock-hint {
+      display: block;
+      font-family: var(--mono);
+      font-size: 8px;
+      letter-spacing: 0.24em;
+      text-transform: uppercase;
+      color: var(--dim);
+      margin-bottom: 10px;
+      padding-left: 2px;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .dock-sw { transition: none; }
+  }
+
   /* ─── Privacy grid ─────────────────────────────────────────────────── */
   .privacy-grid {
     list-style: none;
@@ -1122,108 +1268,9 @@
            pointer-events off and hidden from assistive tech — only the swatches
            on the left are operable. -->
       <div class="theme-lab">
-        <div class="sw-list" role="radiogroup" aria-label="Preview a theme">
-          <button class="sw" type="button" role="radio" aria-checked="true" tabindex="0"
-                  data-theme="midnight" title="Midnight"
-                  style="--sw-bg:#06080d;--sw-card:#0f1319;--sw-accent:#38bdf8">
-            <span class="sw-chip" aria-hidden="true"></span><span class="sw-name">Midnight</span>
-          </button>
-          <button class="sw" type="button" role="radio" aria-checked="false" tabindex="-1"
-                  data-theme="graphite" title="Graphite"
-                  style="--sw-bg:#1a1a1a;--sw-card:#222222;--sw-accent:#a0a0a0">
-            <span class="sw-chip" aria-hidden="true"></span><span class="sw-name">Graphite</span>
-          </button>
-          <button class="sw" type="button" role="radio" aria-checked="false" tabindex="-1"
-                  data-theme="ocean" title="Ocean"
-                  style="--sw-bg:#0a1628;--sw-card:#13243d;--sw-accent:#60a5fa">
-            <span class="sw-chip" aria-hidden="true"></span><span class="sw-name">Ocean</span>
-          </button>
-          <button class="sw" type="button" role="radio" aria-checked="false" tabindex="-1"
-                  data-theme="nord" title="Nord"
-                  style="--sw-bg:#2e3440;--sw-card:#434c5e;--sw-accent:#88c0d0">
-            <span class="sw-chip" aria-hidden="true"></span><span class="sw-name">Nord</span>
-          </button>
-          <button class="sw" type="button" role="radio" aria-checked="false" tabindex="-1"
-                  data-theme="dracula" title="Dracula"
-                  style="--sw-bg:#1e1f29;--sw-card:#2c2e3a;--sw-accent:#bd93f9">
-            <span class="sw-chip" aria-hidden="true"></span><span class="sw-name">Dracula</span>
-          </button>
-          <button class="sw" type="button" role="radio" aria-checked="false" tabindex="-1"
-                  data-theme="monokai" title="Monokai"
-                  style="--sw-bg:#1e1f1c;--sw-card:#2d2e27;--sw-accent:#a6e22e">
-            <span class="sw-chip" aria-hidden="true"></span><span class="sw-name">Monokai</span>
-          </button>
-          <button class="sw" type="button" role="radio" aria-checked="false" tabindex="-1"
-                  data-theme="vsdark" title="VS Dark"
-                  style="--sw-bg:#1e1e1e;--sw-card:#2d2d2d;--sw-accent:#007acc">
-            <span class="sw-chip" aria-hidden="true"></span><span class="sw-name">VS Dark</span>
-          </button>
-          <button class="sw" type="button" role="radio" aria-checked="false" tabindex="-1"
-                  data-theme="forest" title="Forest"
-                  style="--sw-bg:#0a1410;--sw-card:#14261c;--sw-accent:#4ade80">
-            <span class="sw-chip" aria-hidden="true"></span><span class="sw-name">Forest</span>
-          </button>
-          <button class="sw" type="button" role="radio" aria-checked="false" tabindex="-1"
-                  data-theme="sunset" title="Sunset"
-                  style="--sw-bg:#1a1008;--sw-card:#2e1e14;--sw-accent:#fbbf24">
-            <span class="sw-chip" aria-hidden="true"></span><span class="sw-name">Sunset</span>
-          </button>
-          <button class="sw" type="button" role="radio" aria-checked="false" tabindex="-1"
-                  data-theme="ember" title="Ember"
-                  style="--sw-bg:#110808;--sw-card:#221414;--sw-accent:#f87171">
-            <span class="sw-chip" aria-hidden="true"></span><span class="sw-name">Ember</span>
-          </button>
-          <button class="sw" type="button" role="radio" aria-checked="false" tabindex="-1"
-                  data-theme="copper" title="Copper"
-                  style="--sw-bg:#12100e;--sw-card:#24201a;--sw-accent:#d9a878">
-            <span class="sw-chip" aria-hidden="true"></span><span class="sw-name">Copper</span>
-          </button>
-          <button class="sw" type="button" role="radio" aria-checked="false" tabindex="-1"
-                  data-theme="void" title="Void"
-                  style="--sw-bg:#000000;--sw-card:#111111;--sw-accent:#ffffff">
-            <span class="sw-chip" aria-hidden="true"></span><span class="sw-name">Void</span>
-          </button>
-          <button class="sw" type="button" role="radio" aria-checked="false" tabindex="-1"
-                  data-theme="bluepill" title="Blue Pill"
-                  style="--sw-bg:#000000;--sw-card:#06101e;--sw-accent:#22d3ee">
-            <span class="sw-chip" aria-hidden="true"></span><span class="sw-name">Blue Pill</span>
-          </button>
-          <button class="sw" type="button" role="radio" aria-checked="false" tabindex="-1"
-                  data-theme="lavender" title="Lavender"
-                  style="--sw-bg:#f5f0fa;--sw-card:#ffffff;--sw-accent:#8b5cf6">
-            <span class="sw-chip" aria-hidden="true"></span><span class="sw-name">Lavender</span>
-          </button>
-          <button class="sw" type="button" role="radio" aria-checked="false" tabindex="-1"
-                  data-theme="rose" title="Rosé"
-                  style="--sw-bg:#faf5f3;--sw-card:#ffffff;--sw-accent:#c2665a">
-            <span class="sw-chip" aria-hidden="true"></span><span class="sw-name">Rosé</span>
-          </button>
-          <button class="sw" type="button" role="radio" aria-checked="false" tabindex="-1"
-                  data-theme="sand" title="Sand"
-                  style="--sw-bg:#f7f3ee;--sw-card:#ffffff;--sw-accent:#8c6e46">
-            <span class="sw-chip" aria-hidden="true"></span><span class="sw-name">Sand</span>
-          </button>
-          <button class="sw" type="button" role="radio" aria-checked="false" tabindex="-1"
-                  data-theme="arctic" title="Arctic"
-                  style="--sw-bg:#f0f5fa;--sw-card:#ffffff;--sw-accent:#2563eb">
-            <span class="sw-chip" aria-hidden="true"></span><span class="sw-name">Arctic</span>
-          </button>
-          <button class="sw" type="button" role="radio" aria-checked="false" tabindex="-1"
-                  data-theme="silver" title="Silver"
-                  style="--sw-bg:#f0f0f0;--sw-card:#f5f5f5;--sw-accent:#555555">
-            <span class="sw-chip" aria-hidden="true"></span><span class="sw-name">Silver</span>
-          </button>
-          <button class="sw" type="button" role="radio" aria-checked="false" tabindex="-1"
-                  data-theme="vslight" title="VS Light"
-                  style="--sw-bg:#ffffff;--sw-card:#ffffff;--sw-accent:#007acc">
-            <span class="sw-chip" aria-hidden="true"></span><span class="sw-name">VS Light</span>
-          </button>
-          <button class="sw" type="button" role="radio" aria-checked="false" tabindex="-1"
-                  data-theme="newsprint" title="Newsprint"
-                  style="--sw-bg:#f5f0e8;--sw-card:#faf5ed;--sw-accent:#333333">
-            <span class="sw-chip" aria-hidden="true"></span><span class="sw-name">Newsprint</span>
-          </button>
-        </div>
+
+
+        <p class="theme-cue">Pick a palette in the bar at the bottom — the whole page follows.</p>
 
         <div class="mk-wrap">
           <div class="mk" id="themeMock" aria-hidden="true">
@@ -1469,15 +1516,127 @@
   </section>
 </main>
 
-<footer>
-  <div class="wrap foot-in">
-    <span>Catalyst · MIT</span>
-    <span class="foot-sp"></span>
-    <a href="https://github.com/OLI-Systems/Catalyst" target="_blank" rel="noopener">GitHub</a>
-    <a href="https://github.com/OLI-Systems/Catalyst/releases" target="_blank" rel="noopener">Releases</a>
-    <a href="https://olisystems.com/" target="_blank" rel="noopener">OLI Systems</a>
+<!-- Fixed dock. Carries the footer meta at all times and reveals the theme
+     picker once the reader reaches the themes section, so choosing a palette
+     stays possible for the rest of the page. -->
+<div class="dock-sw" id="dockSw">
+  <span class="dock-hint">Theme</span>
+  <div class="sw-list" role="radiogroup" aria-label="Preview a theme">
+    <button class="sw" type="button" role="radio" aria-checked="true" tabindex="0"
+            data-theme="midnight" title="Midnight"
+            style="--sw-bg:#06080d;--sw-card:#0f1319;--sw-accent:#38bdf8">
+      <span class="sw-chip" aria-hidden="true"></span><span class="sw-name">Midnight</span>
+    </button>
+    <button class="sw" type="button" role="radio" aria-checked="false" tabindex="-1"
+            data-theme="graphite" title="Graphite"
+            style="--sw-bg:#1a1a1a;--sw-card:#222222;--sw-accent:#a0a0a0">
+      <span class="sw-chip" aria-hidden="true"></span><span class="sw-name">Graphite</span>
+    </button>
+    <button class="sw" type="button" role="radio" aria-checked="false" tabindex="-1"
+            data-theme="ocean" title="Ocean"
+            style="--sw-bg:#0a1628;--sw-card:#13243d;--sw-accent:#60a5fa">
+      <span class="sw-chip" aria-hidden="true"></span><span class="sw-name">Ocean</span>
+    </button>
+    <button class="sw" type="button" role="radio" aria-checked="false" tabindex="-1"
+            data-theme="nord" title="Nord"
+            style="--sw-bg:#2e3440;--sw-card:#434c5e;--sw-accent:#88c0d0">
+      <span class="sw-chip" aria-hidden="true"></span><span class="sw-name">Nord</span>
+    </button>
+    <button class="sw" type="button" role="radio" aria-checked="false" tabindex="-1"
+            data-theme="dracula" title="Dracula"
+            style="--sw-bg:#1e1f29;--sw-card:#2c2e3a;--sw-accent:#bd93f9">
+      <span class="sw-chip" aria-hidden="true"></span><span class="sw-name">Dracula</span>
+    </button>
+    <button class="sw" type="button" role="radio" aria-checked="false" tabindex="-1"
+            data-theme="monokai" title="Monokai"
+            style="--sw-bg:#1e1f1c;--sw-card:#2d2e27;--sw-accent:#a6e22e">
+      <span class="sw-chip" aria-hidden="true"></span><span class="sw-name">Monokai</span>
+    </button>
+    <button class="sw" type="button" role="radio" aria-checked="false" tabindex="-1"
+            data-theme="vsdark" title="VS Dark"
+            style="--sw-bg:#1e1e1e;--sw-card:#2d2d2d;--sw-accent:#007acc">
+      <span class="sw-chip" aria-hidden="true"></span><span class="sw-name">VS Dark</span>
+    </button>
+    <button class="sw" type="button" role="radio" aria-checked="false" tabindex="-1"
+            data-theme="forest" title="Forest"
+            style="--sw-bg:#0a1410;--sw-card:#14261c;--sw-accent:#4ade80">
+      <span class="sw-chip" aria-hidden="true"></span><span class="sw-name">Forest</span>
+    </button>
+    <button class="sw" type="button" role="radio" aria-checked="false" tabindex="-1"
+            data-theme="sunset" title="Sunset"
+            style="--sw-bg:#1a1008;--sw-card:#2e1e14;--sw-accent:#fbbf24">
+      <span class="sw-chip" aria-hidden="true"></span><span class="sw-name">Sunset</span>
+    </button>
+    <button class="sw" type="button" role="radio" aria-checked="false" tabindex="-1"
+            data-theme="ember" title="Ember"
+            style="--sw-bg:#110808;--sw-card:#221414;--sw-accent:#f87171">
+      <span class="sw-chip" aria-hidden="true"></span><span class="sw-name">Ember</span>
+    </button>
+    <button class="sw" type="button" role="radio" aria-checked="false" tabindex="-1"
+            data-theme="copper" title="Copper"
+            style="--sw-bg:#12100e;--sw-card:#24201a;--sw-accent:#d9a878">
+      <span class="sw-chip" aria-hidden="true"></span><span class="sw-name">Copper</span>
+    </button>
+    <button class="sw" type="button" role="radio" aria-checked="false" tabindex="-1"
+            data-theme="void" title="Void"
+            style="--sw-bg:#000000;--sw-card:#111111;--sw-accent:#ffffff">
+      <span class="sw-chip" aria-hidden="true"></span><span class="sw-name">Void</span>
+    </button>
+    <button class="sw" type="button" role="radio" aria-checked="false" tabindex="-1"
+            data-theme="bluepill" title="Blue Pill"
+            style="--sw-bg:#000000;--sw-card:#06101e;--sw-accent:#22d3ee">
+      <span class="sw-chip" aria-hidden="true"></span><span class="sw-name">Blue Pill</span>
+    </button>
+    <button class="sw" type="button" role="radio" aria-checked="false" tabindex="-1"
+            data-theme="lavender" title="Lavender"
+            style="--sw-bg:#f5f0fa;--sw-card:#ffffff;--sw-accent:#8b5cf6">
+      <span class="sw-chip" aria-hidden="true"></span><span class="sw-name">Lavender</span>
+    </button>
+    <button class="sw" type="button" role="radio" aria-checked="false" tabindex="-1"
+            data-theme="rose" title="Rosé"
+            style="--sw-bg:#faf5f3;--sw-card:#ffffff;--sw-accent:#c2665a">
+      <span class="sw-chip" aria-hidden="true"></span><span class="sw-name">Rosé</span>
+    </button>
+    <button class="sw" type="button" role="radio" aria-checked="false" tabindex="-1"
+            data-theme="sand" title="Sand"
+            style="--sw-bg:#f7f3ee;--sw-card:#ffffff;--sw-accent:#8c6e46">
+      <span class="sw-chip" aria-hidden="true"></span><span class="sw-name">Sand</span>
+    </button>
+    <button class="sw" type="button" role="radio" aria-checked="false" tabindex="-1"
+            data-theme="arctic" title="Arctic"
+            style="--sw-bg:#f0f5fa;--sw-card:#ffffff;--sw-accent:#2563eb">
+      <span class="sw-chip" aria-hidden="true"></span><span class="sw-name">Arctic</span>
+    </button>
+    <button class="sw" type="button" role="radio" aria-checked="false" tabindex="-1"
+            data-theme="silver" title="Silver"
+            style="--sw-bg:#f0f0f0;--sw-card:#f5f5f5;--sw-accent:#555555">
+      <span class="sw-chip" aria-hidden="true"></span><span class="sw-name">Silver</span>
+    </button>
+    <button class="sw" type="button" role="radio" aria-checked="false" tabindex="-1"
+            data-theme="vslight" title="VS Light"
+            style="--sw-bg:#ffffff;--sw-card:#ffffff;--sw-accent:#007acc">
+      <span class="sw-chip" aria-hidden="true"></span><span class="sw-name">VS Light</span>
+    </button>
+    <button class="sw" type="button" role="radio" aria-checked="false" tabindex="-1"
+            data-theme="newsprint" title="Newsprint"
+            style="--sw-bg:#f5f0e8;--sw-card:#faf5ed;--sw-accent:#333333">
+      <span class="sw-chip" aria-hidden="true"></span><span class="sw-name">Newsprint</span>
+    </button>
   </div>
-</footer>
+</div>
+
+<div class="dock" id="dock">
+  <div class="wrap dock-in">
+    <div class="dock-meta">
+      <span class="dock-brand">Catalyst · MIT</span>
+      <span class="dock-sp"></span>
+      <span class="dock-now" id="dockNow"></span>
+      <a href="https://github.com/OLI-Systems/Catalyst" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://github.com/OLI-Systems/Catalyst/releases" target="_blank" rel="noopener">Releases</a>
+      <a href="https://olisystems.com/" target="_blank" rel="noopener">OLI Systems</a>
+    </div>
+  </div>
+</div>
 
 <script>
   // Theme picker. Retints the mock by setting CSS custom properties from the
@@ -1521,6 +1680,8 @@
       document.getElementById('themeName').textContent = t.label;
       document.getElementById('themeHex').textContent = t.accent;
       document.getElementById('themeKind').textContent = t.light ? 'light' : 'dark';
+      var now = document.getElementById('dockNow');
+      if (now) now.textContent = t.label;
     }
 
     var STORE_KEY = 'catalyst-site-theme';
@@ -1559,6 +1720,42 @@
       return b.dataset.theme === saved;
     })[0]) || buttons[0];
     select(start);
+  })();
+
+
+  // Reveal the dock's picker once the themes section is reached, and keep it
+  // open afterwards — having it vanish again would be worse than never showing.
+  (function () {
+    var dock = document.getElementById('dock');
+    var themes = document.getElementById('themes');
+    if (!dock || !themes) return;
+
+    var opened = false;
+    function open() {
+      if (opened) return;
+      opened = true;
+      dock.classList.add('is-open');
+      window.removeEventListener('scroll', onScroll);
+    }
+
+    // A plain scroll test rather than an observer: it also fires for
+    // programmatic jumps and for a page restored mid-scroll, both of which an
+    // IntersectionObserver can miss.
+    function check() {
+      var top = themes.getBoundingClientRect().top;
+      if (top < window.innerHeight * 0.85) open();
+    }
+
+    var queued = false;
+    function onScroll() {
+      if (queued) return;
+      queued = true;
+      requestAnimationFrame(function () { queued = false; check(); });
+    }
+
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll, { passive: true });
+    check(); // in case the page loads already scrolled down
   })();
 
   // Reveal on scroll. Anything already in view when the page loads is shown
