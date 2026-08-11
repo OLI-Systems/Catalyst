@@ -23,6 +23,9 @@
     "clipboard-manager:allow-read-image",
     "core:image:default",
     "updater:default",
-    "process:allow-restart"
+    "process:allow-restart",
+
+    "allow-check-for-updates",
+    "allow-install-update"
   ]
 }

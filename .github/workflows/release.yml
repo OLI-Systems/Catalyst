@@ -100,6 +100,57 @@ jobs:
             echo "::notice::Signing the macOS bundle, but not notarising — APPLE_ID, APPLE_PASSWORD and APPLE_TEAM_ID are needed for that."
           fi
 
+      # Authenticode signing for the NSIS installer, on the same
+      # only-when-configured basis as the Apple step above.
+      #
+      # Without it, Chrome refuses to name the finished download: it lands as
+      # "Unconfirmed <n>.crdownload" with the bytes complete but the rename
+      # withheld, and SmartScreen warns on first run. That is reputation, not
+      # corruption — an unsigned installer from a new publisher has none.
+      #
+      # To sign, add these repository secrets:
+      #   WINDOWS_CERTIFICATE           base64 of your code-signing .pfx
+      #   WINDOWS_CERTIFICATE_PASSWORD  the .pfx export password
+      #
+      # An OV certificate builds reputation over time; an EV certificate carries
+      # it immediately. Note this path is untested — it cannot run until a real
+      # certificate exists, so treat the first signed release as the test.
+      - name: Configure Windows signing
+        id: winsign
+        if: runner.os == 'Windows'
+        shell: pwsh
+        env:
+          CERT: ${{ secrets.WINDOWS_CERTIFICATE }}
+          CERT_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:CERT)) {
+            Write-Output "::notice::No Windows signing secrets configured - publishing an unsigned installer. Chrome will hold the download as 'Unconfirmed .crdownload' and SmartScreen will warn on first run until a certificate is added."
+            "args=" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+            exit 0
+          }
+
+          $pfx = Join-Path $env:RUNNER_TEMP "catalyst-signing.pfx"
+          [IO.File]::WriteAllBytes($pfx, [Convert]::FromBase64String($env:CERT))
+          $secure = ConvertTo-SecureString -String $env:CERT_PASSWORD -Force -AsPlainText
+          $cert = Import-PfxCertificate -FilePath $pfx -CertStoreLocation Cert:\CurrentUser\My -Password $secure
+          Remove-Item $pfx -Force
+
+          # Passed as a config overlay rather than committed, so the thumbprint
+          # (which is specific to the imported cert) never lands in the repo.
+          $overlay = @{
+            bundle = @{
+              windows = @{
+                certificateThumbprint = $cert.Thumbprint
+                digestAlgorithm = "sha256"
+                timestampUrl = "http://timestamp.digicert.com"
+              }
+            }
+          }
+          $path = Join-Path $env:GITHUB_WORKSPACE "signing.conf.json"
+          $overlay | ConvertTo-Json -Depth 6 | Set-Content -Path $path -Encoding utf8
+          "args=--config $path" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          Write-Output "::notice::Signing the Windows installer with certificate $($cert.Thumbprint)."
+
       - name: Build and publish
         uses: tauri-apps/tauri-action@v0
         env:
@@ -107,6 +158,8 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
+          # Empty on macOS, where the signing step above does not run.
+          args: ${{ steps.winsign.outputs.args }}
           tagName: ${{ github.ref_name }}
           releaseName: 'Catalyst __VERSION__'
           releaseBody: |

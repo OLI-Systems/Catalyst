@@ -237,6 +237,23 @@ footer, About and Settings → Updates all follow the bump with no further edits
 | `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` | Same | Only if the key has a password. |
 | Pages source = **GitHub Actions** | Settings → Pages | Lets `pages.yml` deploy `site/`. Required — the workflow cannot do this itself, because `configure-pages`' `enablement` input does not accept the default `GITHUB_TOKEN`. Until it is set, Deploy Pages fails with `Get Pages site failed`. |
 
+### Optional: a signed Windows installer
+
+Unsigned installers have no reputation with Chrome or SmartScreen. Chrome
+downloads the file completely but withholds the rename, leaving
+`Unconfirmed <n>.crdownload` in your downloads folder, and SmartScreen warns on
+first run. The bytes are fine — it is the missing publisher identity that trips
+both. Signing is the only real fix.
+
+| Secret | What it is |
+|---|---|
+| `WINDOWS_CERTIFICATE` | Your code-signing certificate as a base64 `.pfx` |
+| `WINDOWS_CERTIFICATE_PASSWORD` | The export password for that `.pfx` |
+
+An OV certificate accumulates reputation over the first few hundred downloads;
+an EV certificate carries it from the first release. With neither secret set the
+workflow publishes unsigned and says so in the log.
+
 ### Optional: signed and notarized macOS builds
 
 Without these, the macOS leg still builds and publishes — the `.dmg` is just
