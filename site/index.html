@@ -1020,15 +1020,18 @@
   .dock-sp { flex: 1; }
   .dock-brand { white-space: nowrap; }
   .dock-attrib {
+    /* Its own row under the footer line. Full measure rather than 62ch, since
+       nothing is competing with it for horizontal space now. */
+    margin: 9px 0 0;
+    font-family: var(--mono);
     font-size: 8.5px;
     letter-spacing: 0.06em;
     text-transform: none;
     color: var(--dim);
-    opacity: 0.75;
-    max-width: 62ch;
-    line-height: 1.45;
+    opacity: 0.7;
+    line-height: 1.5;
+    max-width: none;
   }
-  @media (max-width: 900px) { .dock-attrib { display: none; } }
   .dock-now { color: var(--accent); white-space: nowrap; }
   @media (max-width: 620px) {
     .dock-meta a:not(:last-child) { display: none; }
@@ -1055,20 +1058,6 @@
   }
 
   /* Inside the dock the swatches are a single scrollable row. */
-  .dock-sw .sw-list {
-    grid-template-columns: none;
-    grid-auto-flow: column;
-    grid-auto-columns: max-content;
-    overflow-x: auto;
-    overflow-y: hidden;
-    gap: 6px;
-    margin: 0 0 9px;
-    padding-bottom: 4px;
-    scrollbar-width: thin;
-    overscroll-behavior-x: contain;
-  }
-  .dock-sw .sw { padding: 6px 9px; font-size: 8.5px; }
-  .dock-sw .sw-chip { width: 20px; height: 13px; }
 
   .theme-cue {
     font-family: var(--mono);
@@ -1515,9 +1504,24 @@
     padding: 0;
     overflow: visible;
     border-radius: 50%;
-    border: 1px solid var(--line);
-    background: color-mix(in srgb, var(--void) 66%, transparent);
-    backdrop-filter: blur(14px);
+    border: 1px solid color-mix(in srgb, var(--ice) 12%, transparent);
+    /* Frosted glass: blur alone just looks blurry, so saturate what shows
+       through, add a lit top edge and a shadow so the disc sits above the page. */
+    background:
+      linear-gradient(160deg,
+        color-mix(in srgb, var(--ice) 9%, transparent) 0%,
+        color-mix(in srgb, var(--ice) 2%, transparent) 38%,
+        transparent 62%),
+      radial-gradient(120% 120% at 30% 8%,
+        color-mix(in srgb, var(--accent) 12%, transparent),
+        transparent 58%),
+      color-mix(in srgb, var(--void) 52%, transparent);
+    backdrop-filter: blur(18px) saturate(150%);
+    -webkit-backdrop-filter: blur(18px) saturate(150%);
+    box-shadow:
+      inset 0 1px 0 color-mix(in srgb, var(--ice) 20%, transparent),
+      inset 0 -1px 0 color-mix(in srgb, var(--void) 45%, transparent),
+      0 18px 40px -18px color-mix(in srgb, var(--void) 85%, transparent);
     transform: rotate(0deg);   /* set inline by the picker; see note in JS */
     /* No animation here: a filled animation on transform overrides the inline
        rotation the picker writes, which silently froze the ring. */
@@ -1574,8 +1578,17 @@
     width: calc(var(--dial) * 0.47);
     height: calc(var(--dial) * 0.47);
     border-radius: 50%;
-    background: var(--panel);
-    border: 1px solid var(--line);
+    background:
+      linear-gradient(160deg,
+        color-mix(in srgb, var(--ice) 10%, transparent) 0%,
+        transparent 55%),
+      color-mix(in srgb, var(--panel) 72%, transparent);
+    backdrop-filter: blur(12px) saturate(140%);
+    -webkit-backdrop-filter: blur(12px) saturate(140%);
+    border: 1px solid color-mix(in srgb, var(--ice) 14%, transparent);
+    box-shadow:
+      inset 0 1px 0 color-mix(in srgb, var(--ice) 18%, transparent),
+      0 8px 20px -10px color-mix(in srgb, var(--void) 80%, transparent);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -1658,6 +1671,13 @@
     .dock-sw, .dock-sw .sw, .dial-hub { transition: none; }
     .dock-sw.is-away { transform: none; filter: none; }
     .dock-sw.is-away .sw { transform: rotate(var(--a, 0deg)) translateY(calc(-1 * var(--orbit))); }
+  }
+
+  /* No backdrop-filter (older Firefox, some Linux builds): the translucent disc
+     would leave the chips floating over page text, so make it solid. */
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .dock-sw .sw-list { background: var(--panel); }
+    .dial-hub { background: var(--panel); }
   }
 </style>
 </head>
@@ -2575,13 +2595,13 @@
   <div class="wrap dock-in">
     <div class="dock-meta">
       <span class="dock-brand">Catalyst · MIT</span>
-      <span class="dock-attrib">Claude Code, Codex and Gemini CLI are trademarks of Anthropic, OpenAI and Google. Catalyst is an independent launcher and is not affiliated with them.</span>
       <span class="dock-sp"></span>
       <span class="dock-now" id="dockNow"></span>
       <a href="https://github.com/OLI-Systems/Catalyst" target="_blank" rel="noopener">GitHub</a>
       <a href="https://github.com/OLI-Systems/Catalyst/releases" target="_blank" rel="noopener">Releases</a>
       <a href="https://olisystems.com/" target="_blank" rel="noopener">OLI Systems</a>
     </div>
+    <p class="dock-attrib">Claude Code, Codex and Gemini CLI are trademarks of Anthropic, OpenAI and Google. Catalyst is an independent launcher and is not affiliated with them.</p>
   </div>
 </div>
 
