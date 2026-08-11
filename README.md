@@ -20,14 +20,21 @@ Grab the latest build from
 | Platform | File | Notes |
 |---|---|---|
 | Windows x64 | `Catalyst_<version>_x64-setup.exe` | Installs per-user — no administrator prompt. |
-| macOS (Apple Silicon) | `Catalyst_<version>_aarch64.dmg` | Not notarized yet; see below. |
+| macOS (Apple Silicon) | `Catalyst_<version>_aarch64.dmg` | Drag Catalyst to Applications. See the note below on Gatekeeper. |
 
-macOS builds are unsigned, so Gatekeeper blocks the first launch. Clear the
-quarantine flag once:
+The release workflow codesigns and notarizes the macOS bundle when Apple
+credentials are configured for the repository, and publishes an unsigned bundle
+when they are not — see [Releasing](#releasing). If macOS refuses to open the app,
+the build you downloaded was not notarized. Get past it either way:
 
-```sh
-xattr -dr com.apple.quarantine /Applications/Catalyst.app
-```
+- Right-click Catalyst in Applications and choose **Open**, or
+- clear the quarantine flag once:
+
+  ```sh
+  xattr -dr com.apple.quarantine /Applications/Catalyst.app
+  ```
+
+Only Apple Silicon Macs have a published build; on Intel, build from source.
 
 Node.js ships inside the app, so there is nothing else to install for the app
 itself.
@@ -50,6 +57,11 @@ installed.
 
 **Settings → Updates** shows the installed version, checks again on demand, and
 installs a pending update with **Install & Restart**.
+
+**Install updates automatically** in the same place skips the prompt: a newer
+release is installed on launch and the app restarts into it. It is off by default,
+and it skips only the question — the signature is still verified before anything
+is installed.
 
 ## Themes
 
@@ -111,6 +123,23 @@ context to the agent as a prompt, and can set the item to *In Progress*.
 - Inner split terminals within a session — a plain shell or another CLI
 - Pin tabs to auto-launch on startup
 - Reconnect with output-buffer replay
+
+**Picking up where you left off** — choosing a repository and an agent opens a
+list of what is already running in that repository and the past conversations
+that agent can resume. From there you can switch to a live session, resume an
+earlier conversation, delete individual conversations, or clear them all.
+Conversations are read from each CLI's own history, so the list reflects work
+started outside Catalyst too.
+
+**More than one repository per session** — add extra repositories when you start a
+session. The first is the working directory; the rest are passed to the agent
+through its own mechanism for additional roots:
+
+| Agent | How extra roots are passed |
+|---|---|
+| Claude Code | `--add-dir` |
+| Gemini CLI | `--include-directories` |
+| Codex | `sandbox_workspace_write.writable_roots` |
 
 ### Git
 - Branch display with auto-refresh, switching and creation
@@ -182,17 +211,23 @@ Signing keys are only needed to produce an *updatable* build. Without
 `.github/workflows/release.yml` builds and publishes on a version tag.
 
 1. Bump the version in `package.json`, `src-tauri/Cargo.toml` and
-   `src-tauri/tauri.conf.json` (all three must match).
+   `src-tauri/tauri.conf.json` — all three must match. Update the two lockfiles to
+   match as well, or the next build rewrites them: the root entries in
+   `package-lock.json` and the `catalyst` package entry in `src-tauri/Cargo.lock`.
 2. Commit, then tag and push:
 
    ```sh
-   git tag v1.0.1
-   git push origin v1.0.1
+   git tag v1.1.0
+   git push origin v1.1.0
    ```
 
 The workflow builds the Windows installer and the macOS bundle, signs the updater
 artifacts, and publishes a release with the `latest.json` the in-app updater
-reads.
+reads. The two platforms build independently, so a macOS failure never withholds
+the Windows installer.
+
+The version the UI displays comes from `package.json` at runtime, so the welcome
+footer, About and Settings → Updates all follow the bump with no further edits.
 
 ### One-time repository setup
 
@@ -201,6 +236,24 @@ reads.
 | `TAURI_SIGNING_PRIVATE_KEY` | Settings → Secrets → Actions | Signs updater artifacts. Must match the `pubkey` in `src-tauri/tauri.conf.json`. |
 | `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` | Same | Only if the key has a password. |
 | Pages source = **GitHub Actions** | Settings → Pages | Lets `pages.yml` deploy `site/`. Required — the workflow cannot do this itself, because `configure-pages`' `enablement` input does not accept the default `GITHUB_TOKEN`. Until it is set, Deploy Pages fails with `Get Pages site failed`. |
+
+### Optional: signed and notarized macOS builds
+
+Without these, the macOS leg still builds and publishes — the `.dmg` is just
+unsigned, and users have to clear the quarantine flag on first launch. Add all six
+and the workflow codesigns *and* notarizes; add only the first three and it signs
+without notarizing.
+
+| Secret | What it is |
+|---|---|
+| `APPLE_CERTIFICATE` | Your Developer ID Application certificate as a base64 `.p12` |
+| `APPLE_CERTIFICATE_PASSWORD` | The export password for that `.p12` |
+| `APPLE_SIGNING_IDENTITY` | e.g. `Developer ID Application: Your Name (TEAMID)` |
+| `APPLE_ID` | The Apple ID email for notarization |
+| `APPLE_PASSWORD` | An app-specific password for that Apple ID — not the account password |
+| `APPLE_TEAM_ID` | Your 10-character team ID |
+
+An Apple Developer Program membership is required to obtain the certificate.
 
 To generate a keypair:
 

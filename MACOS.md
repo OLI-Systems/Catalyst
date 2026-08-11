@@ -67,8 +67,10 @@ ignores `nsis`; on Windows it produces only the NSIS installer.
 - **Must build on a Mac.** You cannot cross-build the `.app` or the darwin
   sidecar from Windows — the sidecar is a copy of the host's Node binary and the
   `.app`/`.dmg` bundlers require macOS tooling.
-- **Unsigned builds trigger Gatekeeper.** A locally built `.app`/`.dmg` is not
-  codesigned, so first launch is blocked. To open it:
+- **Unsigned builds trigger Gatekeeper.** A locally built `.app`/`.dmg` is never
+  codesigned, so first launch is blocked. (Released builds are signed and
+  notarized only when Apple credentials are configured for the release
+  workflow — see *Distribution* below.) To open an unsigned build:
   - Right-click the app → **Open** → confirm, **or**
   - Clear the quarantine attribute:
 
@@ -82,7 +84,17 @@ ignores `nsis`; on Windows it produces only the NSIS installer.
 
 ## Distribution
 
-For distribution outside your own machine you must **codesign and notarize** the
-app (Apple Developer ID). This is not required for local use. See Tauri's macOS
-signing documentation:
+For distribution outside your own machine the app must be **codesigned and
+notarized** with an Apple Developer ID. This is not required for local use.
+
+`.github/workflows/release.yml` does this for you when the credentials are
+available: its `Configure Apple signing` step exports the `APPLE_*` environment
+variables that Tauri's bundler reads, but only when the corresponding repository
+secrets are actually set. With none set, the release still succeeds and publishes
+an unsigned `.dmg`; the step logs which of the two it did. The six secrets are
+listed under *Optional: signed and notarized macOS builds* in
+[README.md](README.md).
+
+To sign a local build, export the same variables in your shell before
+`npm run tauri:build`. See Tauri's macOS signing documentation:
 <https://v2.tauri.app/distribute/sign/macos/>

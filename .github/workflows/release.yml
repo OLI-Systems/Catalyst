@@ -57,6 +57,49 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # Apple codesigning + notarisation, but only when the credentials exist.
+      # Tauri reads these from the environment; an empty APPLE_* value is worse
+      # than an absent one, because it makes the bundler attempt to sign with
+      # nothing and fail the build. So export them only when they are really set,
+      # and otherwise say plainly that the .dmg will be unsigned.
+      #
+      # To get signed + notarised macOS builds, add these repository secrets:
+      #   APPLE_CERTIFICATE           base64 of your Developer ID .p12
+      #   APPLE_CERTIFICATE_PASSWORD  the .p12 export password
+      #   APPLE_SIGNING_IDENTITY      e.g. "Developer ID Application: Name (TEAMID)"
+      #   APPLE_ID                    your Apple ID email
+      #   APPLE_PASSWORD              an app-specific password for that Apple ID
+      #   APPLE_TEAM_ID               your 10-character team ID
+      - name: Configure Apple signing
+        if: runner.os == 'macOS'
+        env:
+          CERT: ${{ secrets.APPLE_CERTIFICATE }}
+          CERT_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_ID_IN: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD_IN: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID_IN: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          if [ -z "$CERT" ] || [ -z "$IDENTITY" ]; then
+            echo "::notice::No Apple signing secrets configured — publishing an unsigned .dmg. Users will need to clear the quarantine flag on first launch (see MACOS.md)."
+            exit 0
+          fi
+
+          echo "APPLE_CERTIFICATE=$CERT" >> "$GITHUB_ENV"
+          echo "APPLE_CERTIFICATE_PASSWORD=$CERT_PASSWORD" >> "$GITHUB_ENV"
+          echo "APPLE_SIGNING_IDENTITY=$IDENTITY" >> "$GITHUB_ENV"
+
+          # Notarisation needs all three; signing alone still beats nothing, so
+          # don't fail the build when only the certificate is available.
+          if [ -n "$APPLE_ID_IN" ] && [ -n "$APPLE_PASSWORD_IN" ] && [ -n "$APPLE_TEAM_ID_IN" ]; then
+            echo "APPLE_ID=$APPLE_ID_IN" >> "$GITHUB_ENV"
+            echo "APPLE_PASSWORD=$APPLE_PASSWORD_IN" >> "$GITHUB_ENV"
+            echo "APPLE_TEAM_ID=$APPLE_TEAM_ID_IN" >> "$GITHUB_ENV"
+            echo "::notice::Signing and notarising the macOS bundle."
+          else
+            echo "::notice::Signing the macOS bundle, but not notarising — APPLE_ID, APPLE_PASSWORD and APPLE_TEAM_ID are needed for that."
+          fi
+
       - name: Build and publish
         uses: tauri-apps/tauri-action@v0
         env:
@@ -72,8 +115,9 @@ jobs:
             **Windows** — download `Catalyst_<version>_x64-setup.exe` and run it.
             Installs per-user, no admin required.
 
-            **macOS (Apple Silicon)** — download the `.dmg`. The build is
-            unsigned, so clear the quarantine flag on first run:
+            **macOS (Apple Silicon)** — download the `.dmg` and drag Catalyst to
+            Applications. If macOS blocks the first launch, the build was not
+            notarised: right-click Catalyst and choose **Open**, or run
             `xattr -dr com.apple.quarantine /Applications/Catalyst.app`
 
             Existing installs pick this up automatically via the in-app updater.
