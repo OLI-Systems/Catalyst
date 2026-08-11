@@ -1199,11 +1199,17 @@
     border-color: var(--m-border);
     color: var(--m-muted);
   }
-  /* The reset button runs the full width of its section. */
+  /* Danger buttons carry the colour treatment only. The app's Reset button also
+     runs the full width of its section, but the sessions dialog's Close all and
+     Clear history sit inline in the footer — so full-width belongs to the
+     settings section, not to the class. Left on the class, both footer buttons
+     demanded 100% of the flex row and pushed Start fresh out of the dialog. */
   .mk-btn-danger {
+    background: transparent; border: 1px solid var(--m-danger); color: var(--m-danger);
+  }
+  .mk-set-sec .mk-btn-danger {
     display: block; width: 100%; text-align: center;
     padding: 6.39px 14.2px;
-    background: transparent; border: 1px solid var(--m-danger); color: var(--m-danger);
   }
 
   /* ─── Updates ─────────────────────────────────────────────────────────── */
@@ -1397,6 +1403,7 @@
     opacity: 0.7;
     line-height: 1.5;
     max-width: none;
+    text-align: center;
   }
   .dock-now { color: var(--accent); white-space: nowrap; }
   @media (max-width: 620px) {
