@@ -34,7 +34,7 @@ the build you downloaded was not notarized. Get past it either way:
   xattr -dr com.apple.quarantine /Applications/Catalyst.app
   ```
 
-Only Apple Silicon Macs have a published build; on Intel, build from source.
+Apple Silicon only — Intel Macs are not supported.
 
 Node.js ships inside the app, so there is nothing else to install for the app
 itself.
@@ -59,9 +59,9 @@ installed.
 installs a pending update with **Install & Restart**.
 
 **Install updates automatically** in the same place skips the prompt: a newer
-release is installed on launch and the app restarts into it. It is off by default,
-and it skips only the question — the signature is still verified before anything
-is installed.
+release is installed on launch and the app restarts into it. This is **on by
+default** — untick it to be asked first. It skips only the question, never the
+checks: the signature is verified before anything is installed either way.
 
 ## Themes
 

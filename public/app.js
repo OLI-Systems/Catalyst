@@ -2918,7 +2918,11 @@
             setIntegProvider(savedProvider);
           }
           // Strict compare so a missing or malformed value stays off.
-          if (autoUpdateToggle) autoUpdateToggle.checked = msg.settings.autoUpdate === true;
+          // On by default: only an explicit false unticks it, so a settings file
+          // written before this setting existed still shows the default. Must
+          // match AUTO_UPDATE_DEFAULT in src-tauri/src/lib.rs, which is what
+          // actually decides whether the startup install runs.
+          if (autoUpdateToggle) autoUpdateToggle.checked = msg.settings.autoUpdate !== false;
         }
         const patStatus = $('#patStatus');
         if (msg.hasPat) {

@@ -9,7 +9,9 @@ the local server.
 
 ## Prerequisites
 
-- **macOS 10.15+** (Catalina or later).
+- **Apple Silicon Mac**, macOS 10.15+ (Catalina or later). Intel Macs are not a
+  supported target — the build machinery is arch-agnostic, so an Intel build may
+  well work, but it is neither released nor tested.
 - **Xcode Command Line Tools**: `xcode-select --install`
 - **Rust** (stable, via [rustup](https://rustup.rs)): `rustup toolchain install stable`
 - **Node 18+** — the *same* Node binary you run `npm install` with becomes the

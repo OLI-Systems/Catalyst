@@ -62,22 +62,29 @@ async fn install_update(app: tauri::AppHandle) -> Result<(), String> {
 /// Rust reads the file instead of having the frontend hand the flag over: the
 /// startup check runs before the sidecar has even reported its port, so there is
 /// no page to ask yet, and waiting for one would either delay the check or race
-/// it. Anything unexpected — no file, bad JSON, missing key — means opted out,
-/// because an unattended install must only ever follow an explicit opt-in.
+/// it.
+///
+/// Automatic installs are ON unless the user turned them off. Only an explicit
+/// `false` opts out — a fresh install with no settings file yet, or a file we
+/// cannot read, gets the default. That is deliberately not a fail-safe-to-off:
+/// staying current matters more here, and the update is signature-verified
+/// either way, so the flag decides whether to *ask*, never whether to *verify*.
+const AUTO_UPDATE_DEFAULT: bool = true;
+
 fn auto_update_enabled(app: &tauri::AppHandle) -> bool {
     let Ok(home) = app.path().home_dir() else {
-        return false;
+        return AUTO_UPDATE_DEFAULT;
     };
     let Ok(raw) = std::fs::read_to_string(home.join(".catalyst").join("sessions.json")) else {
-        return false;
+        return AUTO_UPDATE_DEFAULT;
     };
     let Ok(json) = serde_json::from_str::<serde_json::Value>(&raw) else {
-        return false;
+        return AUTO_UPDATE_DEFAULT;
     };
     json.get("settings")
         .and_then(|s| s.get("autoUpdate"))
         .and_then(serde_json::Value::as_bool)
-        .unwrap_or(false)
+        .unwrap_or(AUTO_UPDATE_DEFAULT)
 }
 
 /// Startup check. Stays silent when already current; otherwise installs straight

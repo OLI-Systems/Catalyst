@@ -1230,6 +1230,10 @@
     width: 11.36px; height: 11.36px; border-radius: 50%;
     background: var(--m-muted);
   }
+  /* Automatic installs are on by default in the app, so the mock shows the
+     toggle on: knob to the right, track carrying the accent. */
+  .mk-switch.is-on { background: color-mix(in srgb, var(--m-accent) 45%, transparent); }
+  .mk-switch.is-on::after { left: auto; right: 1.42px; background: var(--m-accent); }
   .mk-auto-t { font-size: 8.52px; font-weight: 500; color: var(--m-text); }
   .mk-auto-d { font-size: 8px; color: var(--m-muted); margin-top: 1.42px; }
   /* A found release outlines its card in the accent — no fill behind it. */
@@ -3013,7 +3017,7 @@
                     <div class="mk-ver"><span>Installed</span><b>1.0.0</b></div>
                     <div class="mk-set-row"><span class="mk-btn-sm mk-btn-2">Check for updates</span></div>
                     <div class="mk-auto">
-                      <span class="mk-switch"></span>
+                      <span class="mk-switch is-on"></span>
                       <div>
                         <div class="mk-auto-t">Install updates automatically</div>
                         <div class="mk-auto-d">Install a newer signed release on launch and restart, without asking first</div>
@@ -3441,6 +3445,50 @@
     // persist=false either way: a restored value is already stored, and a random
     // one is deliberately not remembered.
     select(chosen, false, false);
+
+    // With no saved preference, show the range rather than one lucky palette:
+    // five distinct themes, two seconds apart, starting from the one already
+    // applied. Each step goes through select(), so the dial turns exactly as it
+    // does for a click, and nothing is persisted — this is a demo, not a choice.
+    var wantsCalm = window.matchMedia &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    if (isRandom && !wantsCalm) {
+      var reel = [chosen];
+      var pool = buttons.filter(function (b) { return b !== chosen; });
+      while (reel.length < 5 && pool.length) {
+        // Drawn without replacement, so all five are different.
+        reel.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
+      }
+
+      var reelTimer = null;
+      var reelStep = 1;
+
+      // Declared before the timer that calls it, and as a var rather than a
+      // block-scoped function declaration, so the listeners below bind to the
+      // same function object in every browser.
+      var stopReel = function () {
+        if (reelTimer !== null) { clearInterval(reelTimer); reelTimer = null; }
+        buttons.forEach(function (b) { b.removeEventListener('click', stopReel); });
+        document.removeEventListener('keydown', stopReel);
+      };
+
+      reelTimer = setInterval(function () {
+        if (reelStep >= reel.length) { stopReel(); return; }
+        select(reel[reelStep], false, false);
+        reelStep++;
+      }, 2000);
+
+      // Any deliberate input ends it immediately: the reel must never fight the
+      // visitor for control of the picker.
+      buttons.forEach(function (b) { b.addEventListener('click', stopReel); });
+      document.addEventListener('keydown', stopReel);
+
+      // A hidden tab should not burn through the reel unseen.
+      document.addEventListener('visibilitychange', function () {
+        if (document.hidden) stopReel();
+      });
+    }
   })();
 
 
