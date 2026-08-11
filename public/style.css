@@ -2763,6 +2763,33 @@ body.is-desktop .welcome-settings-btn {
   flex: none;
 }
 
+/* The confirm dialog is opened from on top of other modals (e.g. deleting a
+   conversation from the sessions modal). Everything else sits at z-index 200,
+   so an equal value left the confirmation painted underneath and unclickable. */
+#confirmModal {
+  z-index: 300 !important;
+}
+
+.sess-del {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+.sess-del:hover {
+  color: var(--danger);
+  border-color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 10%, transparent);
+}
+
 .sess-empty {
   padding: 18px 20px;
   font-size: 11px;

@@ -1057,6 +1057,24 @@ wss.on('connection', (ws) => {
         break;
       }
 
+      // Destructive: removes specific transcripts by id. Ids are resolved
+      // server-side against this repo's own history, so a client cannot name an
+      // arbitrary file. The client confirms with the user first.
+      case 'delete-conversations': {
+        (async () => {
+          const { cli, repoPath, ids } = msg;
+          let result = { removed: 0, errors: ['Repository path is outside the configured projects folder'] };
+          if (isAllowedRepoPath(repoPath)) {
+            try { result = conversationStore.remove(cli, repoPath, ids); }
+            catch (e) { result = { removed: 0, errors: [e.message] }; }
+          }
+          if (ws.readyState === 1) {
+            ws.send(JSON.stringify({ type: 'conversations-cleared', cli, repoPath, ...result }));
+          }
+        })();
+        break;
+      }
+
       // Destructive: removes the CLI's own transcript files. The client confirms
       // with the user before sending this.
       case 'clear-conversations-for': {

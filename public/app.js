@@ -2267,6 +2267,9 @@
             <div class="sess-meta">${escHtml(bits.join(' · '))}</div>
           </div>
           <button class="btn btn-secondary btn-sm" data-resume="${escHtml(c.id)}"${disabled} type="button">Resume</button>
+          <button class="sess-del" data-delete="${escHtml(c.id)}" data-label="${escHtml(c.label)}" title="Delete this conversation" aria-label="Delete this conversation" type="button">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>
+          </button>
         </div>`);
       });
     }
@@ -2281,6 +2284,21 @@
     }));
     body.querySelectorAll('[data-resume]').forEach(b => b.addEventListener('click', () => {
       launchPending({ resume: b.dataset.resume });
+    }));
+
+    // Delete one conversation. Confirmed individually — it is not recoverable,
+    // and the label is quoted back so it is obvious which one is going.
+    body.querySelectorAll('[data-delete]').forEach(b => b.addEventListener('click', async () => {
+      const p = state._pendingLaunch;
+      if (!p) return;
+      const ok = await showConfirm(
+        'Delete conversation',
+        `Permanently delete "${b.dataset.label}" from ${p.cli}'s history for ${p.repo}?`,
+        'This cannot be undone. Other conversations are left alone.',
+        'Delete'
+      );
+      if (!ok) return;
+      wsSend({ type: 'delete-conversations', cli: p.cli, repoPath: p.repoPath, ids: [b.dataset.delete] });
     }));
 
     $('#sessionsKillAll').classList.toggle('hidden', !data.running.length);
