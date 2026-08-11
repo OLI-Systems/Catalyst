@@ -159,12 +159,24 @@ app.use((req, res, next) => {
   next();
 });
 
+// The shipped version, for the places the UI displays it. Read once here rather
+// than hardcoded in the markup, where it silently went stale every release.
+const APP_VERSION = (() => {
+  try {
+    return require('./package.json').version || '';
+  } catch {
+    return '';
+  }
+})();
+
 // Serve index.html with the per-launch WS token injected (must come before
 // express.static so '/' doesn't fall through to the raw file).
 app.get(['/', '/index.html'], (req, res) => {
   fs.promises.readFile(path.join(__dirname, 'public', 'index.html'), 'utf-8').then(html => {
     res.setHeader('Cache-Control', 'no-store');
-    res.type('html').send(html.replace(/<head>/i, `<head>\n  <meta name="ws-token" content="${AUTH_TOKEN}">`));
+    res.type('html').send(html.replace(/<head>/i,
+      `<head>\n  <meta name="ws-token" content="${AUTH_TOKEN}">` +
+      `\n  <meta name="app-version" content="${APP_VERSION}">`));
   }).catch(() => res.status(500).end());
 });
 

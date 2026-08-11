@@ -1,7 +1,7 @@
 {
   "name": "catalyst",
-  "version": "1.0.0",
-  "description": "Lightweight AI CLI session manager",
+  "version": "1.1.0",
+  "description": "An IDE for the AI-first world — one desktop workspace for Claude Code, Codex and Gemini CLI across all your repositories",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

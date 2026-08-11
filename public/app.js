@@ -1776,6 +1776,17 @@
   if (creditYearEl) creditYearEl.textContent = '© ' + new Date().getFullYear();
   $$('.welcome-year').forEach(el => el.textContent = new Date().getFullYear());
 
+  // Version, from the server rather than the markup. The welcome footer, About
+  // and Settings → Updates all used to carry a hardcoded literal, so each of them
+  // still claimed 1.0.0 after later releases shipped.
+  const appVersion = document.querySelector('meta[name="app-version"]')?.content || '';
+  if (appVersion) {
+    $$('.app-version').forEach(el => el.textContent = 'v' + appVersion);
+    $$('.about-version').forEach(el => el.textContent = 'v' + appVersion);
+    const installedEl = $('#updateCurrentVersion');
+    if (installedEl) installedEl.textContent = appVersion;
+  }
+
   settingsRootBrowse.addEventListener('click', () => {
     if (state._browsing) return;
     state._browsing = true;
