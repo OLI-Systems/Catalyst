@@ -1,0 +1,912 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Catalyst — run every AI coding agent in one window</title>
+<meta name="description" content="Catalyst is a desktop workspace for running Claude Code, Codex and Gemini CLI across all your git repositories — real terminals, real branches, one window.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cg fill='none' stroke='%2338bdf8' stroke-width='2.2' stroke-linejoin='round'%3E%3Cpath d='M16 6 L24.66 11 L24.66 21 L16 26 L7.34 21 L7.34 11 Z'/%3E%3Cline x1='16' y1='6' x2='16' y2='3.4'/%3E%3C/g%3E%3Ccircle cx='16' cy='2.4' r='2' fill='%2338bdf8'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Martian+Mono:wght@300;400;600;700&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+  /* ─── Tokens ───────────────────────────────────────────────────────────
+     Palette lifted from the app itself: the near-black window ground, the
+     cyan "active site" of the benzene mark, and the amber it uses for
+     uncommitted work. Amber appears in exactly one place on this page — the
+     uncatalyzed path of the reaction diagram — so the two colors keep
+     meaning: cyan is catalyzed, amber is friction. */
+  :root {
+    --void:   #05070c;
+    --panel:  #0b1017;
+    --line:   #1b2430;
+    --ice:    #eaf1f9;
+    --dim:    #6b7f95;
+    --accent: #38bdf8;
+    --flare:  #f0b429;
+
+    --mono: 'Martian Mono', ui-monospace, 'Cascadia Mono', Consolas, monospace;
+    --sans: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+
+    --gut: clamp(20px, 5vw, 64px);
+    --max: 1140px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+
+  html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+
+  body {
+    margin: 0;
+    background: var(--void);
+    color: var(--ice);
+    font-family: var(--sans);
+    font-weight: 300;
+    font-size: clamp(15px, 0.55vw + 13px, 17px);
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  a { color: inherit; }
+
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
+
+  img { max-width: 100%; display: block; }
+
+  .wrap {
+    width: 100%;
+    max-width: var(--max);
+    margin-inline: auto;
+    padding-inline: var(--gut);
+  }
+
+  /* ─── Shared type roles ─────────────────────────────────────────────── */
+
+  /* The app labels its own panels this way — GIT REPOSITORIES, SNAPSHOT,
+     CHOOSE AI. Reusing that vernacular as the page's section marker. */
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 9.5px;
+    font-weight: 600;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--dim);
+    margin: 0 0 18px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .eyebrow::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--line);
+  }
+  .eyebrow--tight::after { display: none; }
+
+  h1, h2, h3 {
+    font-family: var(--mono);
+    font-weight: 400;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+    margin: 0;
+    text-wrap: balance;
+  }
+
+  h2 { font-size: clamp(26px, 3.2vw, 42px); }
+  h3 { font-size: clamp(19px, 1.6vw, 24px); }
+
+  p { margin: 0 0 1.1em; max-width: 62ch; }
+  p:last-child { margin-bottom: 0; }
+
+  .lede { font-size: clamp(16px, 1vw + 13px, 20px); color: #b9c8d8; }
+
+  strong { font-weight: 500; color: var(--ice); }
+
+  code {
+    font-family: var(--mono);
+    font-size: 0.82em;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 0.15em 0.45em;
+    color: var(--accent);
+  }
+
+  /* ─── Nav ───────────────────────────────────────────────────────────── */
+
+  .nav {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    background: color-mix(in srgb, var(--void) 88%, transparent);
+    backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--line);
+  }
+  .nav-in {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    height: 58px;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.26em;
+  }
+  .brand svg { width: 22px; height: 22px; flex: none; color: var(--accent); }
+  .nav-sp { flex: 1; }
+  .nav-link {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--dim);
+    text-decoration: none;
+    transition: color 0.2s;
+    white-space: nowrap;
+  }
+  .nav-link:hover { color: var(--ice); }
+  /* Narrow screens keep only the two links worth tapping; the section anchors
+     would otherwise wrap and double the bar's height. */
+  @media (max-width: 680px) {
+    .nav-link--wide { display: none; }
+  }
+
+  /* ─── Buttons ───────────────────────────────────────────────────────── */
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    text-decoration: none;
+    padding: 12px 20px;
+    border-radius: 5px;
+    border: 1px solid transparent;
+    transition: transform 0.16s, background 0.2s, border-color 0.2s;
+    white-space: nowrap;
+  }
+  .btn:hover { transform: translateY(-1px); }
+  .btn-primary {
+    background: var(--accent);
+    color: #04202e;
+  }
+  .btn-primary:hover { background: #5cc9fa; }
+  .btn-ghost {
+    border-color: var(--line);
+    color: var(--ice);
+  }
+  .btn-ghost:hover { border-color: var(--dim); }
+  .btn svg { width: 13px; height: 13px; }
+
+  /* ─── Hero ──────────────────────────────────────────────────────────── */
+
+  .hero { padding: clamp(56px, 9vw, 104px) 0 clamp(40px, 6vw, 64px); }
+
+  .hero-eyebrow {
+    font-family: var(--mono);
+    font-size: 9.5px;
+    font-weight: 600;
+    letter-spacing: 0.34em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 26px;
+    max-width: none; /* tracked-out mono needs more room than the 62ch p default */
+  }
+
+  .hero h1 {
+    font-size: clamp(34px, 6.4vw, 74px);
+    font-weight: 300;
+    letter-spacing: -0.045em;
+    max-width: 17ch;
+  }
+  .hero h1 em {
+    font-style: normal;
+    color: var(--accent);
+  }
+
+  .hero .lede { margin-top: 26px; }
+
+  .hero-cta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 34px;
+    align-items: center;
+  }
+  .hero-note {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    color: var(--dim);
+  }
+
+  /* ─── Signature: reaction coordinate ───────────────────────────────────
+     A catalyst lowers the activation energy of a reaction without being
+     consumed by it. That is the whole claim of the product and the reason
+     for its name, so the page opens with the diagram that says it. */
+
+  .reaction {
+    margin-top: clamp(44px, 7vw, 76px);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background:
+      radial-gradient(120% 90% at 50% 0%, rgba(56,189,248,0.07), transparent 70%),
+      var(--panel);
+    padding: clamp(20px, 3vw, 34px);
+  }
+  .reaction-head {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 26px;
+    align-items: baseline;
+    margin-bottom: 6px;
+  }
+  .reaction-title {
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.26em;
+    text-transform: uppercase;
+    color: var(--dim);
+  }
+  .legend { display: flex; gap: 20px; flex-wrap: wrap; }
+  .legend span {
+    font-family: var(--mono);
+    font-size: 9.5px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--dim);
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .legend i {
+    width: 16px;
+    height: 2px;
+    border-radius: 2px;
+    background: currentColor;
+    flex: none;
+  }
+  .legend .k-flare { color: var(--flare); }
+  .legend .k-accent { color: var(--accent); }
+
+  .reaction svg { width: 100%; height: auto; overflow: visible; }
+
+  .rx-axis { stroke: var(--line); stroke-width: 1; }
+  .rx-axis-label {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    fill: var(--dim);
+  }
+  .rx-path { fill: none; stroke-width: 2.4; stroke-linecap: round; }
+  .rx-slow { stroke: var(--flare); stroke-dasharray: 7 6; opacity: 0.85; }
+  .rx-fast { stroke: var(--accent); }
+  .rx-node { fill: var(--accent); }
+  .rx-node-ring { fill: none; stroke: var(--accent); stroke-width: 1.2; opacity: 0.35; }
+  .rx-tag {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    fill: var(--ice);
+  }
+  .rx-tag-sub {
+    font-family: var(--mono);
+    font-size: 8.5px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    fill: var(--dim);
+  }
+  .rx-delta { stroke: var(--accent); stroke-width: 1; opacity: 0.5; }
+  .rx-delta-label {
+    font-family: var(--mono);
+    font-size: 9.5px;
+    letter-spacing: 0.1em;
+    fill: var(--accent);
+  }
+
+  /* Page-load draw. The uncatalyzed path lands first so the catalyzed one
+     reads as the answer to it. */
+  .rx-draw {
+    stroke-dasharray: 1400;
+    stroke-dashoffset: 1400;
+    animation: draw 1.5s cubic-bezier(0.5, 0, 0.2, 1) forwards;
+  }
+  .rx-slow.rx-draw { animation-delay: 0.25s; stroke-dasharray: 7 6; animation-name: fade; }
+  .rx-fast.rx-draw { animation-delay: 0.9s; }
+  .rx-late { opacity: 0; animation: fade 0.7s ease forwards 2.1s; }
+  /* transform-box is required here: without it the scale is applied about the
+     SVG user-space origin and the ring flies off the plot. */
+  .rx-pulse {
+    animation: pulse 2.6s ease-in-out infinite 2.6s;
+    transform-box: fill-box;
+    transform-origin: center;
+  }
+
+  @keyframes draw { to { stroke-dashoffset: 0; } }
+  @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes pulse {
+    0%, 100% { opacity: 0.35; transform: scale(1); }
+    50%      { opacity: 0.9;  transform: scale(1.5); }
+  }
+
+  .reaction-read {
+    margin-top: 18px;
+    padding-top: 18px;
+    border-top: 1px solid var(--line);
+    font-size: 14px;
+    color: #a8b8ca;
+  }
+  .reaction-read p { max-width: 76ch; }
+
+  /* ─── Proof shot ────────────────────────────────────────────────────── */
+
+  .shot {
+    border: 1px solid var(--line);
+    border-radius: 9px;
+    overflow: hidden;
+    background: var(--panel);
+    box-shadow: 0 30px 70px -30px rgba(0, 0, 0, 0.9);
+  }
+  figure { margin: 0; }
+  figcaption {
+    font-family: var(--mono);
+    font-size: 9.5px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--dim);
+    margin-top: 12px;
+  }
+
+  .proof { padding: clamp(30px, 5vw, 56px) 0 clamp(56px, 9vw, 104px); }
+
+  /* ─── Feature rows ──────────────────────────────────────────────────── */
+
+  .feature {
+    padding: clamp(48px, 7vw, 88px) 0;
+    border-top: 1px solid var(--line);
+  }
+  .feature h3 { margin-bottom: 14px; }
+  .feature-copy {
+    margin-bottom: clamp(28px, 4vw, 48px);
+    max-width: 68ch;
+  }
+  .feature-copy p { color: #a8b8ca; }
+
+  /* Screenshots run the full content width so the app's own UI text stays
+     legible, but each frame is capped at the image's real pixel width — an
+     upscaled screenshot reads as blur, which is worse than a smaller one. */
+  .frame { margin-inline: auto; }
+  .frame--wide  { max-width: 1253px; }
+  .frame--modal { max-width: 900px; }
+  .frame--panel { max-width: 680px; }
+
+  /* Theme tiles: two across on desktop keeps each one large enough to read. */
+  .theme-grid {
+    display: grid;
+    gap: clamp(16px, 2.4vw, 26px);
+    grid-template-columns: 1fr;
+  }
+  @media (min-width: 760px) { .theme-grid { grid-template-columns: 1fr 1fr; } }
+  .theme-grid figcaption { margin-top: 9px; }
+
+  .spec {
+    list-style: none;
+    margin: 20px 0 0;
+    padding: 0;
+    display: grid;
+    gap: 9px;
+  }
+  .spec li {
+    position: relative;
+    padding-left: 20px;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    letter-spacing: 0.02em;
+    color: #a8b8ca;
+    line-height: 1.5;
+  }
+  .spec li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0.52em;
+    width: 7px;
+    height: 7px;
+    border: 1px solid var(--accent);
+    transform: rotate(45deg);
+  }
+
+  /* ─── Update band ───────────────────────────────────────────────────── */
+
+  .band {
+    border-top: 1px solid var(--line);
+    padding: clamp(48px, 7vw, 88px) 0;
+    background:
+      radial-gradient(80% 120% at 15% 0%, rgba(56,189,248,0.06), transparent 65%);
+  }
+  .band-copy {
+    max-width: 68ch;
+    margin-bottom: clamp(28px, 4vw, 44px);
+  }
+
+  /* ─── Install ───────────────────────────────────────────────────────── */
+
+  .install { border-top: 1px solid var(--line); padding: clamp(48px, 7vw, 88px) 0; }
+  .plats {
+    display: grid;
+    gap: 18px;
+    margin-top: 34px;
+  }
+  @media (min-width: 720px) { .plats { grid-template-columns: 1fr 1fr; } }
+  .plat {
+    border: 1px solid var(--line);
+    border-radius: 9px;
+    padding: 24px;
+    background: var(--panel);
+  }
+  .plat h3 { font-size: 17px; margin-bottom: 6px; }
+  .plat .os {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 12px;
+  }
+  .plat p { font-size: 14px; color: #a8b8ca; }
+  .plat pre {
+    margin: 14px 0 0;
+    padding: 12px 14px;
+    background: var(--void);
+    border: 1px solid var(--line);
+    border-radius: 5px;
+    overflow-x: auto;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--dim);
+  }
+  .plat pre code { background: none; border: 0; padding: 0; }
+
+  .req {
+    margin-top: 30px;
+    font-size: 14px;
+    color: var(--dim);
+  }
+  .req strong { color: #a8b8ca; font-weight: 500; }
+
+  /* ─── Footer ────────────────────────────────────────────────────────── */
+
+  footer {
+    border-top: 1px solid var(--line);
+    padding: 40px 0 56px;
+  }
+  .foot-in {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px 28px;
+    align-items: center;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--dim);
+  }
+  .foot-in a { text-decoration: none; transition: color 0.2s; }
+  .foot-in a:hover { color: var(--ice); }
+  .foot-sp { flex: 1; }
+
+  /* ─── Scroll reveal ─────────────────────────────────────────────────── */
+
+  .rise {
+    opacity: 0;
+    transform: translateY(18px);
+    transition: opacity 0.7s ease, transform 0.7s cubic-bezier(0.2, 0.7, 0.2, 1);
+  }
+  .rise.in { opacity: 1; transform: none; }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    *, *::before, *::after {
+      animation-duration: 0.001ms !important;
+      animation-delay: 0s !important;
+      transition-duration: 0.001ms !important;
+    }
+    .rise { opacity: 1; transform: none; }
+    .rx-draw, .rx-late { stroke-dashoffset: 0; opacity: 1; }
+  }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="wrap nav-in">
+    <a class="brand" href="#top">
+      <svg viewBox="0 0 32 32" aria-hidden="true">
+        <g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round">
+          <path d="M16 6 L24.66 11 L24.66 21 L16 26 L7.34 21 L7.34 11 Z"/>
+          <line x1="16" y1="6" x2="16" y2="3.4"/>
+        </g>
+        <circle cx="16" cy="16" r="1.5" fill="currentColor" opacity="0.4"/>
+        <circle cx="16" cy="2.4" r="2" fill="currentColor"/>
+      </svg>
+      CATALYST
+    </a>
+    <span class="nav-sp"></span>
+    <a class="nav-link nav-link--wide" href="#what">What it does</a>
+    <a class="nav-link nav-link--wide" href="#themes">Themes</a>
+    <a class="nav-link" href="#install">Install</a>
+    <a class="nav-link" href="https://github.com/OLI-Systems/Catalyst" target="_blank" rel="noopener">Source</a>
+  </div>
+</nav>
+
+<main id="top">
+
+  <!-- ─── Hero ─────────────────────────────────────────────────────────── -->
+  <section class="hero">
+    <div class="wrap">
+      <p class="hero-eyebrow">Many minds · One workspace · You're in command</p>
+      <h1>Run every coding agent in <em>one</em> window.</h1>
+      <p class="lede">
+        Catalyst is a desktop workspace for Claude Code, Codex and Gemini CLI. Point
+        it at the folder your repositories live in, pick a repo, pick an agent — and
+        get a real terminal running the real CLI, with the branch, the diff and the
+        work item right beside it.
+      </p>
+      <div class="hero-cta">
+        <a class="btn btn-primary" href="https://github.com/OLI-Systems/Catalyst/releases/latest" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 3v12"/><path d="m7 12 5 5 5-5"/><path d="M4 21h16"/>
+          </svg>
+          Download for Windows
+        </a>
+        <a class="btn btn-ghost" href="https://github.com/OLI-Systems/Catalyst" target="_blank" rel="noopener">Read the source</a>
+        <span class="hero-note">Free · MIT · Updates itself</span>
+      </div>
+
+      <!-- Signature element -->
+      <div class="reaction">
+        <div class="reaction-head">
+          <span class="reaction-title">Reaction coordinate</span>
+          <span class="legend">
+            <span class="k-flare"><i></i>Without Catalyst</span>
+            <span class="k-accent"><i></i>With Catalyst</span>
+          </span>
+        </div>
+
+        <svg viewBox="0 0 800 340" role="img"
+             aria-label="A reaction coordinate diagram. Starting from eight repositories and three agents, the path without Catalyst climbs a tall activation-energy peak; the path with Catalyst reaches the same finished, shipped result over a much lower one.">
+          <!-- axes. Endpoint states annotate the x-axis, which keeps every
+               label clear of the two curves at any width. -->
+          <line class="rx-axis" x1="62" y1="26" x2="62" y2="286"/>
+          <line class="rx-axis" x1="62" y1="286" x2="770" y2="286"/>
+          <text class="rx-axis-label" x="70" y="18" text-anchor="start">Friction</text>
+
+          <!-- uncatalyzed: tall hump -->
+          <path class="rx-path rx-slow rx-draw"
+                d="M80,250 C230,250 250,52 400,52 C550,52 570,268 720,268"/>
+
+          <!-- catalyzed: low hump -->
+          <path class="rx-path rx-fast rx-draw"
+                d="M80,250 C230,250 262,166 400,166 C538,166 570,268 720,268"/>
+
+          <!-- the gap between the two peaks: what the catalyst takes away -->
+          <g class="rx-late">
+            <line class="rx-delta" x1="400" y1="60" x2="400" y2="158"/>
+            <line class="rx-delta" x1="392" y1="60" x2="408" y2="60"/>
+            <line class="rx-delta" x1="392" y1="158" x2="408" y2="158"/>
+            <text class="rx-delta-label" x="420" y="113">Activation energy</text>
+          </g>
+
+          <!-- endpoints -->
+          <circle class="rx-node-ring rx-pulse" cx="80" cy="250" r="9"/>
+          <circle class="rx-node" cx="80" cy="250" r="4"/>
+          <circle class="rx-node" cx="720" cy="268" r="4"/>
+
+          <g class="rx-late">
+            <line class="rx-axis" x1="80" y1="286" x2="80" y2="294"/>
+            <text class="rx-tag-sub" x="80" y="310" text-anchor="start">Start</text>
+            <text class="rx-tag" x="80" y="328" text-anchor="start">8 repos · 3 agents</text>
+
+            <line class="rx-axis" x1="720" y1="286" x2="720" y2="294"/>
+            <text class="rx-tag-sub" x="740" y="310" text-anchor="end">Finish</text>
+            <text class="rx-tag" x="740" y="328" text-anchor="end">Reviewed · shipped</text>
+          </g>
+        </svg>
+
+        <div class="reaction-read">
+          <p>
+            A catalyst lowers the energy a reaction needs to get going, and comes out
+            of it unchanged. The work in the middle is still yours — Catalyst just
+            takes out the part that was never the work: hunting for the right window,
+            re-typing the same path, losing your place between one agent and the next.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── Proof ────────────────────────────────────────────────────────── -->
+  <section class="proof">
+    <div class="wrap rise">
+      <figure>
+        <div class="shot">
+          <img src="img/workspace.jpg" width="1253" height="545"
+               alt="The Catalyst workspace: a folder path bar above a grid of eight repository cards, each showing its detected stack, current branch and uncommitted change count.">
+        </div>
+        <figcaption>Every git repository under one folder, with its stack and branch already read</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- ─── What it does ─────────────────────────────────────────────────── -->
+  <section class="feature" id="what">
+    <div class="wrap rise">
+      <div class="feature-copy">
+        <p class="eyebrow eyebrow--tight">Choose AI</p>
+        <h3>Pick a repo, pick an agent.</h3>
+        <p>
+          Selecting a repository shows you what you're walking into before you
+          start: the branch, whether the tree is clean, how many branches and open
+          PRs it has, and how recent the commits are.
+        </p>
+        <ul class="spec">
+          <li>Claude Code, Codex and Gemini CLI, detected on your PATH</li>
+          <li>Stack read from the repo — Node, .NET, Python, Rust, Go, React</li>
+          <li>Optional worktree isolation, so your main checkout stays untouched</li>
+        </ul>
+      </div>
+      <figure class="frame frame--panel">
+        <div class="shot">
+          <img src="img/repo-detail.jpg" width="645" height="550"
+               alt="A selected repository showing a commit sparkline, a snapshot of branch and working tree state, and buttons to launch Claude, Codex or Gemini.">
+        </div>
+      </figure>
+    </div>
+  </section>
+
+  <section class="feature">
+    <div class="wrap rise">
+      <div class="feature-copy">
+        <p class="eyebrow eyebrow--tight">Session</p>
+        <h3>Real terminals, not a chat box.</h3>
+        <p>
+          Catalyst doesn't wrap or re-implement any AI. It spawns the actual CLI in
+          a pseudo-terminal and bridges it to a full xterm.js terminal, so
+          everything the tool can do, it still does — prompts, slash commands,
+          permission dialogs, colour and all.
+        </p>
+        <ul class="spec">
+          <li>One tab per session, up to eight, plus inner split terminals</li>
+          <li>Paste an image straight into the terminal</li>
+          <li>Branch, diff and changed files in the panel beside it</li>
+          <li>Pull, push and PR without leaving the session</li>
+        </ul>
+      </div>
+      <figure class="frame frame--wide">
+        <div class="shot">
+          <img src="img/session.jpg" width="1253" height="300"
+               alt="A Catalyst session running Claude Code in a terminal, with a repository panel on the right showing the branch, pull, push and PR controls, and a changed-files list.">
+        </div>
+      </figure>
+    </div>
+  </section>
+
+  <!-- ─── Themes ───────────────────────────────────────────────────────── -->
+  <section class="feature" id="themes">
+    <div class="wrap rise">
+      <div class="feature-copy">
+        <p class="eyebrow eyebrow--tight">Appearance</p>
+        <h3>Twenty themes, light and dark.</h3>
+        <p>
+          Pick the one you can look at all day. Each theme retints the whole
+          window — sidebar, cards, terminal and status bar together — so nothing
+          is left on the old palette. Font family and size are yours to set too.
+        </p>
+      </div>
+
+      <div class="theme-grid">
+        <figure>
+          <div class="shot">
+            <img src="img/theme-dracula.jpg" width="652" height="360"
+                 alt="The Catalyst workspace in the Dracula theme: deep violet background with lilac accents.">
+          </div>
+          <figcaption>Dracula</figcaption>
+        </figure>
+        <figure>
+          <div class="shot">
+            <img src="img/theme-monokai.jpg" width="652" height="360"
+                 alt="The Catalyst workspace in the Monokai theme: near-black background with acid green accents.">
+          </div>
+          <figcaption>Monokai</figcaption>
+        </figure>
+        <figure>
+          <div class="shot">
+            <img src="img/theme-nord.jpg" width="652" height="360"
+                 alt="The Catalyst workspace in the Nord theme: slate blue-grey background with pale blue accents.">
+          </div>
+          <figcaption>Nord</figcaption>
+        </figure>
+        <figure>
+          <div class="shot">
+            <img src="img/theme-rose.jpg" width="652" height="360"
+                 alt="The Catalyst workspace in the Rosé theme: warm off-white background with a brick red accent.">
+          </div>
+          <figcaption>Rosé</figcaption>
+        </figure>
+        <figure>
+          <div class="shot">
+            <img src="img/theme-sand.jpg" width="652" height="360"
+                 alt="The Catalyst workspace in the Sand theme: pale beige background with a bronze accent.">
+          </div>
+          <figcaption>Sand</figcaption>
+        </figure>
+        <figure>
+          <div class="shot">
+            <img src="img/theme-vslight.jpg" width="652" height="360"
+                 alt="The Catalyst workspace in the VS Light theme: white background with a bright blue accent.">
+          </div>
+          <figcaption>VS Light</figcaption>
+        </figure>
+      </div>
+
+      <figure class="frame frame--modal" style="margin-top:clamp(26px,4vw,44px)">
+        <div class="shot">
+          <img src="img/appearance.jpg" width="845" height="630"
+               alt="The Appearance settings page, showing a grid of twenty theme swatches and controls for font size and font family.">
+        </div>
+        <figcaption>All twenty, plus font size and family, in Appearance</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section class="feature">
+    <div class="wrap rise">
+      <div class="feature-copy">
+        <p class="eyebrow eyebrow--tight">Settings</p>
+        <h3>Set up once, on your machine.</h3>
+        <p>
+          Catalyst runs entirely on localhost. Your code never leaves the machine,
+          and access tokens go to the OS credential store — Windows Credential
+          Manager or the macOS Keychain — not to a config file.
+        </p>
+        <ul class="spec">
+          <li>One root folder, scanned for git repositories</li>
+          <li>Azure DevOps work items: fetch a task, start it, set it in progress</li>
+          <li>Install a missing CLI from inside the app</li>
+          <li>Reset wipes cached data and both tokens in one action</li>
+        </ul>
+      </div>
+      <figure class="frame frame--modal">
+        <div class="shot">
+          <img src="img/settings.jpg" width="845" height="380"
+               alt="Catalyst settings, showing the git root folder field and a reset action that clears cached repository data, sessions and stored tokens.">
+        </div>
+      </figure>
+    </div>
+  </section>
+
+  <!-- ─── Updates ──────────────────────────────────────────────────────── -->
+  <section class="band">
+    <div class="wrap">
+      <div class="rise">
+        <div class="band-copy">
+          <p class="eyebrow eyebrow--tight">Updates</p>
+          <h2>It keeps itself current.</h2>
+          <p class="lede" style="margin-top:18px">
+            Catalyst checks GitHub Releases when it starts. When there's a newer
+            build it offers it, and installs it when you say so.
+          </p>
+          <p style="margin-top:16px;color:#a8b8ca">
+            Every release is signed, and the app verifies that signature before it
+            installs anything. <strong>Settings → Updates</strong> shows the
+            installed version and checks again whenever you ask.
+          </p>
+        </div>
+        <figure class="frame frame--modal">
+          <div class="shot">
+            <img src="img/updates.jpg" width="845" height="417"
+                 alt="The Updates settings page, showing the installed version with a check button and a highlighted panel offering version 1.1.0 with release notes and an Install and Restart action.">
+          </div>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── Install ──────────────────────────────────────────────────────── -->
+  <section class="install" id="install">
+    <div class="wrap rise">
+      <p class="eyebrow">Install</p>
+      <h2>Get Catalyst.</h2>
+
+      <div class="plats">
+        <div class="plat">
+          <p class="os">Windows</p>
+          <h3>Run the installer</h3>
+          <p>
+            Download <code>Catalyst_&lt;version&gt;_x64-setup.exe</code> from the
+            latest release and run it. It installs for the current user, so it
+            doesn't ask for an administrator.
+          </p>
+        </div>
+        <div class="plat">
+          <p class="os">macOS · Apple Silicon</p>
+          <h3>Open the disk image</h3>
+          <p>
+            Download the <code>.dmg</code> and drag Catalyst to Applications. The
+            build isn't notarized yet, so clear the quarantine flag once:
+          </p>
+          <pre><code>xattr -dr com.apple.quarantine \
+  /Applications/Catalyst.app</code></pre>
+        </div>
+      </div>
+
+      <p class="req">
+        <strong>You'll also need:</strong> git on your PATH, and at least one agent
+        CLI — Catalyst can install a missing one for you. Node.js ships inside the
+        app, so there's nothing else to set up.
+      </p>
+
+      <div class="hero-cta">
+        <a class="btn btn-primary" href="https://github.com/OLI-Systems/Catalyst/releases/latest" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 3v12"/><path d="m7 12 5 5 5-5"/><path d="M4 21h16"/>
+          </svg>
+          Go to latest release
+        </a>
+        <a class="btn btn-ghost" href="https://github.com/OLI-Systems/Catalyst#readme" target="_blank" rel="noopener">Build from source</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap foot-in">
+    <span>Catalyst · MIT</span>
+    <span class="foot-sp"></span>
+    <a href="https://github.com/OLI-Systems/Catalyst" target="_blank" rel="noopener">GitHub</a>
+    <a href="https://github.com/OLI-Systems/Catalyst/releases" target="_blank" rel="noopener">Releases</a>
+    <a href="https://olisystems.com/" target="_blank" rel="noopener">OLI Systems</a>
+  </div>
+</footer>
+
+<script>
+  // Reveal on scroll. Anything already in view when the page loads is shown
+  // immediately, so the hero never waits on an intersection callback.
+  (function () {
+    var items = document.querySelectorAll('.rise');
+    if (!('IntersectionObserver' in window)) {
+      items.forEach(function (el) { el.classList.add('in'); });
+      return;
+    }
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (e.isIntersecting) {
+          e.target.classList.add('in');
+          io.unobserve(e.target);
+        }
+      });
+    }, { rootMargin: '0px 0px -12% 0px', threshold: 0.06 });
+    items.forEach(function (el) { io.observe(el); });
+  })();
+</script>
+
+</body>
+</html>

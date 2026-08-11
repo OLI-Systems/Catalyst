@@ -1,0 +1,1777 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Catalyst</title>
+  <link rel="icon" href="/icons/icon-192.png">
+  <!-- PWA Manifest & Meta Tags -->
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#06080d">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Catalyst">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <meta name="msapplication-TileColor" content="#06080d">
+  <meta name="msapplication-TileImage" content="/icons/icon-192.png">
+
+  <!-- Resource hints: preconnect to external origins used by CSS/JS -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+
+  <!-- Critical font: Fira Code (default UI/terminal font) loaded eagerly -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;600&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap">
+
+  <!-- Optional fonts: loaded non-blocking (user can select in settings) -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@300;400;500;600&family=IBM+Plex+Mono:wght@300;400;500;600&family=Inconsolata:wght@300;400;500;600&family=Ubuntu+Mono:wght@400;700&family=Roboto+Mono:wght@300;400;500;600&family=Space+Mono:wght@400;700&family=DM+Mono:wght@300;400;500&family=Geist+Mono:wght@300;400;500;600&family=VT323&family=Share+Tech+Mono&family=Press+Start+2P&display=swap" media="print" onload="this.media='all'">
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@300;400;500;600&family=IBM+Plex+Mono:wght@300;400;500;600&family=Inconsolata:wght@300;400;500;600&family=Ubuntu+Mono:wght@400;700&family=Roboto+Mono:wght@300;400;500;600&family=Space+Mono:wght@400;700&family=DM+Mono:wght@300;400;500&family=Geist+Mono:wght@300;400;500;600&family=VT323&family=Share+Tech+Mono&family=Press+Start+2P&display=swap"></noscript>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    if (typeof tailwind !== 'undefined') {
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            fontFamily: { mono: ['Fira Code', 'Consolas', 'monospace'] },
+            colors: {
+              catalyst: { bg: '#06080d', card: '#0f1319', sidebar: '#0a0d13', surface: '#141a24', accent: '#38bdf8' }
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Critical CSS: inline minimal styles to avoid FOUC -->
+  <style>
+    body{margin:0;background:#06080d;color:#fff;font-family:'Fira Code',monospace;overflow:hidden;height:100vh}
+    .app{display:flex;flex-direction:column;height:100vh}
+    .hidden{display:none!important}
+  </style>
+
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="welcome-port.css">
+  <link rel="stylesheet" href="onboarding.css">
+  <link rel="stylesheet" href="/xterm/css/xterm.css" media="print" onload="this.media='all'">
+  <noscript><link rel="stylesheet" href="/xterm/css/xterm.css"></noscript>
+  <script>if(localStorage.getItem('catalyst-onboarded'))document.documentElement.classList.add('onboarded');</script>
+  <!-- Tauri desktop shim: defines window.tauriDesktop. Must load before the inline is-desktop script below. -->
+  <script src="desktop-shim.js"></script>
+</head>
+<body class="dark">
+  <script>if(window.tauriDesktop&&window.tauriDesktop.isDesktop)document.body.classList.add('is-desktop');</script>
+  <div class="desktop-drag-bar"></div>
+  <!-- Custom window controls (shown only under Tauri via body.is-desktop) -->
+  <div id="win-controls">
+    <button id="win-min" type="button" title="Minimize" aria-label="Minimize">&#9472;</button>
+    <button id="win-max" type="button" title="Maximize" aria-label="Maximize">&#9634;</button>
+    <button id="win-close" type="button" title="Close" aria-label="Close">&#10005;</button>
+  </div>
+  <div class="app">
+    <!-- Top Tab Bar -->
+    <div class="topbar hidden" id="topbar">
+      <div class="topbar-row-1" data-tauri-drag-region>
+        <div class="topbar-brand" id="topbarBrand">
+          <svg class="topbar-brand-icon" viewBox="0 0 32 32" width="18" height="18"><g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M16 6 L24.66 11 L24.66 21 L16 26 L7.34 21 L7.34 11 Z"/><line x1="16" y1="6" x2="16" y2="3.4"/></g><circle cx="16" cy="16" r="1.5" fill="currentColor" opacity="0.4"/><circle cx="16" cy="2.4" r="2" fill="currentColor"/></svg>
+          <span class="brand-text"><span>C</span><span>A</span><span>T</span><span>A</span><span>L</span><span>Y</span><span>S</span><span>T</span></span>
+        </div>
+        <div class="topbar-repo-tabs" id="repoTabList"></div>
+        <div class="topbar-right">
+          <button class="topbar-btn" id="searchBtn" title="Command Palette (Ctrl+Shift+P)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+          </button>
+          <div class="topbar-run-wrap">
+            <button class="topbar-btn topbar-run-btn" id="runBtn" title="Run all configurations">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="6 4 20 12 6 20 6 4"/></svg>
+              <span>Run</span>
+            </button>
+            <button class="topbar-btn topbar-run-caret" id="runCaretBtn" title="Run a specific configuration">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <div class="run-menu hidden" id="runMenu"></div>
+          </div>
+          <button class="topbar-btn pwa-install-btn hidden" id="pwaInstallBtn" title="Install Catalyst App">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          </button>
+          <button class="topbar-btn" id="settingsBtn" title="Settings">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="topbar-row-2" id="cliSubTabs"></div>
+      <div class="topbar-tabs hidden" id="sessionList" style="display:none!important"></div>
+    </div>
+
+    <!-- Keep sidebar reference for JS but hidden -->
+    <div class="sidebar hidden" style="display:none!important"></div>
+
+    <div class="main-content">
+      <div class="main-panel" id="mainPanel">
+      <!-- Onboarding Wizard -->
+      <div class="ob-overlay" id="obOverlay">
+        <div class="ob-card">
+          <div class="ob-dots">
+            <button class="ob-dot active"></button>
+            <button class="ob-dot"></button>
+            <button class="ob-dot"></button>
+            <button class="ob-dot"></button>
+            <button class="ob-dot"></button>
+            <button class="ob-dot"></button>
+            <button class="ob-dot"></button>
+          </div>
+
+          <div class="ob-screens">
+
+            <!-- Step 0: Welcome -->
+            <div class="ob-screen ob-welcome active" data-step="0">
+              <svg class="ob-logo" viewBox="0 0 32 32"><g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M16 6 L24.66 11 L24.66 21 L16 26 L7.34 21 L7.34 11 Z"/><line x1="16" y1="6" x2="16" y2="3.4"/></g><circle cx="16" cy="16" r="1.5" fill="currentColor" opacity="0.4"/><circle cx="16" cy="2.4" r="2" fill="currentColor"/></svg>
+              <div class="ob-welcome-title">CATALYST</div>
+              <div class="ob-welcome-sub">Let's set up your workspace</div>
+              <div class="ob-welcome-tagline">A smooth, lightweight IDE built for CLI-first development. Use your own tools to build &mdash; Catalyst just gets out of the way.</div>
+              <div class="ob-features">
+                <div class="ob-feature">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><line x1="8" y1="10" x2="12" y2="14"/><line x1="12" y1="14" x2="16" y2="10"/></svg>
+                  <span>Terminal-native &mdash; your shell, your workflow, zero friction</span>
+                </div>
+                <div class="ob-feature">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 01-9 9"/></svg>
+                  <span>One workspace for all your git repos</span>
+                </div>
+                <div class="ob-feature">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+                  <span>Claude, Codex &amp; Gemini &mdash; pick your AI, keep your tools</span>
+                </div>
+                <div class="ob-feature">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/></svg>
+                  <span>17 themes crafted for long sessions</span>
+                </div>
+              </div>
+              <div class="ob-welcome-note">This takes about 60 seconds. Everything can be changed later in Settings.</div>
+            </div>
+
+            <!-- Step 1: Appearance -->
+            <div class="ob-screen" data-step="1">
+              <div class="ob-section-title">Appearance</div>
+              <div class="ob-section-sub">Make it yours</div>
+
+              <div class="ob-theme-grid">
+                <button class="ob-theme-swatch" data-theme="midnight"><span class="ob-swatch-preview" style="background:#06080d;border-color:rgba(56,189,248,0.2)"><span class="ob-swatch-bar" style="background:#141a24"></span><span class="ob-swatch-dot" style="background:#38bdf8"></span></span><span class="ob-swatch-label">Midnight</span></button>
+                <button class="ob-theme-swatch" data-theme="rose"><span class="ob-swatch-preview" style="background:#faf5f3"><span class="ob-swatch-bar" style="background:#f0e6e1"></span><span class="ob-swatch-dot" style="background:#c2665a"></span></span><span class="ob-swatch-label">Ros&eacute;</span></button>
+                <button class="ob-theme-swatch" data-theme="ocean"><span class="ob-swatch-preview" style="background:#0a1628;border-color:rgba(96,165,250,0.15)"><span class="ob-swatch-bar" style="background:#182b48"></span><span class="ob-swatch-dot" style="background:#60a5fa"></span></span><span class="ob-swatch-label">Ocean</span></button>
+                <button class="ob-theme-swatch" data-theme="forest"><span class="ob-swatch-preview" style="background:#0a1410;border-color:rgba(74,222,128,0.15)"><span class="ob-swatch-bar" style="background:#1a3024"></span><span class="ob-swatch-dot" style="background:#4ade80"></span></span><span class="ob-swatch-label">Forest</span></button>
+                <button class="ob-theme-swatch" data-theme="sunset"><span class="ob-swatch-preview" style="background:#1a1008;border-color:rgba(251,191,36,0.15)"><span class="ob-swatch-bar" style="background:#3a2818"></span><span class="ob-swatch-dot" style="background:#fbbf24"></span></span><span class="ob-swatch-label">Sunset</span></button>
+                <button class="ob-theme-swatch" data-theme="lavender"><span class="ob-swatch-preview" style="background:#f5f0fa"><span class="ob-swatch-bar" style="background:#ddd0ea"></span><span class="ob-swatch-dot" style="background:#8b5cf6"></span></span><span class="ob-swatch-label">Lavender</span></button>
+                <button class="ob-theme-swatch" data-theme="nord"><span class="ob-swatch-preview" style="background:#2e3440;border-color:rgba(136,192,208,0.15)"><span class="ob-swatch-bar" style="background:#4c566a"></span><span class="ob-swatch-dot" style="background:#88c0d0"></span></span><span class="ob-swatch-label">Nord</span></button>
+                <button class="ob-theme-swatch" data-theme="monokai"><span class="ob-swatch-preview" style="background:#1e1f1c;border-color:rgba(249,38,114,0.15)"><span class="ob-swatch-bar" style="background:#3e3d32"></span><span class="ob-swatch-dot" style="background:#a6e22e"></span></span><span class="ob-swatch-label">Monokai</span></button>
+                <button class="ob-theme-swatch" data-theme="dracula"><span class="ob-swatch-preview" style="background:#1e1f29;border-color:rgba(189,147,249,0.15)"><span class="ob-swatch-bar" style="background:#44475a"></span><span class="ob-swatch-dot" style="background:#bd93f9"></span></span><span class="ob-swatch-label">Dracula</span></button>
+                <button class="ob-theme-swatch" data-theme="ember"><span class="ob-swatch-preview" style="background:#110808;border-color:rgba(248,113,113,0.15)"><span class="ob-swatch-bar" style="background:#2e1a1a"></span><span class="ob-swatch-dot" style="background:#f87171"></span></span><span class="ob-swatch-label">Ember</span></button>
+                <button class="ob-theme-swatch" data-theme="void"><span class="ob-swatch-preview" style="background:#000000;border-color:rgba(255,255,255,0.08)"><span class="ob-swatch-bar" style="background:#1a1a1a"></span><span class="ob-swatch-dot" style="background:#ffffff"></span></span><span class="ob-swatch-label">Void</span></button>
+                <button class="ob-theme-swatch" data-theme="copper"><span class="ob-swatch-preview" style="background:#12100e;border-color:rgba(217,168,120,0.15)"><span class="ob-swatch-bar" style="background:#302a22"></span><span class="ob-swatch-dot" style="background:#d9a878"></span></span><span class="ob-swatch-label">Copper</span></button>
+                <button class="ob-theme-swatch" data-theme="sand"><span class="ob-swatch-preview" style="background:#f7f3ee"><span class="ob-swatch-bar" style="background:#ddd4c8"></span><span class="ob-swatch-dot" style="background:#8c6e46"></span></span><span class="ob-swatch-label">Sand</span></button>
+                <button class="ob-theme-swatch" data-theme="arctic"><span class="ob-swatch-preview" style="background:#f0f5fa"><span class="ob-swatch-bar" style="background:#cdd8e8"></span><span class="ob-swatch-dot" style="background:#2563eb"></span></span><span class="ob-swatch-label">Arctic</span></button>
+                <button class="ob-theme-swatch" data-theme="vsdark"><span class="ob-swatch-preview" style="background:#1e1e1e;border-color:rgba(77,77,77,0.3)"><span class="ob-swatch-bar" style="background:#333333"></span><span class="ob-swatch-dot" style="background:#007acc"></span></span><span class="ob-swatch-label">VS Dark</span></button>
+                <button class="ob-theme-swatch" data-theme="vslight"><span class="ob-swatch-preview" style="background:#ffffff;border-color:rgba(0,0,0,0.1)"><span class="ob-swatch-bar" style="background:#e8e8e8"></span><span class="ob-swatch-dot" style="background:#007acc"></span></span><span class="ob-swatch-label">VS Light</span></button>
+                <button class="ob-theme-swatch" data-theme="bluepill"><span class="ob-swatch-preview" style="background:#000000;border-color:rgba(34,211,238,0.22)"><span class="ob-swatch-bar" style="background:#0f1c2e"></span><span class="ob-swatch-dot" style="background:#22d3ee"></span></span><span class="ob-swatch-label">Blue Pill</span></button>
+                <button class="ob-theme-swatch" data-theme="silver"><span class="ob-swatch-preview" style="background:#eef1f4;border-color:rgba(36,55,78,0.18)"><span class="ob-swatch-bar" style="background:#dde2e8"></span><span class="ob-swatch-dot" style="background:#3b4a5e"></span></span><span class="ob-swatch-label">Silver</span></button>
+                <button class="ob-theme-swatch" data-theme="graphite"><span class="ob-swatch-preview" style="background:#14181f;border-color:rgba(196,210,230,0.22)"><span class="ob-swatch-bar" style="background:#252b35"></span><span class="ob-swatch-dot" style="background:#b8c4d4"></span></span><span class="ob-swatch-label">Graphite</span></button>
+                <button class="ob-theme-swatch" data-theme="newsprint"><span class="ob-swatch-preview" style="background:#fff1e5;border-color:rgba(38,42,51,0.18)"><span class="ob-swatch-bar" style="background:#f2dfce"></span><span class="ob-swatch-dot" style="background:#0d7680"></span></span><span class="ob-swatch-label">Newsprint</span></button>
+              </div>
+
+              <div class="ob-typo-section">
+                <div class="ob-typo-row">
+                  <span class="ob-typo-label">Font Size</span>
+                  <div class="ob-font-size-ctrl">
+                    <button id="obFontSizeDown">&minus;</button>
+                    <span id="obFontSizeVal">13</span>
+                    <button id="obFontSizeUp">+</button>
+                  </div>
+                </div>
+                <div class="ob-typo-row">
+                  <span class="ob-typo-label">Font Family</span>
+                  <select class="ob-font-select" id="obFontFamily">
+                    <optgroup label="Ligature Fonts">
+                      <option value="'Fira Code', monospace">Fira Code</option>
+                      <option value="'Fira Code', monospace" data-note="retina">Fira Code Retina</option>
+                      <option value="'Cascadia Code', monospace">Cascadia Code</option>
+                      <option value="'JetBrains Mono', monospace">JetBrains Mono</option>
+                    </optgroup>
+                    <optgroup label="Popular Dev Fonts">
+                      <option value="'Source Code Pro', monospace">Source Code Pro</option>
+                      <option value="'IBM Plex Mono', monospace">IBM Plex Mono</option>
+                      <option value="'Inconsolata', monospace">Inconsolata</option>
+                      <option value="'Roboto Mono', monospace">Roboto Mono</option>
+                      <option value="'DM Mono', monospace">DM Mono</option>
+                      <option value="'Geist Mono', monospace">Geist Mono</option>
+                    </optgroup>
+                    <optgroup label="Classic Monospace">
+                      <option value="'Ubuntu Mono', monospace">Ubuntu Mono</option>
+                      <option value="'Space Mono', monospace">Space Mono</option>
+                      <option value="Consolas, monospace">Consolas</option>
+                      <option value="'Lucida Console', monospace">Lucida Console</option>
+                      <option value="Menlo, monospace">Menlo</option>
+                      <option value="Monaco, monospace">Monaco</option>
+                      <option value="'Courier New', monospace">Courier New</option>
+                    </optgroup>
+                    <optgroup label="Retro / Terminal">
+                      <option value="'VT323', monospace">VT323</option>
+                      <option value="'Share Tech Mono', monospace">Share Tech Mono</option>
+                      <option value="'Press Start 2P', monospace">Press Start 2P</option>
+                    </optgroup>
+                    <optgroup label="Sans-Serif">
+                      <option value="Arial, sans-serif">Arial</option>
+                      <option value="'Segoe UI', sans-serif">Segoe UI</option>
+                      <option value="'Helvetica Neue', sans-serif">Helvetica Neue</option>
+                    </optgroup>
+                  </select>
+                </div>
+                <div class="ob-font-preview" id="obFontPreview">The quick brown fox jumps over the lazy dog. 0O1l</div>
+              </div>
+            </div>
+
+            <!-- Step 2: Workspace -->
+            <div class="ob-screen" data-step="2">
+              <div class="ob-section-title">Workspace</div>
+              <div class="ob-section-sub">Where your code lives</div>
+              <div class="ob-workspace-desc">Point Catalyst to the folder containing your git repositories. We'll scan it and discover every repo inside.</div>
+              <div class="ob-folder-row">
+                <input type="text" class="ob-folder-input" id="obFolderInput" placeholder="C:\Users\you\projects">
+                <button class="ob-folder-btn" id="obBrowseBtn" disabled>Browse</button>
+              </div>
+              <div class="ob-scan-hint" id="obScanHint"></div>
+              <div class="ob-repo-chips" id="obRepoChips"></div>
+            </div>
+
+            <!-- Step 3: AI Tools -->
+            <div class="ob-screen" data-step="3">
+              <div class="ob-section-title">AI Tools</div>
+              <div class="ob-section-sub">Your command-line assistants</div>
+              <div class="ob-tools-desc">Catalyst supports multiple AI CLIs. Here's what's on your machine.</div>
+              <div class="ob-tools-grid" id="obToolsGrid">
+                <div class="ob-tool-card" data-cli="claude">
+                  <div class="ob-tool-header">
+                    <svg class="ob-tool-logo" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M4.709 15.955l4.72-2.647.08-.23-.08-.128H9.2l-.79-.048-2.698-.073-2.339-.097-2.266-.122-.571-.121L0 11.784l.055-.352.48-.321.686.06 1.52.103 2.278.158 1.652.097 2.449.255h.389l.055-.157-.134-.098-.103-.097-2.358-1.596-2.552-1.688-1.336-.972-.724-.491-.364-.462-.158-1.008.656-.722.881.06.225.061.893.686 1.908 1.476 2.491 1.833.365.304.145-.103.019-.073-.164-.274-1.355-2.446-1.446-2.49-.644-1.032-.17-.619a2.97 2.97 0 01-.104-.729L6.283.134 6.696 0l.996.134.42.364.62 1.414 1.002 2.229 1.555 3.03.456.898.243.832.091.255h.158V9.01l.128-1.706.237-2.095.23-2.695.08-.76.376-.91.747-.492.584.28.48.685-.067.444-.286 1.851-.559 2.903-.364 1.942h.212l.243-.242.985-1.306 1.652-2.064.73-.82.85-.904.547-.431h1.033l.76 1.129-.34 1.166-1.064 1.347-.881 1.142-1.264 1.7-.79 1.36.073.11.188-.02 2.856-.606 1.543-.28 1.841-.315.833.388.091.395-.328.807-1.969.486-2.309.462-3.439.813-.042.03.049.061 1.549.146.662.036h1.622l3.02.225.79.522.474.638-.079.485-1.215.62-1.64-.389-3.829-.91-1.312-.329h-.182v.11l1.093 1.068 2.006 1.81 2.509 2.33.127.578-.322.455-.34-.049-2.205-1.657-.851-.747-1.926-1.62h-.128v.17l.444.649 2.345 3.521.122 1.08-.17.353-.608.213-.668-.122-1.374-1.925-1.415-2.167-1.143-1.943-.14.08-.674 7.254-.316.37-.729.28-.607-.461-.322-.747.322-1.476.389-1.924.315-1.53.286-1.9.17-.632-.012-.042-.14.018-1.434 1.967-2.18 2.945-1.726 1.845-.414.164-.717-.37.067-.662.401-.589 2.388-3.036 1.44-1.882.93-1.086-.006-.158h-.055L4.132 18.56l-1.13.146-.487-.456.061-.746.231-.243 1.908-1.312-.006.006z" fill="#D97757"/></svg>
+                    <div class="ob-tool-info">
+                      <span class="ob-tool-name">Claude Code</span>
+                      <span class="ob-tool-pkg">@anthropic-ai/claude-code</span>
+                    </div>
+                    <span class="ob-tool-status" id="obStatus-claude"><span class="ob-status-dot checking"></span>Checking</span>
+                  </div>
+                </div>
+                <div class="ob-tool-card" data-cli="codex">
+                  <div class="ob-tool-header">
+                    <svg class="ob-tool-logo" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M13.796 23.785a5.947 5.947 0 005.827-4.756C22.287 18.339 24 15.84 24 13.296c0-1.665-.713-3.282-1.998-4.448.119-.5.19-.999.19-1.498 0-3.401-2.759-5.947-5.946-5.947-.642 0-1.26.095-1.88.31A5.962 5.962 0 0010.205 0a5.947 5.947 0 00-5.827 4.757C1.713 5.447 0 7.945 0 10.49c0 1.666.713 3.283 1.998 4.448-.119.5-.19 1-.19 1.499 0 3.401 2.759 5.946 5.946 5.946.642 0 1.26-.095 1.88-.309a5.96 5.96 0 004.162 1.713zM9.205 8.658v-2.26c0-.19.072-.333.238-.428l4.543-2.616c.619-.357 1.356-.523 2.117-.523 2.854 0 4.662 2.212 4.662 4.566 0 .167 0 .357-.024.547l-4.71-2.759a.797.797 0 00-.856 0l-5.97 3.473zm10.609 8.8V12.06c0-.333-.143-.57-.429-.737l-5.97-3.473 1.95-1.118a.433.433 0 01.476 0l4.543 2.617c1.309.76 2.189 2.378 2.189 3.948 0 1.808-1.07 3.473-2.76 4.163zM7.802 12.703l-1.95-1.142c-.167-.095-.239-.238-.239-.428V5.899c0-2.545 1.95-4.472 4.591-4.472 1 0 1.927.333 2.712.928L8.23 5.067c-.285.166-.428.404-.428.737v6.898zM12 15.128l-2.795-1.57v-3.33L12 8.658l2.795 1.57v3.33L12 15.128zm1.796 7.23c-1 0-1.927-.332-2.712-.927l4.686-2.712c.285-.166.428-.404.428-.737v-6.898l1.974 1.142c.167.095.238.238.238.428v5.233c0 2.545-1.974 4.472-4.614 4.472zm-5.637-5.303l-4.544-2.617c-1.308-.761-2.188-2.378-2.188-3.948A4.482 4.482 0 014.21 6.327v5.423c0 .333.143.571.428.738l5.947 3.449-1.95 1.118a.432.432 0 01-.476 0zm-.262 3.9c-2.688 0-4.662-2.021-4.662-4.519 0-.19.024-.38.047-.57l4.686 2.71c.286.167.571.167.856 0l5.97-3.448v2.26c0 .19-.07.333-.237.428l-4.543 2.616c-.619.357-1.356.523-2.117.523z" fill="#10a37f"/></svg>
+                    <div class="ob-tool-info">
+                      <span class="ob-tool-name">Codex CLI</span>
+                      <span class="ob-tool-pkg">@openai/codex</span>
+                    </div>
+                    <span class="ob-tool-status" id="obStatus-codex"><span class="ob-status-dot checking"></span>Checking</span>
+                  </div>
+                </div>
+                <div class="ob-tool-card" data-cli="gemini">
+                  <div class="ob-tool-header">
+                    <svg class="ob-tool-logo" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M20.616 10.835a14.147 14.147 0 01-4.45-3.001 14.111 14.111 0 01-3.678-6.452.503.503 0 00-.975 0 14.134 14.134 0 01-3.679 6.452 14.155 14.155 0 01-4.45 3.001c-.65.28-1.318.505-2.002.678a.502.502 0 000 .975c.684.172 1.35.397 2.002.677a14.147 14.147 0 014.45 3.001 14.112 14.112 0 013.679 6.453.502.502 0 00.975 0c.172-.685.397-1.351.677-2.003a14.145 14.145 0 013.001-4.45 14.113 14.113 0 016.453-3.678.503.503 0 000-.975 13.245 13.245 0 01-2.003-.678z" fill="#4285F4"/></svg>
+                    <div class="ob-tool-info">
+                      <span class="ob-tool-name">Gemini CLI</span>
+                      <span class="ob-tool-pkg">@google/gemini-cli</span>
+                    </div>
+                    <span class="ob-tool-status" id="obStatus-gemini"><span class="ob-status-dot checking"></span>Checking</span>
+                  </div>
+                </div>
+                <div class="ob-tool-card" data-cli="copilot">
+                  <div class="ob-tool-header">
+                    <svg class="ob-tool-logo" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 0C5.373 0 0 5.373 0 12c0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297 24 5.373 18.627 0 12 0" fill="currentColor"/></svg>
+                    <div class="ob-tool-info">
+                      <span class="ob-tool-name">GitHub Copilot</span>
+                      <span class="ob-tool-pkg">gh copilot extension</span>
+                    </div>
+                    <span class="ob-tool-status" id="obStatus-copilot"><span class="ob-status-dot checking"></span>Checking</span>
+                  </div>
+                </div>
+              </div>
+              <div class="ob-tools-hint" id="obToolsHint">Detecting installed tools...</div>
+            </div>
+
+            <!-- Step 4: Intelligence -->
+            <div class="ob-screen" data-step="4">
+              <div class="ob-section-title">Intelligence</div>
+              <div class="ob-section-sub">Your IDE sidekick</div>
+              <div class="ob-pilot-desc">Catalyst Pilot watches git state, build output, and your edits, then surfaces what's actionable. Choose what it monitors.</div>
+              <div class="ob-toggles">
+                <label class="ob-toggle-row">
+                  <div class="ob-toggle-switch"><input type="checkbox" class="ob-pilot-toggle" data-key="pilotUnpushed" checked><span class="ob-toggle-track"></span></div>
+                  <div class="ob-toggle-info"><div class="ob-toggle-title">Unpushed commits</div><div class="ob-toggle-desc">Nudge when local commits aren't pushed</div></div>
+                </label>
+                <label class="ob-toggle-row">
+                  <div class="ob-toggle-switch"><input type="checkbox" class="ob-pilot-toggle" data-key="pilotStaleTests" checked><span class="ob-toggle-track"></span></div>
+                  <div class="ob-toggle-info"><div class="ob-toggle-title">Stale tests</div><div class="ob-toggle-desc">Suggest running tests after edits</div></div>
+                </label>
+                <label class="ob-toggle-row">
+                  <div class="ob-toggle-switch"><input type="checkbox" class="ob-pilot-toggle" data-key="pilotPrReady" checked><span class="ob-toggle-track"></span></div>
+                  <div class="ob-toggle-info"><div class="ob-toggle-title">PR readiness</div><div class="ob-toggle-desc">Watch for moments when a PR is appropriate</div></div>
+                </label>
+                <label class="ob-toggle-row">
+                  <div class="ob-toggle-switch"><input type="checkbox" class="ob-pilot-toggle" data-key="pilotBranchDrift" checked><span class="ob-toggle-track"></span></div>
+                  <div class="ob-toggle-info"><div class="ob-toggle-title">Branch drift</div><div class="ob-toggle-desc">Notice when origin moves ahead of you</div></div>
+                </label>
+                <label class="ob-toggle-row">
+                  <div class="ob-toggle-switch"><input type="checkbox" class="ob-pilot-toggle" data-key="pilotFailedBuilds" checked><span class="ob-toggle-track"></span></div>
+                  <div class="ob-toggle-info"><div class="ob-toggle-title">Failed builds</div><div class="ob-toggle-desc">Highlight broken builds across sessions</div></div>
+                </label>
+                <label class="ob-toggle-row">
+                  <div class="ob-toggle-switch"><input type="checkbox" class="ob-pilot-toggle" data-key="pilotSmartpill" checked><span class="ob-toggle-track"></span></div>
+                  <div class="ob-toggle-info"><div class="ob-toggle-title">Smart notifications</div><div class="ob-toggle-desc">Show contextual suggestions at the bottom of the screen</div></div>
+                </label>
+              </div>
+            </div>
+
+            <!-- Step 5: Integrations -->
+            <div class="ob-screen" data-step="5">
+              <div class="ob-section-title">Integrations</div>
+              <div class="ob-section-sub">Where are your repos hosted?</div>
+
+              <div class="ob-provider-picker">
+                <button class="ob-provider-btn active" data-provider="azure">
+                  <svg viewBox="0 0 24 24" width="32" height="32" xmlns="http://www.w3.org/2000/svg"><path d="M0 8.877L2.247 5.91l8.405-3.416V.022l7.37 5.393L2.966 8.338v8.225L0 15.707zm24-4.45v15.12l-5.624 4.43-10.552-3.836v3.474L2.67 15.472l15.628 2.4V2.2z" fill="#0078d4"/></svg>
+                  <span class="ob-provider-name">Azure DevOps</span>
+                  <span class="ob-provider-desc">Work items, PRs, pipelines</span>
+                </button>
+                <button class="ob-provider-btn" data-provider="github">
+                  <svg viewBox="0 0 24 24" width="32" height="32" xmlns="http://www.w3.org/2000/svg"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12" fill="currentColor"/></svg>
+                  <span class="ob-provider-name">GitHub</span>
+                  <span class="ob-provider-desc">Repos, issues, pull requests</span>
+                </button>
+                <button class="ob-provider-btn" data-provider="none">
+                  <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/></svg>
+                  <span class="ob-provider-name">Skip</span>
+                  <span class="ob-provider-desc">Configure later in Settings</span>
+                </button>
+              </div>
+
+              <!-- Azure DevOps fields -->
+              <div class="ob-provider-fields" id="obFieldsAzure">
+                <div class="ob-azure-section">
+                  <div class="ob-field">
+                    <label class="ob-field-label">DevOps URL</label>
+                    <input type="text" class="ob-field-input" id="obAzureUrl" placeholder="https://dev.azure.com/your-org/your-project">
+                    <div class="ob-field-hint">Paste your project URL &mdash; org and project are extracted automatically</div>
+                    <div class="ob-field-hint" id="obAzureParsed" style="color:var(--success);margin-top:4px"></div>
+                  </div>
+                  <div class="ob-field">
+                    <label class="ob-field-label">Personal Access Token</label>
+                    <div class="ob-pat-row">
+                      <input type="password" class="ob-field-input" id="obAzurePat" placeholder="Stored securely in Windows Credential Manager">
+                      <button class="ob-pat-toggle" id="obPatToggle">Show</button>
+                    </div>
+                  </div>
+                  <button class="ob-verify-btn" id="obVerifyAzure">Verify Connection</button>
+                  <div class="ob-verify-result" id="obVerifyAzureResult"></div>
+                </div>
+              </div>
+
+              <!-- GitHub fields -->
+              <div class="ob-provider-fields" id="obFieldsGithub" style="display:none">
+                <div class="ob-azure-section">
+                  <div class="ob-field">
+                    <label class="ob-field-label">GitHub Owner / Organization</label>
+                    <input type="text" class="ob-field-input" id="obGithubOrg" placeholder="your-org or your-username">
+                    <div class="ob-field-hint">The GitHub user or organization that owns your repos</div>
+                  </div>
+                  <div class="ob-field">
+                    <label class="ob-field-label">Personal Access Token</label>
+                    <div class="ob-pat-row">
+                      <input type="password" class="ob-field-input" id="obGithubPat" placeholder="ghp_... (classic) or github_pat_... (fine-grained)">
+                      <button class="ob-pat-toggle" id="obGhPatToggle">Show</button>
+                    </div>
+                    <div class="ob-field-hint">Needs repo scope &mdash; used for PRs, issues, and status checks</div>
+                  </div>
+                  <button class="ob-verify-btn" id="obVerifyGithub">Verify Connection</button>
+                  <div class="ob-verify-result" id="obVerifyGithubResult"></div>
+                </div>
+              </div>
+
+              <!-- None selected -->
+              <div class="ob-provider-fields ob-provider-none-msg" id="obFieldsNone" style="display:none">
+                <div class="ob-azure-note" style="margin-top:8px">No worries &mdash; you can connect a provider anytime from Settings.</div>
+              </div>
+            </div>
+
+            <!-- Step 5: All Set -->
+            <div class="ob-screen ob-done" data-step="6">
+              <svg class="ob-done-logo" viewBox="0 0 32 32"><g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M16 6 L24.66 11 L24.66 21 L16 26 L7.34 21 L7.34 11 Z"/><line x1="16" y1="6" x2="16" y2="3.4"/></g><circle cx="16" cy="16" r="1.5" fill="currentColor" opacity="0.4"/><circle cx="16" cy="2.4" r="2" fill="currentColor"/></svg>
+              <div class="ob-done-title">YOU'RE ALL SET</div>
+              <div class="ob-done-sub">Catalyst is ready</div>
+              <div class="ob-summary" id="obSummary"></div>
+              <div class="ob-done-hint">You can change any of these in Settings</div>
+              <div class="ob-done-tip"><strong>PRO TIP:</strong> Use Ctrl+Shift+P to open the command palette &mdash; it's the fastest way to do anything.</div>
+            </div>
+
+          </div>
+
+          <div class="ob-footer">
+            <div class="ob-footer-left"><button class="ob-btn-back hidden" id="obBack">Back</button></div>
+            <div class="ob-footer-center" id="obStepLabel">1 of 6</div>
+            <div class="ob-footer-right"><button class="ob-btn-next" id="obNext">Let's Go</button></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Welcome Screen -->
+      <div class="welcome" id="welcomeScreen">
+        <button class="welcome-settings-btn" id="welcomeSettingsBtn" title="Settings">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+        </button>
+        <div class="welcome-card">
+          <div class="welcome-glow"></div>
+          <svg class="welcome-logo-icon" viewBox="0 0 32 32" width="48" height="48"><g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M16 6 L24.66 11 L24.66 21 L16 26 L7.34 21 L7.34 11 Z"/><line x1="16" y1="6" x2="16" y2="3.4"/></g><circle cx="16" cy="16" r="1.5" fill="currentColor" opacity="0.4"/><circle cx="16" cy="2.4" r="2" fill="currentColor"/></svg>
+          <div class="welcome-title">CATALYST</div>
+          <div class="welcome-sub">Many minds · one workspace · you're in command</div>
+          <p class="welcome-desc">Pick a folder, discover your repos, and let AI do the heavy lifting.</p>
+          <div class="folder-input-group">
+            <input type="text" class="folder-input" id="folderInput" placeholder="Paste a folder path or click Browse...">
+            <button class="btn btn-primary" id="browseBtn">Browse Folder</button>
+          </div>
+          <div id="folderError" class="error-msg hidden"></div>
+          <div class="repo-cli-layout" id="repoCliLayout">
+            <div id="repoSection" class="hidden">
+              <div class="section-label">Git Repositories</div>
+              <div class="repo-grid" id="repoGrid"></div>
+              <div id="noRepos" class="no-repos hidden">No git repositories found in this folder.</div>
+            </div>
+            <div id="cliSection" class="hidden">
+              <div class="repo-info-panel" id="repoInfoPanel">
+                <div class="repo-info-name" id="repoInfoName"></div>
+                <div class="repo-info-desc" id="repoInfoDesc"></div>
+                <div class="repo-info-tags" id="repoInfoTags"></div>
+              </div>
+              <div class="port-sparkline" id="portSparkline"></div>
+              <div class="port-snapshot" id="portSnapshot"></div>
+              <div class="section-label">Choose AI</div>
+              <div class="cli-picker">
+                <button class="cli-btn" data-cli="claude">
+                <svg class="cli-logo" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M4.709 15.955l4.72-2.647.08-.23-.08-.128H9.2l-.79-.048-2.698-.073-2.339-.097-2.266-.122-.571-.121L0 11.784l.055-.352.48-.321.686.06 1.52.103 2.278.158 1.652.097 2.449.255h.389l.055-.157-.134-.098-.103-.097-2.358-1.596-2.552-1.688-1.336-.972-.724-.491-.364-.462-.158-1.008.656-.722.881.06.225.061.893.686 1.908 1.476 2.491 1.833.365.304.145-.103.019-.073-.164-.274-1.355-2.446-1.446-2.49-.644-1.032-.17-.619a2.97 2.97 0 01-.104-.729L6.283.134 6.696 0l.996.134.42.364.62 1.414 1.002 2.229 1.555 3.03.456.898.243.832.091.255h.158V9.01l.128-1.706.237-2.095.23-2.695.08-.76.376-.91.747-.492.584.28.48.685-.067.444-.286 1.851-.559 2.903-.364 1.942h.212l.243-.242.985-1.306 1.652-2.064.73-.82.85-.904.547-.431h1.033l.76 1.129-.34 1.166-1.064 1.347-.881 1.142-1.264 1.7-.79 1.36.073.11.188-.02 2.856-.606 1.543-.28 1.841-.315.833.388.091.395-.328.807-1.969.486-2.309.462-3.439.813-.042.03.049.061 1.549.146.662.036h1.622l3.02.225.79.522.474.638-.079.485-1.215.62-1.64-.389-3.829-.91-1.312-.329h-.182v.11l1.093 1.068 2.006 1.81 2.509 2.33.127.578-.322.455-.34-.049-2.205-1.657-.851-.747-1.926-1.62h-.128v.17l.444.649 2.345 3.521.122 1.08-.17.353-.608.213-.668-.122-1.374-1.925-1.415-2.167-1.143-1.943-.14.08-.674 7.254-.316.37-.729.28-.607-.461-.322-.747.322-1.476.389-1.924.315-1.53.286-1.9.17-.632-.012-.042-.14.018-1.434 1.967-2.18 2.945-1.726 1.845-.414.164-.717-.37.067-.662.401-.589 2.388-3.036 1.44-1.882.93-1.086-.006-.158h-.055L4.132 18.56l-1.13.146-.487-.456.061-.746.231-.243 1.908-1.312-.006.006z" fill="#D97757"/>
+                </svg>
+                <span>Claude</span>
+              </button>
+              <button class="cli-btn" data-cli="codex">
+                <svg class="cli-logo" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M13.796 23.785a5.947 5.947 0 005.827-4.756C22.287 18.339 24 15.84 24 13.296c0-1.665-.713-3.282-1.998-4.448.119-.5.19-.999.19-1.498 0-3.401-2.759-5.947-5.946-5.947-.642 0-1.26.095-1.88.31A5.962 5.962 0 0010.205 0a5.947 5.947 0 00-5.827 4.757C1.713 5.447 0 7.945 0 10.49c0 1.666.713 3.283 1.998 4.448-.119.5-.19 1-.19 1.499 0 3.401 2.759 5.946 5.946 5.946.642 0 1.26-.095 1.88-.309a5.96 5.96 0 004.162 1.713zM9.205 8.658v-2.26c0-.19.072-.333.238-.428l4.543-2.616c.619-.357 1.356-.523 2.117-.523 2.854 0 4.662 2.212 4.662 4.566 0 .167 0 .357-.024.547l-4.71-2.759a.797.797 0 00-.856 0l-5.97 3.473zm10.609 8.8V12.06c0-.333-.143-.57-.429-.737l-5.97-3.473 1.95-1.118a.433.433 0 01.476 0l4.543 2.617c1.309.76 2.189 2.378 2.189 3.948 0 1.808-1.07 3.473-2.76 4.163zM7.802 12.703l-1.95-1.142c-.167-.095-.239-.238-.239-.428V5.899c0-2.545 1.95-4.472 4.591-4.472 1 0 1.927.333 2.712.928L8.23 5.067c-.285.166-.428.404-.428.737v6.898zM12 15.128l-2.795-1.57v-3.33L12 8.658l2.795 1.57v3.33L12 15.128zm1.796 7.23c-1 0-1.927-.332-2.712-.927l4.686-2.712c.285-.166.428-.404.428-.737v-6.898l1.974 1.142c.167.095.238.238.238.428v5.233c0 2.545-1.974 4.472-4.614 4.472zm-5.637-5.303l-4.544-2.617c-1.308-.761-2.188-2.378-2.188-3.948A4.482 4.482 0 014.21 6.327v5.423c0 .333.143.571.428.738l5.947 3.449-1.95 1.118a.432.432 0 01-.476 0zm-.262 3.9c-2.688 0-4.662-2.021-4.662-4.519 0-.19.024-.38.047-.57l4.686 2.71c.286.167.571.167.856 0l5.97-3.448v2.26c0 .19-.07.333-.237.428l-4.543 2.616c-.619.357-1.356.523-2.117.523z" fill="#10a37f"/>
+                </svg>
+                <span>Codex</span>
+              </button>
+              <button class="cli-btn" data-cli="gemini">
+                <svg class="cli-logo" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <defs>
+                    <linearGradient id="gm-a" gradientUnits="userSpaceOnUse" x1="7" x2="11" y1="15.5" y2="12"><stop stop-color="#08B962"/><stop offset="1" stop-color="#08B962" stop-opacity="0"/></linearGradient>
+                    <linearGradient id="gm-b" gradientUnits="userSpaceOnUse" x1="8" x2="11.5" y1="5.5" y2="11"><stop stop-color="#F94543"/><stop offset="1" stop-color="#F94543" stop-opacity="0"/></linearGradient>
+                    <linearGradient id="gm-c" gradientUnits="userSpaceOnUse" x1="3.5" x2="17.5" y1="13.5" y2="12"><stop stop-color="#FABC12"/><stop offset=".46" stop-color="#FABC12" stop-opacity="0"/></linearGradient>
+                  </defs>
+                  <path d="M20.616 10.835a14.147 14.147 0 01-4.45-3.001 14.111 14.111 0 01-3.678-6.452.503.503 0 00-.975 0 14.134 14.134 0 01-3.679 6.452 14.155 14.155 0 01-4.45 3.001c-.65.28-1.318.505-2.002.678a.502.502 0 000 .975c.684.172 1.35.397 2.002.677a14.147 14.147 0 014.45 3.001 14.112 14.112 0 013.679 6.453.502.502 0 00.975 0c.172-.685.397-1.351.677-2.003a14.145 14.145 0 013.001-4.45 14.113 14.113 0 016.453-3.678.503.503 0 000-.975 13.245 13.245 0 01-2.003-.678z" fill="#3186FF"/>
+                  <path d="M20.616 10.835a14.147 14.147 0 01-4.45-3.001 14.111 14.111 0 01-3.678-6.452.503.503 0 00-.975 0 14.134 14.134 0 01-3.679 6.452 14.155 14.155 0 01-4.45 3.001c-.65.28-1.318.505-2.002.678a.502.502 0 000 .975c.684.172 1.35.397 2.002.677a14.147 14.147 0 014.45 3.001 14.112 14.112 0 013.679 6.453.502.502 0 00.975 0c.172-.685.397-1.351.677-2.003a14.145 14.145 0 013.001-4.45 14.113 14.113 0 016.453-3.678.503.503 0 000-.975 13.245 13.245 0 01-2.003-.678z" fill="url(#gm-a)"/>
+                  <path d="M20.616 10.835a14.147 14.147 0 01-4.45-3.001 14.111 14.111 0 01-3.678-6.452.503.503 0 00-.975 0 14.134 14.134 0 01-3.679 6.452 14.155 14.155 0 01-4.45 3.001c-.65.28-1.318.505-2.002.678a.502.502 0 000 .975c.684.172 1.35.397 2.002.677a14.147 14.147 0 014.45 3.001 14.112 14.112 0 013.679 6.453.502.502 0 00.975 0c.172-.685.397-1.351.677-2.003a14.145 14.145 0 013.001-4.45 14.113 14.113 0 016.453-3.678.503.503 0 000-.975 13.245 13.245 0 01-2.003-.678z" fill="url(#gm-b)"/>
+                  <path d="M20.616 10.835a14.147 14.147 0 01-4.45-3.001 14.111 14.111 0 01-3.678-6.452.503.503 0 00-.975 0 14.134 14.134 0 01-3.679 6.452 14.155 14.155 0 01-4.45 3.001c-.65.28-1.318.505-2.002.678a.502.502 0 000 .975c.684.172 1.35.397 2.002.677a14.147 14.147 0 014.45 3.001 14.112 14.112 0 013.679 6.453.502.502 0 00.975 0c.172-.685.397-1.351.677-2.003a14.145 14.145 0 013.001-4.45 14.113 14.113 0 016.453-3.678.503.503 0 000-.975 13.245 13.245 0 01-2.003-.678z" fill="url(#gm-c)"/>
+                </svg>
+                <span>Gemini</span>
+              </button>
+            </div>
+            <label class="worktree-option">
+              <span class="worktree-toggle"><input type="checkbox" id="useWorktree"></span>
+              <div class="worktree-info">
+                <div class="worktree-title">Isolate in worktree</div>
+                <div class="worktree-desc">Run in a separate git worktree so your main checkout stays untouched</div>
+              </div>
+            </label>
+            <button class="btn-reveal" id="revealBtn" type="button">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+              <span>Reveal in Explorer</span>
+            </button>
+          </div>
+          </div>
+          <div class="welcome-footer">
+            <span>&copy; <span class="welcome-year"></span> OLI Systems · Catalyst v1.0.0</span>
+          </div>
+        </div>
+        <!-- SmartPill -->
+        <div class="smartpill hidden" id="smartpill">
+          <div class="smartpill-icon">
+            <svg class="smartpill-logo" viewBox="0 0 32 32" width="18" height="18"><g fill="none" stroke="var(--accent)" stroke-width="2.2" stroke-linejoin="round"><path d="M16 6 L24.66 11 L24.66 21 L16 26 L7.34 21 L7.34 11 Z"/><line x1="16" y1="6" x2="16" y2="3.4"/></g><circle cx="16" cy="16" r="1.5" fill="var(--accent)" opacity="0.4"/><circle cx="16" cy="2.4" r="2" fill="var(--accent)"/></svg>
+          </div>
+          <div class="smartpill-body">
+            <span class="smartpill-header" id="smartpillHeader">CATALYST</span>
+            <span class="smartpill-msg" id="smartpillMsg"></span>
+          </div>
+          <button class="smartpill-btn" id="smartpillBtn"></button>
+          <button class="smartpill-dismiss" id="smartpillDismiss" title="Dismiss">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Settings Modal -->
+      <div class="settings-modal-overlay hidden" id="settingsPanel">
+      <div class="settings-modal-container">
+        <button class="settings-modal-close" id="settingsModalClose" title="Close">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+        <div class="settings-sidebar">
+          <div class="settings-sidebar-header">
+            <span class="settings-nav-title">Settings</span>
+          </div>
+          <div class="settings-nav">
+            <button class="settings-nav-item active" data-section="general">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+              General
+            </button>
+            <button class="settings-nav-item" data-section="appearance">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+              Appearance
+            </button>
+            <button class="settings-nav-item" data-section="pilot">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+              Catalyst Pilot
+            </button>
+            <button class="settings-nav-item" data-section="azure">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 22v-4a4.8 4.8 0 00-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 004 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65S8.93 17.38 9 18v4"/><path d="M9 18c-4.51 2-5-2-7-2"/></svg>
+              Integrations
+            </button>
+            <button class="settings-nav-item" data-section="aicli">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="14" rx="2"/><path d="M8 10l3 3-3 3M13 16h4"/><line x1="2" y1="20" x2="22" y2="20"/></svg>
+              AI CLI
+            </button>
+            <button class="settings-nav-item" data-section="shortcuts">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01M8 12h.01M12 12h.01M16 12h.01M8 16h8"/></svg>
+              Shortcuts
+            </button>
+            <button class="settings-nav-item" data-section="updates">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12"/><path d="M7 12l5 5 5-5"/><path d="M4 21h16"/></svg>
+              Updates
+              <span class="nav-dot hidden" id="updateNavDot" aria-hidden="true"></span>
+            </button>
+            <button class="settings-nav-item" data-section="about">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+              About
+            </button>
+          </div>
+        </div>
+        <div class="settings-body">
+
+          <div class="settings-section-page active" id="settings-general">
+            <div class="settings-page-title">General</div>
+            <div class="settings-section">
+              <div class="settings-section-title">Git Root Folder</div>
+              <div class="settings-hint" style="margin-bottom:10px">The folder containing all your git repositories</div>
+              <div class="settings-row">
+                <input type="text" class="settings-input" id="settingsRootInput" placeholder="Root folder path...">
+                <button class="btn btn-primary btn-sm" id="settingsRootBrowse">Browse</button>
+                <button class="btn btn-secondary btn-sm" id="settingsRootSave">Save</button>
+              </div>
+              <div class="settings-hint" id="settingsRootHint"></div>
+            </div>
+            <div class="settings-section danger-section">
+              <div class="settings-section-title" style="color:var(--danger)">Reset Catalyst</div>
+              <div class="settings-hint" style="margin-bottom:10px">Wipes cached repo info, sessions, saved settings, and both PATs from the OS credential store (Windows Credential Manager / macOS Keychain). Then the onboarding wizard runs again on next launch.</div>
+              <button class="btn btn-danger" id="resetCatalystBtn">Reset Catalyst</button>
+              <div class="settings-hint" id="resetHint"></div>
+            </div>
+          </div>
+
+          <div class="settings-section-page" id="settings-appearance">
+            <div class="settings-page-title">Appearance</div>
+            <div class="settings-section">
+              <div class="settings-section-title">Theme</div>
+            <div style="margin-bottom:14px">
+              <span class="settings-label" style="margin-bottom:10px">Theme</span>
+              <div class="theme-grid">
+                <button class="theme-swatch active" data-theme="midnight">
+                  <span class="swatch-preview" style="background:#06080d;border-color:rgba(56,189,248,0.2)">
+                    <span class="swatch-bar" style="background:#141a24"></span>
+                    <span class="swatch-dot" style="background:#38bdf8"></span>
+                  </span>
+                  <span class="swatch-label">Midnight</span>
+                </button>
+                <button class="theme-swatch" data-theme="rose">
+                  <span class="swatch-preview" style="background:#faf5f3">
+                    <span class="swatch-bar" style="background:#f0e6e1"></span>
+                    <span class="swatch-dot" style="background:#c2665a"></span>
+                  </span>
+                  <span class="swatch-label">Rosé</span>
+                </button>
+                <button class="theme-swatch" data-theme="ocean">
+                  <span class="swatch-preview" style="background:#0a1628;border-color:rgba(96,165,250,0.15)">
+                    <span class="swatch-bar" style="background:#182b48"></span>
+                    <span class="swatch-dot" style="background:#60a5fa"></span>
+                  </span>
+                  <span class="swatch-label">Ocean</span>
+                </button>
+                <button class="theme-swatch" data-theme="forest">
+                  <span class="swatch-preview" style="background:#0a1410;border-color:rgba(74,222,128,0.15)">
+                    <span class="swatch-bar" style="background:#1a3024"></span>
+                    <span class="swatch-dot" style="background:#4ade80"></span>
+                  </span>
+                  <span class="swatch-label">Forest</span>
+                </button>
+                <button class="theme-swatch" data-theme="sunset">
+                  <span class="swatch-preview" style="background:#1a1008;border-color:rgba(251,191,36,0.15)">
+                    <span class="swatch-bar" style="background:#3a2818"></span>
+                    <span class="swatch-dot" style="background:#fbbf24"></span>
+                  </span>
+                  <span class="swatch-label">Sunset</span>
+                </button>
+                <button class="theme-swatch" data-theme="lavender">
+                  <span class="swatch-preview" style="background:#f5f0fa">
+                    <span class="swatch-bar" style="background:#ddd0ea"></span>
+                    <span class="swatch-dot" style="background:#8b5cf6"></span>
+                  </span>
+                  <span class="swatch-label">Lavender</span>
+                </button>
+                <button class="theme-swatch" data-theme="nord">
+                  <span class="swatch-preview" style="background:#2e3440;border-color:rgba(136,192,208,0.15)">
+                    <span class="swatch-bar" style="background:#4c566a"></span>
+                    <span class="swatch-dot" style="background:#88c0d0"></span>
+                  </span>
+                  <span class="swatch-label">Nord</span>
+                </button>
+                <button class="theme-swatch" data-theme="monokai">
+                  <span class="swatch-preview" style="background:#1e1f1c;border-color:rgba(249,38,114,0.15)">
+                    <span class="swatch-bar" style="background:#3e3d32"></span>
+                    <span class="swatch-dot" style="background:#a6e22e"></span>
+                  </span>
+                  <span class="swatch-label">Monokai</span>
+                </button>
+                <button class="theme-swatch" data-theme="dracula">
+                  <span class="swatch-preview" style="background:#1e1f29;border-color:rgba(189,147,249,0.15)">
+                    <span class="swatch-bar" style="background:#44475a"></span>
+                    <span class="swatch-dot" style="background:#bd93f9"></span>
+                  </span>
+                  <span class="swatch-label">Dracula</span>
+                </button>
+                <button class="theme-swatch" data-theme="ember">
+                  <span class="swatch-preview" style="background:#110808;border-color:rgba(248,113,113,0.15)">
+                    <span class="swatch-bar" style="background:#2e1a1a"></span>
+                    <span class="swatch-dot" style="background:#f87171"></span>
+                  </span>
+                  <span class="swatch-label">Ember</span>
+                </button>
+                <button class="theme-swatch" data-theme="void">
+                  <span class="swatch-preview" style="background:#000000;border-color:rgba(255,255,255,0.08)">
+                    <span class="swatch-bar" style="background:#1a1a1a"></span>
+                    <span class="swatch-dot" style="background:#ffffff"></span>
+                  </span>
+                  <span class="swatch-label">Void</span>
+                </button>
+                <button class="theme-swatch" data-theme="copper">
+                  <span class="swatch-preview" style="background:#12100e;border-color:rgba(217,168,120,0.15)">
+                    <span class="swatch-bar" style="background:#302a22"></span>
+                    <span class="swatch-dot" style="background:#d9a878"></span>
+                  </span>
+                  <span class="swatch-label">Copper</span>
+                </button>
+                <button class="theme-swatch" data-theme="sand">
+                  <span class="swatch-preview" style="background:#f7f3ee">
+                    <span class="swatch-bar" style="background:#ddd4c8"></span>
+                    <span class="swatch-dot" style="background:#8c6e46"></span>
+                  </span>
+                  <span class="swatch-label">Sand</span>
+                </button>
+                <button class="theme-swatch" data-theme="arctic">
+                  <span class="swatch-preview" style="background:#f0f5fa">
+                    <span class="swatch-bar" style="background:#cdd8e8"></span>
+                    <span class="swatch-dot" style="background:#2563eb"></span>
+                  </span>
+                  <span class="swatch-label">Arctic</span>
+                </button>
+                <button class="theme-swatch" data-theme="vsdark">
+                  <span class="swatch-preview" style="background:#1e1e1e;border-color:rgba(77,77,77,0.3)">
+                    <span class="swatch-bar" style="background:#333333"></span>
+                    <span class="swatch-dot" style="background:#007acc"></span>
+                  </span>
+                  <span class="swatch-label">VS Dark</span>
+                </button>
+                <button class="theme-swatch" data-theme="vslight">
+                  <span class="swatch-preview" style="background:#ffffff;border-color:rgba(0,0,0,0.1)">
+                    <span class="swatch-bar" style="background:#e8e8e8"></span>
+                    <span class="swatch-dot" style="background:#007acc"></span>
+                  </span>
+                  <span class="swatch-label">VS Light</span>
+                </button>
+                <button class="theme-swatch" data-theme="bluepill">
+                  <span class="swatch-preview" style="background:#000000;border-color:rgba(34,211,238,0.22)">
+                    <span class="swatch-bar" style="background:#0f1c2e"></span>
+                    <span class="swatch-dot" style="background:#22d3ee"></span>
+                  </span>
+                  <span class="swatch-label">Blue Pill</span>
+                </button>
+                <button class="theme-swatch" data-theme="silver">
+                  <span class="swatch-preview" style="background:#eef1f4;border-color:rgba(36,55,78,0.18)">
+                    <span class="swatch-bar" style="background:#dde2e8"></span>
+                    <span class="swatch-dot" style="background:#3b4a5e"></span>
+                  </span>
+                  <span class="swatch-label">Silver</span>
+                </button>
+                <button class="theme-swatch" data-theme="graphite">
+                  <span class="swatch-preview" style="background:#14181f;border-color:rgba(196,210,230,0.22)">
+                    <span class="swatch-bar" style="background:#252b35"></span>
+                    <span class="swatch-dot" style="background:#b8c4d4"></span>
+                  </span>
+                  <span class="swatch-label">Graphite</span>
+                </button>
+                <button class="theme-swatch" data-theme="newsprint">
+                  <span class="swatch-preview" style="background:#fff1e5;border-color:rgba(38,42,51,0.18)">
+                    <span class="swatch-bar" style="background:#f2dfce"></span>
+                    <span class="swatch-dot" style="background:#0d7680"></span>
+                  </span>
+                  <span class="swatch-label">Newsprint</span>
+                </button>
+              </div>
+            </div>
+            </div>
+            <div class="settings-section">
+              <div class="settings-section-title">Typography</div>
+            <div class="settings-row" style="margin-bottom:14px">
+              <span class="settings-label">Font Size</span>
+              <div class="font-size-control">
+                <button class="btn btn-secondary btn-sm" id="fontSizeDown">-</button>
+                <span class="font-size-value" id="fontSizeValue">13</span>
+                <button class="btn btn-secondary btn-sm" id="fontSizeUp">+</button>
+              </div>
+            </div>
+            <div class="settings-row" style="margin-bottom:14px">
+              <span class="settings-label">Font Family</span>
+              <select class="settings-select" id="fontFamilySelect">
+                <optgroup label="Ligature Fonts">
+                  <option value="'Fira Code', monospace">Fira Code</option>
+                  <option value="'Fira Code', monospace" data-note="retina">Fira Code Retina</option>
+                  <option value="'Cascadia Code', monospace">Cascadia Code</option>
+                  <option value="'JetBrains Mono', monospace">JetBrains Mono</option>
+                </optgroup>
+                <optgroup label="Popular Dev Fonts">
+                  <option value="'Source Code Pro', monospace">Source Code Pro</option>
+                  <option value="'IBM Plex Mono', monospace">IBM Plex Mono</option>
+                  <option value="'Inconsolata', monospace">Inconsolata</option>
+                  <option value="'Roboto Mono', monospace">Roboto Mono</option>
+                  <option value="'DM Mono', monospace">DM Mono</option>
+                  <option value="'Geist Mono', monospace">Geist Mono</option>
+                </optgroup>
+                <optgroup label="Classic Monospace">
+                  <option value="'Ubuntu Mono', monospace">Ubuntu Mono</option>
+                  <option value="'Space Mono', monospace">Space Mono</option>
+                  <option value="Consolas, monospace">Consolas</option>
+                  <option value="'Lucida Console', monospace">Lucida Console</option>
+                  <option value="Menlo, monospace">Menlo</option>
+                  <option value="Monaco, monospace">Monaco</option>
+                  <option value="'Courier New', monospace">Courier New</option>
+                </optgroup>
+                <optgroup label="Retro / Terminal">
+                  <option value="'VT323', monospace">VT323 (Video Terminal)</option>
+                  <option value="'Share Tech Mono', monospace">Share Tech Mono</option>
+                  <option value="'Press Start 2P', monospace">Press Start 2P</option>
+                </optgroup>
+                <optgroup label="Sans-Serif">
+                  <option value="Arial, sans-serif">Arial</option>
+                  <option value="'Segoe UI', sans-serif">Segoe UI</option>
+                  <option value="'Helvetica Neue', sans-serif">Helvetica Neue</option>
+                </optgroup>
+              </select>
+            </div>
+            <div class="settings-hint">Font changes apply to the UI and terminal</div>
+            </div>
+          </div>
+
+          <div class="settings-section-page" id="settings-pilot">
+            <div class="settings-page-title">Catalyst Pilot</div>
+            <p style="color:var(--text-muted);font-size:12px;margin:0 0 20px">Your IDE sidekick. Configure what it watches for and when it speaks up.</p>
+            <div class="pilot-toggles">
+              <label class="pilot-toggle-row">
+                <input type="checkbox" class="pilot-toggle" id="pilotUnpushed" checked>
+                <span class="pilot-toggle-switch"></span>
+                <div class="pilot-toggle-info">
+                  <div class="pilot-toggle-title">Unpushed commits</div>
+                  <div class="pilot-toggle-desc">Nudge when local commits aren't pushed</div>
+                </div>
+              </label>
+              <label class="pilot-toggle-row">
+                <input type="checkbox" class="pilot-toggle" id="pilotStaleTests" checked>
+                <span class="pilot-toggle-switch"></span>
+                <div class="pilot-toggle-info">
+                  <div class="pilot-toggle-title">Stale tests</div>
+                  <div class="pilot-toggle-desc">Suggest running tests after edits</div>
+                </div>
+              </label>
+              <label class="pilot-toggle-row">
+                <input type="checkbox" class="pilot-toggle" id="pilotPrReady" checked>
+                <span class="pilot-toggle-switch"></span>
+                <div class="pilot-toggle-info">
+                  <div class="pilot-toggle-title">PR readiness</div>
+                  <div class="pilot-toggle-desc">Watch for moments when a PR is appropriate</div>
+                </div>
+              </label>
+              <label class="pilot-toggle-row">
+                <input type="checkbox" class="pilot-toggle" id="pilotBranchDrift" checked>
+                <span class="pilot-toggle-switch"></span>
+                <div class="pilot-toggle-info">
+                  <div class="pilot-toggle-title">Branch drift</div>
+                  <div class="pilot-toggle-desc">Notice when origin moves ahead of you</div>
+                </div>
+              </label>
+              <label class="pilot-toggle-row">
+                <input type="checkbox" class="pilot-toggle" id="pilotFailedBuilds" checked>
+                <span class="pilot-toggle-switch"></span>
+                <div class="pilot-toggle-info">
+                  <div class="pilot-toggle-title">Failed builds</div>
+                  <div class="pilot-toggle-desc">Highlight broken builds across sessions</div>
+                </div>
+              </label>
+              <label class="pilot-toggle-row">
+                <input type="checkbox" class="pilot-toggle" id="pilotSmartpill" checked>
+                <span class="pilot-toggle-switch"></span>
+                <div class="pilot-toggle-info">
+                  <div class="pilot-toggle-title">Smart notifications</div>
+                  <div class="pilot-toggle-desc">Show contextual suggestions at the bottom of the screen</div>
+                </div>
+              </label>
+            </div>
+            <div class="pilot-howto">
+              <div class="pilot-howto-title">HOW IT WORKS</div>
+              <p>Catalyst Pilot runs a quiet background loop — it watches git state, build output, and your edits, then surfaces what's actionable. It can also execute IDE commands when you ask, like <em>"build it"</em> or <em>"switch to main"</em>.</p>
+            </div>
+          </div>
+
+          <div class="settings-section-page" id="settings-azure">
+            <div class="settings-page-title">Integrations</div>
+            <p style="color:var(--text-muted);font-size:12px;margin:0 0 18px">Connect Catalyst to where your repos and work items live. The matching CLI is installed in the background when you click Save.</p>
+
+            <div class="ob-provider-picker integ-provider-picker">
+              <button class="ob-provider-btn integ-provider-btn active" data-provider="azure">
+                <svg viewBox="0 0 24 24" width="32" height="32" xmlns="http://www.w3.org/2000/svg"><path d="M0 8.877L2.247 5.91l8.405-3.416V.022l7.37 5.393L2.966 8.338v8.225L0 15.707zm24-4.45v15.12l-5.624 4.43-10.552-3.836v3.474L2.67 15.472l15.628 2.4V2.2z" fill="#0078d4"/></svg>
+                <span class="ob-provider-name">Azure DevOps</span>
+                <span class="ob-provider-desc">Work items, PRs, pipelines</span>
+              </button>
+              <button class="ob-provider-btn integ-provider-btn" data-provider="github">
+                <svg viewBox="0 0 24 24" width="32" height="32" xmlns="http://www.w3.org/2000/svg"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12" fill="currentColor"/></svg>
+                <span class="ob-provider-name">GitHub</span>
+                <span class="ob-provider-desc">Repos, issues, pull requests</span>
+              </button>
+              <button class="ob-provider-btn integ-provider-btn" data-provider="none">
+                <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/></svg>
+                <span class="ob-provider-name">Skip</span>
+                <span class="ob-provider-desc">No integration</span>
+              </button>
+            </div>
+
+            <!-- Azure DevOps fields -->
+            <div class="ob-provider-fields" id="integFieldsAzure">
+              <div class="ob-azure-section">
+                <div class="ob-field">
+                  <label class="ob-field-label">DevOps URL</label>
+                  <input type="text" class="ob-field-input" id="azureUrl" placeholder="https://dev.azure.com/your-org/your-project">
+                  <div class="ob-field-hint">Paste your project URL — org and project are extracted automatically</div>
+                  <div class="ob-field-hint" id="azureParsedDetails" style="color:var(--success);margin-top:4px"></div>
+                </div>
+                <div class="ob-field">
+                  <label class="ob-field-label">Personal Access Token</label>
+                  <div class="ob-pat-row">
+                    <input type="password" class="ob-field-input" id="azurePat" placeholder="Stored securely in Windows Credential Manager">
+                    <button class="ob-pat-toggle" id="togglePatVisibility" type="button">Show</button>
+                  </div>
+                  <div class="ob-field-hint" id="patStatus"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- GitHub fields -->
+            <div class="ob-provider-fields" id="integFieldsGithub" style="display:none">
+              <div class="ob-azure-section">
+                <div class="ob-field">
+                  <label class="ob-field-label">GitHub Owner / Organization</label>
+                  <input type="text" class="ob-field-input" id="githubOrg" placeholder="your-org or your-username">
+                  <div class="ob-field-hint">The GitHub user or organization that owns your repos</div>
+                </div>
+                <div class="ob-field">
+                  <label class="ob-field-label">Personal Access Token</label>
+                  <div class="ob-pat-row">
+                    <input type="password" class="ob-field-input" id="githubPat" placeholder="ghp_... (classic) or github_pat_... (fine-grained)">
+                    <button class="ob-pat-toggle" id="toggleGhPatVisibility" type="button">Show</button>
+                  </div>
+                  <div class="ob-field-hint" id="ghPatStatus">Needs repo scope — used for PRs, issues, and status checks</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Skip selected -->
+            <div class="ob-provider-fields ob-provider-none-msg" id="integFieldsNone" style="display:none">
+              <div class="ob-azure-note">No integration is selected — Catalyst won't try to fetch tasks, PRs, or status checks. You can switch this on any time.</div>
+            </div>
+
+            <div class="integ-save-row">
+              <button class="btn btn-primary" id="saveAzureSettings">Save &amp; install CLI</button>
+              <span class="settings-hint" id="azureSaveHint"></span>
+            </div>
+
+            <div class="cli-install-card integ-tool-card hidden" id="integToolCard" data-cli="">
+              <div class="cli-install-header">
+                <div class="cli-install-info">
+                  <div class="cli-install-name" id="integToolName">CLI</div>
+                  <div class="cli-install-pkg" id="integToolPkg">Background install</div>
+                </div>
+                <span class="cli-install-status checking" id="integToolStatus" data-status><span class="cli-install-dot"></span>Checking</span>
+              </div>
+              <pre class="cli-install-log hidden" id="integToolLog" data-log></pre>
+            </div>
+          </div>
+
+          <div class="settings-section-page" id="settings-aicli">
+            <div class="settings-page-title">AI CLI</div>
+            <p style="color:var(--text-muted);font-size:12px;margin:0 0 16px">Install the command-line AI tools Catalyst can run. Installs run in the background and verify automatically when finished.</p>
+            <div class="cli-install-grid">
+              <div class="cli-install-card" data-cli="claude">
+                <div class="cli-install-header">
+                  <svg class="cli-install-logo" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M4.709 15.955l4.72-2.647.08-.23-.08-.128H9.2l-.79-.048-2.698-.073-2.339-.097-2.266-.122-.571-.121L0 11.784l.055-.352.48-.321.686.06 1.52.103 2.278.158 1.652.097 2.449.255h.389l.055-.157-.134-.098-.103-.097-2.358-1.596-2.552-1.688-1.336-.972-.724-.491-.364-.462-.158-1.008.656-.722.881.06.225.061.893.686 1.908 1.476 2.491 1.833.365.304.145-.103.019-.073-.164-.274-1.355-2.446-1.446-2.49-.644-1.032-.17-.619a2.97 2.97 0 01-.104-.729L6.283.134 6.696 0l.996.134.42.364.62 1.414 1.002 2.229 1.555 3.03.456.898.243.832.091.255h.158V9.01l.128-1.706.237-2.095.23-2.695.08-.76.376-.91.747-.492.584.28.48.685-.067.444-.286 1.851-.559 2.903-.364 1.942h.212l.243-.242.985-1.306 1.652-2.064.73-.82.85-.904.547-.431h1.033l.76 1.129-.34 1.166-1.064 1.347-.881 1.142-1.264 1.7-.79 1.36.073.11.188-.02 2.856-.606 1.543-.28 1.841-.315.833.388.091.395-.328.807-1.969.486-2.309.462-3.439.813-.042.03.049.061 1.549.146.662.036h1.622l3.02.225.79.522.474.638-.079.485-1.215.62-1.64-.389-3.829-.91-1.312-.329h-.182v.11l1.093 1.068 2.006 1.81 2.509 2.33.127.578-.322.455-.34-.049-2.205-1.657-.851-.747-1.926-1.62h-.128v.17l.444.649 2.345 3.521.122 1.08-.17.353-.608.213-.668-.122-1.374-1.925-1.415-2.167-1.143-1.943-.14.08-.674 7.254-.316.37-.729.28-.607-.461-.322-.747.322-1.476.389-1.924.315-1.53.286-1.9.17-.632-.012-.042-.14.018-1.434 1.967-2.18 2.945-1.726 1.845-.414.164-.717-.37.067-.662.401-.589 2.388-3.036 1.44-1.882.93-1.086-.006-.158h-.055L4.132 18.56l-1.13.146-.487-.456.061-.746.231-.243 1.908-1.312-.006.006z" fill="#D97757"/></svg>
+                  <div class="cli-install-info">
+                    <div class="cli-install-name">Claude Code</div>
+                    <div class="cli-install-pkg">@anthropic-ai/claude-code</div>
+                  </div>
+                  <span class="cli-install-status checking" data-status><span class="cli-install-dot"></span>Checking</span>
+                </div>
+                <div class="cli-install-actions">
+                  <code class="cli-install-cmd">npm install -g @anthropic-ai/claude-code</code>
+                  <button class="btn btn-primary btn-sm cli-install-btn" data-action="install" disabled>Install</button>
+                </div>
+                <pre class="cli-install-log hidden" data-log></pre>
+              </div>
+              <div class="cli-install-card" data-cli="codex">
+                <div class="cli-install-header">
+                  <svg class="cli-install-logo" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M13.796 23.785a5.947 5.947 0 005.827-4.756C22.287 18.339 24 15.84 24 13.296c0-1.665-.713-3.282-1.998-4.448.119-.5.19-.999.19-1.498 0-3.401-2.759-5.947-5.946-5.947-.642 0-1.26.095-1.88.31A5.962 5.962 0 0010.205 0a5.947 5.947 0 00-5.827 4.757C1.713 5.447 0 7.945 0 10.49c0 1.666.713 3.283 1.998 4.448-.119.5-.19 1-.19 1.499 0 3.401 2.759 5.946 5.946 5.946.642 0 1.26-.095 1.88-.309a5.96 5.96 0 004.162 1.713zM9.205 8.658v-2.26c0-.19.072-.333.238-.428l4.543-2.616c.619-.357 1.356-.523 2.117-.523 2.854 0 4.662 2.212 4.662 4.566 0 .167 0 .357-.024.547l-4.71-2.759a.797.797 0 00-.856 0l-5.97 3.473zm10.609 8.8V12.06c0-.333-.143-.57-.429-.737l-5.97-3.473 1.95-1.118a.433.433 0 01.476 0l4.543 2.617c1.309.76 2.189 2.378 2.189 3.948 0 1.808-1.07 3.473-2.76 4.163zM7.802 12.703l-1.95-1.142c-.167-.095-.239-.238-.239-.428V5.899c0-2.545 1.95-4.472 4.591-4.472 1 0 1.927.333 2.712.928L8.23 5.067c-.285.166-.428.404-.428.737v6.898zM12 15.128l-2.795-1.57v-3.33L12 8.658l2.795 1.57v3.33L12 15.128zm1.796 7.23c-1 0-1.927-.332-2.712-.927l4.686-2.712c.285-.166.428-.404.428-.737v-6.898l1.974 1.142c.167.095.238.238.238.428v5.233c0 2.545-1.974 4.472-4.614 4.472zm-5.637-5.303l-4.544-2.617c-1.308-.761-2.188-2.378-2.188-3.948A4.482 4.482 0 014.21 6.327v5.423c0 .333.143.571.428.738l5.947 3.449-1.95 1.118a.432.432 0 01-.476 0zm-.262 3.9c-2.688 0-4.662-2.021-4.662-4.519 0-.19.024-.38.047-.57l4.686 2.71c.286.167.571.167.856 0l5.97-3.448v2.26c0 .19-.07.333-.237.428l-4.543 2.616c-.619.357-1.356.523-2.117.523z" fill="#10a37f"/></svg>
+                  <div class="cli-install-info">
+                    <div class="cli-install-name">Codex CLI</div>
+                    <div class="cli-install-pkg">@openai/codex</div>
+                  </div>
+                  <span class="cli-install-status checking" data-status><span class="cli-install-dot"></span>Checking</span>
+                </div>
+                <div class="cli-install-actions">
+                  <code class="cli-install-cmd">npm install -g @openai/codex</code>
+                  <button class="btn btn-primary btn-sm cli-install-btn" data-action="install" disabled>Install</button>
+                </div>
+                <pre class="cli-install-log hidden" data-log></pre>
+              </div>
+              <div class="cli-install-card" data-cli="gemini">
+                <div class="cli-install-header">
+                  <svg class="cli-install-logo" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M20.616 10.835a14.147 14.147 0 01-4.45-3.001 14.111 14.111 0 01-3.678-6.452.503.503 0 00-.975 0 14.134 14.134 0 01-3.679 6.452 14.155 14.155 0 01-4.45 3.001c-.65.28-1.318.505-2.002.678a.502.502 0 000 .975c.684.172 1.35.397 2.002.677a14.147 14.147 0 014.45 3.001 14.112 14.112 0 013.679 6.453.502.502 0 00.975 0c.172-.685.397-1.351.677-2.003a14.145 14.145 0 013.001-4.45 14.113 14.113 0 016.453-3.678.503.503 0 000-.975 13.245 13.245 0 01-2.003-.678z" fill="#4285F4"/></svg>
+                  <div class="cli-install-info">
+                    <div class="cli-install-name">Gemini CLI</div>
+                    <div class="cli-install-pkg">@google/gemini-cli</div>
+                  </div>
+                  <span class="cli-install-status checking" data-status><span class="cli-install-dot"></span>Checking</span>
+                </div>
+                <div class="cli-install-actions">
+                  <code class="cli-install-cmd">npm install -g @google/gemini-cli</code>
+                  <button class="btn btn-primary btn-sm cli-install-btn" data-action="install" disabled>Install</button>
+                </div>
+                <pre class="cli-install-log hidden" data-log></pre>
+              </div>
+              <div class="cli-install-card" data-cli="copilot">
+                <div class="cli-install-header">
+                  <svg class="cli-install-logo" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 0C5.373 0 0 5.373 0 12c0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297 24 5.373 18.627 0 12 0" fill="currentColor"/></svg>
+                  <div class="cli-install-info">
+                    <div class="cli-install-name">GitHub Copilot</div>
+                    <div class="cli-install-pkg">gh copilot extension</div>
+                  </div>
+                  <span class="cli-install-status checking" data-status><span class="cli-install-dot"></span>Checking</span>
+                </div>
+                <div class="cli-install-actions">
+                  <code class="cli-install-cmd">gh extension install github/gh-copilot</code>
+                  <button class="btn btn-primary btn-sm cli-install-btn" data-action="install" disabled>Install</button>
+                </div>
+                <pre class="cli-install-log hidden" data-log></pre>
+              </div>
+            </div>
+            <div class="settings-hint" style="margin-top:14px">GitHub Copilot requires the <code>gh</code> CLI already on your PATH.</div>
+          </div>
+
+          <div class="settings-section-page" id="settings-shortcuts">
+            <div class="settings-section">
+              <div class="settings-section-title">Terminal</div>
+              <div class="shortcut-grid">
+                <div class="shortcut-row"><span class="shortcut-key">Enter</span><span class="shortcut-desc">Send command / confirm</span></div>
+                <div class="shortcut-row"><span class="shortcut-key">Tab</span><span class="shortcut-desc">Autocomplete (CLI native)</span></div>
+                <div class="shortcut-row"><span class="shortcut-key">Shift + Drag</span><span class="shortcut-desc">Select text (bypasses CLI mouse capture)</span></div>
+                <div class="shortcut-row"><span class="shortcut-key">Ctrl + C</span><span class="shortcut-desc">Copy selection, or SIGINT if nothing selected</span></div>
+                <div class="shortcut-row"><span class="shortcut-key" data-mac="⌘ ⇧ C">Ctrl + Shift + C</span><span class="shortcut-desc">Copy selected text</span></div>
+                <div class="shortcut-row"><span class="shortcut-key" data-mac="⌘ V">Ctrl + V</span><span class="shortcut-desc">Paste from clipboard</span></div>
+                <div class="shortcut-row"><span class="shortcut-key">Ctrl + Z</span><span class="shortcut-desc">Suspend / SIGTSTP</span></div>
+                <div class="shortcut-row"><span class="shortcut-key">Ctrl + D</span><span class="shortcut-desc">EOF / exit shell</span></div>
+                <div class="shortcut-row"><span class="shortcut-key">Ctrl + L</span><span class="shortcut-desc">Clear terminal screen</span></div>
+                <div class="shortcut-row"><span class="shortcut-key">Ctrl + A</span><span class="shortcut-desc">Jump to start of line</span></div>
+                <div class="shortcut-row"><span class="shortcut-key">Ctrl + E</span><span class="shortcut-desc">Jump to end of line</span></div>
+                <div class="shortcut-row"><span class="shortcut-key">Ctrl + U</span><span class="shortcut-desc">Clear line before cursor</span></div>
+                <div class="shortcut-row"><span class="shortcut-key">Ctrl + W</span><span class="shortcut-desc">Delete word before cursor</span></div>
+                <div class="shortcut-row"><span class="shortcut-key">↑ / ↓</span><span class="shortcut-desc">Navigate command history</span></div>
+                <div class="shortcut-row"><span class="shortcut-key">Esc</span><span class="shortcut-desc">Cancel / dismiss (CLI)</span></div>
+              </div>
+            </div>
+            <div class="settings-section">
+              <div class="settings-section-title">Application</div>
+              <div class="shortcut-grid">
+                <div class="shortcut-row"><span class="shortcut-key" data-mac="⌘ ⇧ P">Ctrl + Shift + P</span><span class="shortcut-desc">Command palette</span></div>
+                <div class="shortcut-row"><span class="shortcut-key" data-mac="⌘ O">Ctrl + O</span><span class="shortcut-desc">Open repo</span></div>
+                <div class="shortcut-row"><span class="shortcut-key" data-mac="⌘ B">Ctrl + B</span><span class="shortcut-desc">Switch branch</span></div>
+                <div class="shortcut-row"><span class="shortcut-key" data-mac="⌘ P">Ctrl + P</span><span class="shortcut-desc">Create pull request</span></div>
+                <div class="shortcut-row"><span class="shortcut-key" data-mac="⌘ T">Ctrl + T</span><span class="shortcut-desc">Start Azure DevOps task</span></div>
+                <div class="shortcut-row"><span class="shortcut-key" data-mac="⌘ N">Ctrl + N</span><span class="shortcut-desc">New terminal</span></div>
+                <div class="shortcut-row"><span class="shortcut-key" data-mac="⌘ ⇧ ]">Ctrl + Shift + ]</span><span class="shortcut-desc">Next session</span></div>
+                <div class="shortcut-row"><span class="shortcut-key" data-mac="⌘ ⇧ [">Ctrl + Shift + [</span><span class="shortcut-desc">Previous session</span></div>
+                <div class="shortcut-row"><span class="shortcut-key" data-mac="⌘ .">Ctrl + .</span><span class="shortcut-desc">Open settings</span></div>
+                <div class="shortcut-row"><span class="shortcut-key" data-mac="⌘ ⇧ Z">Ctrl + Shift + Z</span><span class="shortcut-desc">Toggle zen mode</span></div>
+              </div>
+              <div class="settings-hint" style="margin-top:8px" id="shortcutFocusHint">On Windows/Linux the single-key shortcuts (Open repo, Switch branch, etc.) fire only when the terminal isn't focused, so keys like Ctrl+O still reach the CLI. The Command Palette (Ctrl+Shift+P) works from anywhere.</div>
+            </div>
+            <div class="settings-section">
+              <div class="settings-section-title">Claude Code</div>
+              <div class="shortcut-grid">
+                <div class="shortcut-row"><span class="shortcut-key">Shift + Tab</span><span class="shortcut-desc">Cycle permissions</span></div>
+                <div class="shortcut-row"><span class="shortcut-key">Ctrl + O</span><span class="shortcut-desc">Expand file content</span></div>
+                <div class="shortcut-row"><span class="shortcut-key">/help</span><span class="shortcut-desc">Show help commands</span></div>
+                <div class="shortcut-row"><span class="shortcut-key">/clear</span><span class="shortcut-desc">Clear conversation</span></div>
+                <div class="shortcut-row"><span class="shortcut-key">/compact</span><span class="shortcut-desc">Compact conversation</span></div>
+                <div class="shortcut-row"><span class="shortcut-key">/cost</span><span class="shortcut-desc">Show token usage</span></div>
+              </div>
+            </div>
+            <div class="settings-section">
+              <div class="settings-section-title">Diff Viewer</div>
+              <div class="shortcut-grid">
+                <div class="shortcut-row"><span class="shortcut-key">Click file</span><span class="shortcut-desc">Open Monaco diff viewer</span></div>
+                <div class="shortcut-row"><span class="shortcut-key">Esc</span><span class="shortcut-desc">Close diff viewer</span></div>
+                <div class="shortcut-row"><span class="shortcut-key">Diff / View</span><span class="shortcut-desc">Toggle side-by-side diff or file view</span></div>
+                <div class="shortcut-row"><span class="shortcut-key">Inline</span><span class="shortcut-desc">Toggle inline diff mode</span></div>
+              </div>
+            </div>
+            <div class="settings-section">
+              <div class="settings-section-title">Navigation</div>
+              <div class="shortcut-grid">
+                <div class="shortcut-row"><span class="shortcut-key">Click tab</span><span class="shortcut-desc">Switch session</span></div>
+                <div class="shortcut-row"><span class="shortcut-key">Scroll</span><span class="shortcut-desc">Terminal scrollback</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="settings-section-page" id="settings-updates">
+            <div class="settings-page-title">Updates</div>
+
+            <!-- Desktop only: the browser build has no installer to replace. -->
+            <div class="settings-section" id="updatesDesktop" hidden>
+              <div class="settings-section-title">Version</div>
+              <div class="settings-hint" style="margin-bottom:10px">
+                Catalyst checks GitHub for a newer release each time it starts. Every
+                release is signed, and the signature is verified before anything is
+                installed.
+              </div>
+              <div class="update-version-row">
+                <span class="update-current">Installed</span>
+                <span class="update-current-val" id="updateCurrentVersion">1.0.0</span>
+              </div>
+              <div class="settings-row" style="margin-top:14px">
+                <button class="btn btn-secondary btn-sm" id="checkUpdatesBtn">Check for updates</button>
+              </div>
+              <div class="settings-hint" id="updateStatus"></div>
+            </div>
+
+            <!-- Revealed only when a newer release is found. -->
+            <div class="settings-section update-available hidden" id="updateAvailable">
+              <div class="settings-section-title">
+                Version <span id="updateNewVersion"></span> is available
+              </div>
+              <div class="update-notes" id="updateNotes"></div>
+              <button class="btn btn-primary" id="installUpdateBtn">Install &amp; Restart</button>
+              <div class="settings-hint" id="installStatus"></div>
+            </div>
+
+            <div class="settings-section" id="updatesBrowser" hidden>
+              <div class="settings-section-title">Not available in the browser</div>
+              <div class="settings-hint">
+                You're running Catalyst in a browser against a local server, so there's
+                nothing for the updater to replace. Updates apply to the desktop app.
+              </div>
+            </div>
+          </div>
+
+          <div class="settings-section-page" id="settings-about">
+            <div class="settings-page-title">About</div>
+
+            <div class="about-hero">
+              <div class="about-glow"></div>
+              <svg class="about-hero-logo" viewBox="0 0 32 32" width="56" height="56" aria-hidden="true">
+                <g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round">
+                  <path d="M16 6 L24.66 11 L24.66 21 L16 26 L7.34 21 L7.34 11 Z"/>
+                  <line x1="16" y1="6" x2="16" y2="3.4"/>
+                </g>
+                <circle cx="16" cy="16" r="1.5" fill="currentColor" opacity="0.4"/>
+                <circle cx="16" cy="2.4" r="2" fill="currentColor"/>
+              </svg>
+              <div class="about-logo">CATALYST</div>
+              <div class="about-tagline">An IDE for the AI first world</div>
+              <div class="about-version">v1.0.0</div>
+            </div>
+
+            <div class="about-footer">
+              <div class="credit-line">Designed & Built by</div>
+              <a href="https://olisystems.com/" target="_blank" class="credit-company">OLI Inc.</a>
+              <div class="credit-year" id="creditYear"></div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+      </div>
+    </div>
+
+    <!-- Right Panel restore button (shown when minimized) -->
+    <button class="rp-restore-btn hidden" id="rpRestoreBtn" title="Show panel">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+
+    <!-- Right Panel -->
+    <div class="right-panel hidden" id="rightPanel">
+      <div class="rp-drag-handle" id="rpDragHandle"></div>
+      <button class="rp-minimize-btn" id="rpMinimizeBtn" title="Hide panel">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+      <!-- Tab Pages -->
+      <div class="rp-page active" id="rpPageGit">
+        <div class="rp-header">REPOSITORY</div>
+        <div class="right-section">
+          <div class="right-section-title">Branch</div>
+          <div class="git-row">
+            <div class="branch-display cursor-pointer hover-border-accent transition-colors" id="branchDisplay" title="Click to manage branches">
+              <svg class="w-3 h-3 flex-shrink-0" style="color:var(--catalyst-logo)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3v12M18 9a3 3 0 01-3 3H6"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="6" r="3"/></svg>
+              <span id="branchName">--</span>
+              <svg class="w-3 h-3 ml-auto flex-shrink-0" style="color:var(--text-muted)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+            </div>
+          </div>
+          <div class="git-actions">
+            <button class="git-action-btn" id="gitPullBtn" title="Git Pull">
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+              Pull
+            </button>
+            <button class="git-action-btn" id="gitPushBtn" title="Git Push">
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+              Push
+            </button>
+            <button class="git-action-btn" id="gitPrBtn" title="Create PR">
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+              PR
+            </button>
+          </div>
+          <div class="task-btn-row">
+            <button class="git-action-btn task-start-btn" id="startWithTaskBtn" title="Start with Azure DevOps task">
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+              Start with Task
+            </button>
+          </div>
+          <div class="task-active-card hidden" id="activeTaskCard">
+            <div class="task-active-card-body" id="activeTaskCardBody" title="Open in Azure DevOps">
+              <svg class="task-active-card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+              <span class="task-active-card-text" id="activeTaskCardText"></span>
+              <svg class="task-active-card-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17L17 7M17 7H7M17 7v10"/></svg>
+            </div>
+            <button class="task-active-card-close" id="clearTaskBtn" title="Clear active task">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="right-section right-section-changes">
+          <div class="right-section-title changes-title-row">
+            <div class="changes-toggle" id="changesToggle">
+              <button class="changes-toggle-btn active" data-mode="changes">Changes</button>
+              <button class="changes-toggle-btn" data-mode="all">All Files</button>
+            </div>
+            <div class="changes-title-actions">
+              <span class="changes-inline-count" id="changesInlineCount">0</span>
+              <button class="changes-stage-all-btn" id="stageAllBtn" title="Stage all changes">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+              </button>
+              <button class="changes-view-btn" id="changesViewBtn" title="Open full diff view">View</button>
+              <button class="changes-refresh-btn" id="changesRefreshBtn" title="Refresh">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+              </button>
+            </div>
+          </div>
+          <div class="changes-inline-tree" id="changesInlineTree">
+            <div style="font-size:10px;color:var(--text-muted);padding:4px 0">Loading...</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="rp-page" id="rpPageBuild">
+        <div class="rp-header">RUN & BUILD</div>
+        <div class="right-section">
+          <div class="right-section-title">
+            <span>Scripts</span>
+            <span class="muted" style="margin-left:auto;font-size:9px" id="projectTypeLabel"></span>
+          </div>
+          <div class="script-list" id="scriptList"></div>
+        </div>
+
+        <div class="right-section">
+          <div class="right-section-title">Custom Command</div>
+          <div class="git-row">
+            <div class="branch-display cursor-pointer hover-border-accent transition-colors" id="cmdFolderDisplay" title="Click to choose subfolder">
+              <svg class="w-3 h-3 flex-shrink-0" style="color:var(--accent)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+              <span id="cmdFolderName" class="truncate">/ (root)</span>
+              <svg class="w-3 h-3 ml-auto flex-shrink-0" style="color:var(--text-muted)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+            </div>
+          </div>
+          <div class="custom-cmd-row">
+            <input type="text" class="settings-input" id="customCmdInput" placeholder="e.g. dotnet test --logger trx">
+            <button class="btn btn-primary btn-sm" id="customCmdRun">Run</button>
+          </div>
+        </div>
+
+        <div class="right-section">
+          <div class="right-section-title">
+            <span>Recent Runs</span>
+            <span class="recent-runs-count" id="recentRunsCount">0</span>
+            <button class="changes-refresh-btn" id="clearRunsBtn" title="Clear" style="margin-left:auto">✕ Clear</button>
+          </div>
+          <div class="cmd-output-container" id="cmdOutputContainer"></div>
+        </div>
+      </div>
+
+      <div class="rp-page" id="rpPageManage">
+        <div class="rp-header">MANAGE</div>
+        <div class="right-section">
+          <div class="right-section-title">Session</div>
+          <div class="manage-session-card" id="manageSessionCard">
+            <div class="session-card-header">
+              <span class="tab-cli-icon" id="manageCliIcon"></span>
+              <div class="session-card-info">
+                <div class="session-card-name" id="manageCliName">—</div>
+                <div class="session-card-meta" id="manageCliMeta">—</div>
+              </div>
+              <span class="status-dot" id="manageStatusDot" style="width:8px;height:8px"></span>
+            </div>
+            <div class="session-card-context">
+              <div class="context-row"><span>CONTEXT</span><span id="manageContextText">— / —</span></div>
+              <div class="context-bar"><div class="context-bar-fill" id="manageContextBar" style="width:0%"></div></div>
+              <div class="context-row muted"><span id="manageContextPct">—</span><span id="manageSessionCost">—</span></div>
+            </div>
+            <div class="session-card-stats">
+              <div class="session-stat"><span class="num" id="manageReads">0</span><span class="lbl">Reads</span></div>
+              <div class="session-stat"><span class="num" id="manageWrites">0</span><span class="lbl">Writes</span></div>
+              <div class="session-stat"><span class="num" id="manageCommands">0</span><span class="lbl">Commands</span></div>
+            </div>
+          </div>
+          <div class="session-actions">
+            <button class="session-action-btn" id="manageCompactBtn" title="Compact context">⊟ Compact</button>
+            <button class="session-action-btn" id="manageRestartBtn" title="Restart session">↻ Restart</button>
+            <button class="session-action-btn" id="manageExportBtn" title="Export session">↗ Export</button>
+            <button class="session-action-btn danger" id="closeSessionBtn" title="End session">✕ End</button>
+          </div>
+          <div class="manage-session-info" id="manageSessionInfo" style="display:none"></div>
+        </div>
+
+        <div class="right-section">
+          <div class="right-section-title">Model & Behavior</div>
+          <div class="manage-field">
+            <label class="manage-label">Model</label>
+            <select class="settings-select manage-input" id="manageModel">
+              <option value="opus">Opus 4.6 · most capable</option>
+              <option value="sonnet">Sonnet 4.6 · balanced</option>
+              <option value="haiku">Haiku 4.5 · fastest</option>
+            </select>
+          </div>
+          <div class="manage-field">
+            <label class="manage-label">Effort</label>
+            <div class="manage-btn-group">
+              <button class="manage-btn" data-effort="low">Low</button>
+              <button class="manage-btn" data-effort="medium">Medium</button>
+              <button class="manage-btn active" data-effort="high">High</button>
+            </div>
+          </div>
+          <div class="manage-field">
+            <label class="manage-label">Permissions</label>
+            <div class="manage-btn-group">
+              <button class="manage-btn active" data-perm="bypass">Bypass</button>
+              <button class="manage-btn" data-perm="ask">Ask Each</button>
+              <button class="manage-btn" data-perm="deny">Deny Risky</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom Tab Bar -->
+      <div class="rp-tabbar">
+        <button class="rp-tab active" data-rp-tab="rpPageGit">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3v12M18 9a3 3 0 01-3 3H6"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="6" r="3"/></svg>
+          Git
+        </button>
+        <button class="rp-tab" data-rp-tab="rpPageManage">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+          Manage
+        </button>
+      </div>
+    </div>
+    </div>
+
+    <!-- Status Bar -->
+    <div class="statusbar hidden" id="statusbar">
+      <div class="statusbar-left">
+        <span class="statusbar-item" id="sbBranch">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3v12M18 9a3 3 0 01-3 3H6"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="6" r="3"/></svg>
+          <span id="sbBranchName">--</span>
+        </span>
+        <span class="statusbar-item" id="sbChanges">0 changes</span>
+        <span class="statusbar-item hidden" id="statusbarTask" style="color:var(--text-muted);font-size:10px"></span>
+      </div>
+      <div class="statusbar-right">
+        <span class="statusbar-item" id="sbUptime"></span>
+        <span class="statusbar-item statusbar-btn" id="sbZenBtn" title="Zen Mode (Ctrl+Shift+Z)">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 00-2 2v3m18 0V5a2 2 0 00-2-2h-3m0 18h3a2 2 0 002-2v-3M3 16v3a2 2 0 002 2h3"/></svg>
+          Zen
+        </span>
+        <span class="statusbar-item" id="sbConnection">
+          <span class="statusbar-dot connected"></span>
+          Connected
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Command Palette -->
+  <div class="cmd-palette hidden" id="cmdPalette">
+    <div class="cmd-palette-overlay" id="cmdPaletteOverlay"></div>
+    <div class="cmd-palette-box">
+      <div class="cmd-palette-input-row">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+        <input type="text" class="cmd-palette-input" id="cmdPaletteInput" placeholder="Type a command, search for a repo…" autocomplete="off" spellcheck="false">
+        <kbd class="cmd-palette-esc">ESC</kbd>
+      </div>
+      <div class="cmd-palette-list" id="cmdPaletteList"></div>
+    </div>
+  </div>
+
+  <!-- PR Modal -->
+  <div class="modal-overlay hidden" id="prModal">
+    <div class="modal">
+      <div class="modal-header">
+        <span>Create Pull Request</span>
+        <button class="modal-close" id="prModalClose">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-field">
+          <label>Source Branch</label>
+          <input type="text" class="modal-input" id="prSourceBranch" readonly>
+        </div>
+        <div class="modal-field">
+          <label>Target Branch</label>
+          <input type="text" class="modal-input" id="prTargetBranch" value="main">
+        </div>
+        <div class="modal-field">
+          <label>Title</label>
+          <input type="text" class="modal-input" id="prTitle" placeholder="PR title...">
+        </div>
+        <div class="modal-field">
+          <label>Description</label>
+          <textarea class="modal-textarea" id="prDescription" placeholder="Describe your changes..."></textarea>
+        </div>
+        <div class="modal-field">
+          <label>Work Item ID (optional)</label>
+          <input type="text" class="modal-input" id="prWorkItem" placeholder="e.g. 12345">
+        </div>
+        <div id="prError" class="error-msg hidden"></div>
+        <div id="prSuccess" class="success-msg hidden"></div>
+        <div class="modal-actions">
+          <button class="btn btn-secondary" id="prCancelBtn">Cancel</button>
+          <button class="btn btn-primary" id="prSubmitBtn">Run in Terminal</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Confirm Modal -->
+  <div id="confirmModal" class="fixed inset-0 z-[200] hidden items-center justify-center">
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" id="confirmOverlay"></div>
+    <div class="relative z-10 w-full max-w-sm mx-4 shadow-2xl" style="background:var(--bg-card);border:1px solid color-mix(in srgb, var(--danger) 20%, transparent);">
+      <div class="p-6">
+        <div class="flex items-center gap-3 mb-4">
+          <div class="flex-shrink-0 w-10 h-10 flex items-center justify-center" style="background:color-mix(in srgb, var(--danger) 10%, transparent);border:1px solid color-mix(in srgb, var(--danger) 20%, transparent);">
+            <svg class="w-5 h-5" style="color:var(--danger)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 9v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+          </div>
+          <div>
+            <h3 class="text-sm font-semibold tracking-wide" style="color:var(--text)" id="confirmTitle">Close Session</h3>
+            <p class="text-xs mt-0.5" style="color:var(--text-muted)" id="confirmMessage">This will end the CLI process.</p>
+          </div>
+        </div>
+        <div class="px-3 py-2 mb-5" style="background:color-mix(in srgb, var(--bg) 50%, transparent);border:1px solid var(--border);">
+          <p class="text-xs font-mono" style="color:var(--text)" id="confirmDetail"></p>
+        </div>
+        <div class="flex justify-end gap-2">
+          <button id="confirmCancel" class="px-4 py-2 text-xs font-mono uppercase tracking-wider hover-border-bright hover-text-theme transition-all" style="color:var(--text-muted);border:1px solid var(--border);">
+            Cancel
+          </button>
+          <button id="confirmOk" class="px-4 py-2 text-xs font-mono uppercase tracking-wider hover-bg-danger-dark transition-all" style="color:var(--text);background:var(--danger);border:1px solid var(--danger);">
+            Close Session
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Task Modal -->
+  <div class="modal-overlay hidden" id="taskModal">
+    <div class="modal task-modal">
+      <div class="modal-header">
+        <span>Start with Task</span>
+        <button class="modal-close" id="taskModalClose">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="task-fetch-row">
+          <input type="text" class="modal-input" id="taskIdInput" placeholder="Work item ID (e.g. 12345)">
+          <button class="btn btn-primary btn-sm" id="taskFetchBtn">Fetch</button>
+        </div>
+        <div class="modal-field" style="margin-top:8px">
+          <textarea class="modal-input task-extra-info" id="taskExtraInfo" rows="3" placeholder="Additional context for the AI (optional)..."></textarea>
+        </div>
+        <div id="taskError" class="error-msg hidden"></div>
+        <div id="taskLoading" class="hidden" style="font-size:11px;color:var(--text-muted);padding:8px 0">Fetching work item...</div>
+        <div id="taskDetails" class="hidden">
+          <div class="task-detail-header">
+            <span class="task-detail-id" id="taskDetailId"></span>
+            <span class="task-detail-state" id="taskDetailState"></span>
+          </div>
+          <div class="task-detail-title" id="taskDetailTitle"></div>
+          <div class="task-detail-section">
+            <div class="task-detail-label">Description</div>
+            <div class="task-detail-desc" id="taskDetailDesc"></div>
+          </div>
+          <div class="task-detail-section" id="taskCommentsSection">
+            <div class="task-detail-label">Comments</div>
+            <div class="task-detail-comments" id="taskDetailComments"></div>
+          </div>
+          <label class="task-inprogress-row">
+            <input type="checkbox" id="taskSetInProgress" checked>
+            <span>Set task to In Progress</span>
+          </label>
+          <label class="task-inprogress-row">
+            <input type="checkbox" id="taskCreateBranch" checked>
+            <span>Create branch first</span>
+          </label>
+          <div class="modal-field" id="taskBranchRow" style="margin-top:6px">
+            <input type="text" class="modal-input" id="taskBranchInput" placeholder="feat/short-slug">
+            <div class="settings-hint" style="margin-top:4px;font-size:10px;color:var(--text-muted)">Defaults: Bug → <code>fix/</code>, anything else → <code>feat/</code></div>
+          </div>
+          <div class="task-lfg-row">
+            <button class="btn btn-accent task-lfg-btn" id="taskLfgBtn">Lets Build!</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Branch Modal -->
+  <div id="branchModal" class="fixed inset-0 z-[200] hidden items-center justify-center">
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" id="branchModalOverlay"></div>
+    <div class="relative z-10 w-full max-w-md mx-4 shadow-2xl flex flex-col max-h-[80vh]" style="background:var(--bg-card);border:1px solid color-mix(in srgb, var(--accent) 20%, transparent);">
+      <div class="flex items-center justify-between px-5 py-4" style="border-bottom:1px solid var(--border);">
+        <h3 class="text-xs font-semibold uppercase tracking-[3px]" style="color:var(--text)">Branches</h3>
+        <button id="branchModalClose" class="hover-text-theme transition-colors" style="color:var(--text-muted)">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <div class="px-5 py-3" style="border-bottom:1px solid var(--border);">
+        <div class="flex gap-2">
+          <input type="text" id="newBranchInput" class="flex-1 px-3 py-2 text-xs font-mono outline-none focus-border-accent transition-colors" style="background:var(--input-bg);border:1px solid var(--border);color:var(--text);" placeholder="New branch name...">
+          <button id="createBranchBtn" class="px-4 py-2 text-[10px] font-mono uppercase tracking-wider transition-colors font-semibold hover-border-accent" style="color:var(--btn-primary-text);background:var(--accent);border:1px solid var(--accent);">
+            Create
+          </button>
+        </div>
+      </div>
+
+      <div class="flex-1 overflow-y-auto" id="branchListContainer">
+        <div class="px-5 py-3 text-xs" style="color:var(--text-muted)">Loading branches...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Folder Picker Modal -->
+  <div id="folderPickerModal" class="fixed inset-0 z-[200] hidden items-center justify-center">
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" id="folderPickerOverlay"></div>
+    <div class="relative z-10 w-full max-w-sm mx-4 shadow-2xl flex flex-col max-h-[70vh]" style="background:var(--bg-card);border:1px solid color-mix(in srgb, var(--accent) 20%, transparent);">
+      <div class="flex items-center justify-between px-5 py-3" style="border-bottom:1px solid var(--border);">
+        <h3 class="text-xs font-semibold uppercase tracking-[3px]" style="color:var(--text)">Choose Folder</h3>
+        <button id="folderPickerClose" class="hover-text-theme transition-colors" style="color:var(--text-muted)">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="flex-1 overflow-y-auto" id="folderPickerList"></div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Repo Setup Modal -->
+  <div id="repoSetupModal" class="fixed inset-0 z-[200] hidden items-center justify-center">
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" id="repoSetupOverlay"></div>
+    <div class="relative z-10 w-full max-w-md mx-4 shadow-2xl" style="background:var(--bg-card);border:1px solid color-mix(in srgb, var(--accent) 20%, transparent);border-radius:8px;">
+      <div class="flex items-center justify-between px-5 py-4" style="border-bottom:1px solid var(--border);">
+        <h3 class="text-xs font-semibold uppercase tracking-[3px]" style="color:var(--text)">Setup Repo</h3>
+        <button id="repoSetupSkip" class="hover-text-theme transition-colors" style="color:var(--text-muted)">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="p-5">
+        <div class="text-xs mb-4" style="color:var(--text-muted);line-height:1.8">First time opening this repo. Set up the project type and build configuration.</div>
+        <div class="manage-field">
+          <label class="manage-label">Project Type</label>
+          <select class="settings-select manage-input" id="setupProjectType" style="width:100%">
+            <option value="Web">Web</option>
+            <option value="API">API</option>
+            <option value="Azure Functions">Azure Functions</option>
+            <option value="Console">Console</option>
+            <option value="Library">Library</option>
+            <option value="Worker Service">Worker Service</option>
+            <option value="Node">Node / NPM</option>
+            <option value="Python">Python</option>
+            <option value="Go">Go</option>
+            <option value="Rust">Rust</option>
+          </select>
+        </div>
+        <div class="manage-field">
+          <label class="manage-label">Build Folder</label>
+          <select class="settings-select manage-input" id="setupBuildFolder" style="width:100%">
+            <option value="">/ (root)</option>
+          </select>
+        </div>
+        <div class="manage-field">
+          <label class="manage-label">Build Command</label>
+          <input type="text" class="settings-input manage-input" id="setupBuildCmd" placeholder="e.g. dotnet build" style="width:100%">
+        </div>
+        <div class="manage-field">
+          <label class="manage-label">Run Command</label>
+          <input type="text" class="settings-input manage-input" id="setupRunCmd" placeholder="e.g. dotnet run" style="width:100%">
+        </div>
+        <div class="flex justify-end gap-2 mt-4">
+          <button class="btn btn-secondary btn-sm" id="repoSetupSkipBtn">Skip</button>
+          <button class="btn btn-primary btn-sm" id="repoSetupSaveBtn">Save</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Run Configurations Modal -->
+  <div id="runConfigModal" class="fixed inset-0 z-[200] hidden items-center justify-center">
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" id="runConfigOverlay"></div>
+    <div class="relative z-10 w-full max-w-md mx-4 shadow-2xl" style="background:var(--bg-card);border:1px solid color-mix(in srgb, var(--accent) 20%, transparent);border-radius:8px;">
+      <div class="flex items-center justify-between px-5 py-4" style="border-bottom:1px solid var(--border);">
+        <h3 class="text-xs font-semibold uppercase tracking-[3px]" style="color:var(--text)">Run Configurations</h3>
+        <button id="runConfigClose" class="transition-colors" style="color:var(--text-muted)">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="p-5">
+        <!-- List view -->
+        <div id="runConfigListView">
+          <div id="runConfigList"></div>
+          <div id="runConfigEmpty" class="text-xs" style="color:var(--text-muted);line-height:1.8;padding:6px 0 12px">No run configurations yet. Add one to define how this repo builds and runs — e.g. separate Frontend and Backend configs.</div>
+          <button class="btn btn-secondary btn-sm" id="addRunConfigBtn" style="width:100%">+ Add run configuration</button>
+        </div>
+        <!-- Form view -->
+        <div id="runConfigFormView" class="hidden">
+          <div class="manage-field">
+            <label class="manage-label">Name</label>
+            <input type="text" class="settings-input manage-input" id="rcName" placeholder="e.g. Backend API" style="width:100%">
+          </div>
+          <div class="manage-field">
+            <label class="manage-label">Project Type</label>
+            <select class="settings-select manage-input" id="rcProjectType" style="width:100%">
+              <option value="Web">Web</option>
+              <option value="API">API</option>
+              <option value="Azure Functions">Azure Functions</option>
+              <option value="Console">Console</option>
+              <option value="Library">Library</option>
+              <option value="Worker Service">Worker Service</option>
+              <option value="Node">Node / NPM</option>
+              <option value="Python">Python</option>
+              <option value="Go">Go</option>
+              <option value="Rust">Rust</option>
+            </select>
+          </div>
+          <div class="manage-field">
+            <label class="manage-label">Folder <span style="color:var(--text-muted);text-transform:none;letter-spacing:0">(inside this repo)</span></label>
+            <select class="settings-select manage-input" id="rcBuildFolder" style="width:100%">
+              <option value="">/ (root)</option>
+            </select>
+          </div>
+          <div class="manage-field">
+            <label class="manage-label">Build Command</label>
+            <input type="text" class="settings-input manage-input" id="rcBuildCmd" placeholder="e.g. npm install" style="width:100%">
+          </div>
+          <div class="manage-field">
+            <label class="manage-label">Run Command</label>
+            <input type="text" class="settings-input manage-input" id="rcRunCmd" placeholder="e.g. npm run dev" style="width:100%">
+          </div>
+          <div class="flex justify-between gap-2 mt-4">
+            <button class="btn btn-secondary btn-sm" id="rcDeleteBtn" style="color:#fca5a5">Delete</button>
+            <div class="flex gap-2">
+              <button class="btn btn-secondary btn-sm" id="rcCancelBtn">Cancel</button>
+              <button class="btn btn-primary btn-sm" id="rcSaveBtn">Save</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Monaco Diff Modal -->
+  <div id="monacoModal" class="monaco-modal hidden">
+    <div class="monaco-modal-overlay" id="monacoModalOverlay"></div>
+    <div class="monaco-modal-container">
+      <div class="monaco-modal-header">
+        <div class="monaco-modal-tabs">
+          <button class="monaco-tab active" id="monacoDiffTab" data-mode="diff">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18M3 12h18"/></svg>
+            Diff
+          </button>
+          <button class="monaco-tab" id="monacoViewTab" data-mode="view">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            View
+          </button>
+          <button class="monaco-tab" id="monacoEditTab" data-mode="edit">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            Edit
+          </button>
+        </div>
+        <span class="monaco-modal-filename" id="monacoFileName"></span>
+        <div class="monaco-modal-actions">
+          <button class="monaco-save-btn hidden" id="monacoSaveBtn" title="Save file (Ctrl+S)">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            Save
+          </button>
+          <button class="monaco-modal-btn" id="monacoInlineDiff" title="Toggle inline diff">Inline</button>
+          <button class="monaco-modal-close" id="monacoModalClose">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="monaco-file-tabbar" id="monacoFileTabbar"></div>
+      <div class="monaco-modal-content">
+        <div class="monaco-modal-body" id="monacoEditorContainer"></div>
+        <div class="monaco-sidebar" id="monacoSidebar">
+          <div class="monaco-sidebar-drag" id="monacoSidebarDrag"></div>
+          <div class="monaco-sidebar-header">
+            <span class="monaco-sidebar-title" id="monacoSidebarTitle">Changed Files</span>
+            <span class="monaco-sidebar-count" id="monacoFileCount">0</span>
+          </div>
+          <div class="monaco-sidebar-search">
+            <svg class="monaco-search-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+            <input type="text" class="monaco-search-input" id="monacoSearchInput" placeholder="Filter files..." autocomplete="off" spellcheck="false">
+          </div>
+          <div class="monaco-file-tree" id="monacoFileTree"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/xterm/lib/xterm.js" defer></script>
+  <script src="/xterm-fit/lib/addon-fit.js" defer></script>
+  <script src="/xterm-web-links/lib/addon-web-links.js" defer></script>
+  <script>
+    // Lazy-load Monaco editor — heavy third-party bundle loaded on-demand
+    window._monacoReady = new Promise(resolve => {
+      function loadMonaco() {
+        var s = document.createElement('script');
+        s.src = 'https://cdn.jsdelivr.net/npm/monaco-editor@0.52.2/min/vs/loader.js';
+        s.onload = function () {
+          require.config({ paths: { vs: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.52.2/min/vs' } });
+          require(['vs/editor/editor.main'], function () { resolve(monaco); });
+        };
+        document.head.appendChild(s);
+      }
+      // Defer Monaco until after first paint
+      if (typeof requestIdleCallback === 'function') {
+        requestIdleCallback(loadMonaco);
+      } else {
+        setTimeout(loadMonaco, 200);
+      }
+    });
+  </script>
+  <script src="app.js" defer></script>
+  <script src="onboarding.js" defer></script>
+  <script src="welcome-port.js" defer></script>
+
+  <!-- PWA: Service Worker Registration & Install Prompt -->
+  <script>
+    // Unregister old service worker and clear caches to ensure fresh files (one-time cleanup)
+    if ('serviceWorker' in navigator && !localStorage.getItem('swCleanupDone')) {
+      Promise.all([
+        navigator.serviceWorker.getRegistrations().then(regs => {
+          return Promise.all(regs.map(reg => reg.unregister()));
+        }),
+        caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k))))
+      ]).then(() => {
+        localStorage.setItem('swCleanupDone', '1');
+      }).catch(() => {});
+    }
+
+    // Install prompt handling
+    (function () {
+      let deferredPrompt = null;
+      const installBtn = document.getElementById('pwaInstallBtn');
+      const DISMISS_KEY = 'catalyst-pwa-install-dismissed';
+      const DISMISS_DURATION = 7 * 24 * 60 * 60 * 1000; // 7 days
+
+      function isDismissed() {
+        const ts = localStorage.getItem(DISMISS_KEY);
+        if (!ts) return false;
+        return (Date.now() - parseInt(ts, 10)) < DISMISS_DURATION;
+      }
+
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        // Show install button unless user dismissed recently
+        if (!isDismissed() && installBtn) {
+          installBtn.classList.remove('hidden');
+          installBtn.classList.add('pwa-install-pulse');
+        }
+      });
+
+      if (installBtn) {
+        installBtn.addEventListener('click', async () => {
+          if (!deferredPrompt) return;
+          installBtn.classList.remove('pwa-install-pulse');
+          deferredPrompt.prompt();
+          const { outcome } = await deferredPrompt.userChoice;
+          console.log('[PWA] Install outcome:', outcome);
+          if (outcome === 'dismissed') {
+            // Store dismissal timestamp so we don't nag for a week
+            localStorage.setItem(DISMISS_KEY, Date.now().toString());
+          }
+          deferredPrompt = null;
+          installBtn.classList.add('hidden');
+        });
+
+        // Allow right-click to dismiss without installing
+        installBtn.addEventListener('contextmenu', (e) => {
+          e.preventDefault();
+          localStorage.setItem(DISMISS_KEY, Date.now().toString());
+          installBtn.classList.add('hidden');
+        });
+      }
+
+      // Hide install button after the app is installed
+      window.addEventListener('appinstalled', () => {
+        console.log('[PWA] App installed');
+        deferredPrompt = null;
+        if (installBtn) installBtn.classList.add('hidden');
+      });
+    })();
+  </script>
+  <div class="git-ctx-menu" id="gitCtxMenu"></div>
+</body>
+</html>

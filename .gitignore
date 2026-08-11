@@ -1,0 +1,16 @@
+node_modules/
+dist/
+*.exe
+*.dmg
+*.AppImage
+*.snap
+.DS_Store
+Thumbs.db
+
+# Local agent config and internal design docs — not published
+.claude/
+docs/
+
+# Tauri updater signing keys — never commit these
+*.key
+*.pem

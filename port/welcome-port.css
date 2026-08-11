@@ -1,0 +1,476 @@
+/* ═══════════════════════════════════════════════════════════════
+   Catalyst — Welcome Port
+   Drop-in stylesheet for the refined welcome screen.
+   Loads after style.css so its rules win.
+   ═══════════════════════════════════════════════════════════════ */
+
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&display=swap');
+
+/* Use scoped tokens that work across all 16 existing themes. */
+.welcome[data-port="v1"] {
+  --port-font: 'JetBrains Mono', ui-monospace, monospace;
+  --port-text: var(--text);
+  --port-text-2: var(--text-muted);
+  --port-text-dim: color-mix(in srgb, var(--text-muted) 60%, transparent);
+  --port-border: var(--border);
+  --port-border-strong: var(--border-bright);
+  --port-border-accent: color-mix(in srgb, var(--accent) 32%, transparent);
+  --port-accent-soft:  color-mix(in srgb, var(--accent) 10%, transparent);
+  --port-accent-softer: color-mix(in srgb, var(--accent) 5%, transparent);
+  --port-surface: var(--bg-card);
+  --port-surface-2: var(--surface);
+
+  font-family: var(--port-font);
+}
+
+/* ─── Override base welcome layout ───────────────────────────── */
+.welcome[data-port="v1"] {
+  background: transparent;
+  padding: 0 !important;
+}
+.welcome[data-port="v1"] > .welcome-card {
+  background: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+  padding: 0 !important;
+  max-width: none !important;
+  width: 100% !important;
+}
+
+.welcome[data-port="v1"] .welcome-inner {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 56px 48px 110px;
+  width: 100%;
+}
+
+/* Hero */
+.welcome[data-port="v1"] .port-hero {
+  display: flex; flex-direction: column; align-items: center; gap: 16px;
+  margin-bottom: 36px;
+}
+.welcome[data-port="v1"] .port-mark {
+  width: 56px; height: 56px;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: linear-gradient(180deg, var(--port-surface-2), var(--port-surface));
+  border: 1px solid var(--port-border-strong);
+  border-radius: 8px;
+  position: relative;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.04), 0 12px 32px -16px color-mix(in srgb, var(--accent) 40%, transparent);
+}
+.welcome[data-port="v1"] .port-mark::after {
+  content: ''; position: absolute; inset: -1px;
+  border-radius: 8px;
+  background: linear-gradient(180deg, var(--port-accent-soft), transparent 60%);
+  z-index: -1;
+  filter: blur(8px);
+  opacity: 0.6;
+}
+.welcome[data-port="v1"] .port-mark span {
+  font: 700 22px/1 var(--port-font);
+  color: var(--accent);
+  letter-spacing: -0.04em;
+}
+.welcome[data-port="v1"] .port-mark .cursor {
+  display: inline-block;
+  width: 8px; height: 14px;
+  background: var(--accent);
+  margin-left: 2px;
+  animation: port-blink 1.1s steps(1) infinite;
+  vertical-align: -2px;
+}
+@keyframes port-blink { 50% { opacity: 0; } }
+
+.welcome[data-port="v1"] .port-title {
+  font: 600 14px/1 var(--port-font);
+  letter-spacing: 0.32em;
+  color: var(--port-text);
+}
+.welcome[data-port="v1"] .port-sub {
+  font: 400 11px/1 var(--port-font);
+  letter-spacing: 0.18em;
+  color: var(--port-text-2);
+  text-transform: uppercase;
+}
+
+/* Folder bar */
+.welcome[data-port="v1"] .folder-input-group {
+  display: flex !important;
+  gap: 6px !important;
+  max-width: 720px;
+  margin: 0 auto 40px !important;
+  width: 100%;
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+}
+.welcome[data-port="v1"] .folder-input {
+  flex: 1;
+  height: 42px !important;
+  padding: 0 16px !important;
+  background: var(--port-surface) !important;
+  border: 1px solid var(--port-border-strong) !important;
+  border-radius: 4px !important;
+  font: 400 13px var(--port-font) !important;
+  color: var(--port-text) !important;
+  letter-spacing: 0.01em !important;
+  outline: none;
+  transition: all 0.12s ease;
+}
+.welcome[data-port="v1"] .folder-input:focus {
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 3px var(--port-accent-soft) !important;
+}
+.welcome[data-port="v1"] .folder-input-group .btn {
+  height: 42px !important;
+  padding: 0 20px !important;
+  font: 500 11px var(--port-font) !important;
+  letter-spacing: 0.16em !important;
+  text-transform: uppercase !important;
+  border-radius: 4px !important;
+}
+
+/* Recent chips */
+.welcome[data-port="v1"] .port-recent {
+  margin-bottom: 32px;
+  display: none;
+}
+.welcome[data-port="v1"] .port-recent.has-items { display: block; }
+.welcome[data-port="v1"] .port-recent .eyebrow {
+  font: 500 10px var(--port-font);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--port-text-2);
+  margin-bottom: 12px;
+}
+.welcome[data-port="v1"] .port-recent-row {
+  display: flex; gap: 8px; flex-wrap: wrap;
+}
+.welcome[data-port="v1"] .port-recent-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 10px;
+  background: var(--port-surface);
+  border: 1px solid var(--port-border);
+  border-radius: 4px;
+  font: 400 11px var(--port-font);
+  color: var(--port-text);
+  cursor: pointer;
+  transition: all 0.12s;
+}
+.welcome[data-port="v1"] .port-recent-chip:hover {
+  color: var(--accent);
+  border-color: var(--port-border-accent);
+}
+.welcome[data-port="v1"] .port-recent-chip .when {
+  color: var(--port-text-dim);
+}
+
+/* Section head — Git Repositories label + filter */
+.welcome[data-port="v1"] #repoCliLayout {
+  display: grid !important;
+  grid-template-columns: 1fr;
+  gap: 32px;
+  background: transparent !important;
+  padding: 0 !important;
+}
+.welcome[data-port="v1"] #repoCliLayout.has-selection {
+  grid-template-columns: minmax(280px, 360px) 1fr;
+}
+
+.welcome[data-port="v1"] .section-label {
+  display: none !important; /* hidden — replaced by .port-section-head */
+}
+.welcome[data-port="v1"] .port-section-head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 14px;
+}
+.welcome[data-port="v1"] .port-section-head .eyebrow {
+  font: 500 10px var(--port-font);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--port-text-2);
+}
+.welcome[data-port="v1"] .port-filter {
+  display: flex; align-items: center; gap: 8px;
+  height: 28px;
+  padding: 0 10px;
+  background: var(--port-surface);
+  border: 1px solid var(--port-border);
+  border-radius: 4px;
+  min-width: 220px;
+  transition: all 0.12s ease;
+}
+.welcome[data-port="v1"] .port-filter:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--port-accent-soft);
+}
+.welcome[data-port="v1"] .port-filter svg { color: var(--port-text-2); flex-shrink: 0; }
+.welcome[data-port="v1"] .port-filter input {
+  flex: 1; min-width: 0;
+  background: none; border: none; outline: none;
+  font: 400 11.5px var(--port-font);
+  color: var(--port-text);
+}
+.welcome[data-port="v1"] .port-filter input::placeholder { color: var(--port-text-dim); }
+.welcome[data-port="v1"] .port-filter .count {
+  font: 500 10px var(--port-font);
+  color: var(--port-text-dim);
+  flex-shrink: 0;
+}
+
+/* Repo grid — overrides */
+.welcome[data-port="v1"] .repo-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)) !important;
+  gap: 8px !important;
+  max-height: none !important;
+  overflow: visible !important;
+}
+.welcome[data-port="v1"] #repoCliLayout.has-selection .repo-grid {
+  grid-template-columns: 1fr !important;
+  max-height: 56vh !important;
+  overflow-y: auto !important;
+  padding-right: 6px;
+}
+
+/* Repo card — refined */
+.welcome[data-port="v1"] .repo-card {
+  display: flex !important; flex-direction: column !important; gap: 6px !important;
+  padding: 12px 14px !important;
+  background: var(--port-surface) !important;
+  border: 1px solid var(--port-border) !important;
+  border-radius: 6px !important;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.14s ease !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.025);
+  min-height: 0 !important;
+  height: auto !important;
+}
+.welcome[data-port="v1"] .repo-card:hover {
+  background: var(--port-surface-2) !important;
+  border-color: var(--port-border-strong) !important;
+  transform: translateY(-1px);
+}
+.welcome[data-port="v1"] .repo-card.selected {
+  background: var(--port-accent-softer) !important;
+  border-color: var(--port-border-accent) !important;
+}
+.welcome[data-port="v1"] .repo-card.selected::before {
+  content: ''; position: absolute; left: 0; top: 10px; bottom: 10px;
+  width: 2px; background: var(--accent);
+  border-radius: 0 1px 1px 0;
+}
+.welcome[data-port="v1"] .repo-card-name {
+  font: 500 12.5px var(--port-font) !important;
+  color: var(--port-text) !important;
+  display: flex !important; align-items: center !important; gap: 8px !important;
+  letter-spacing: 0 !important;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.welcome[data-port="v1"] .repo-card-meta-dot {
+  margin-left: auto;
+  width: 6px !important; height: 6px !important;
+  border-radius: 999px !important;
+  background: var(--success, #34d399) !important;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--success, #34d399) 12%, transparent);
+}
+.welcome[data-port="v1"] .repo-card-git {
+  font: 400 10px var(--port-font) !important;
+  color: var(--port-text-dim) !important;
+}
+.welcome[data-port="v1"] .repo-card-tech {
+  display: flex !important; flex-wrap: wrap !important; gap: 4px !important;
+  font: 400 10px var(--port-font) !important;
+  color: var(--port-text-2) !important;
+}
+.welcome[data-port="v1"] .repo-card-tech .sep { color: var(--port-text-dim); }
+
+/* CLI picker pane */
+.welcome[data-port="v1"] #cliSection {
+  background: var(--port-surface) !important;
+  border: 1px solid var(--port-border) !important;
+  border-radius: 6px !important;
+  padding: 24px !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.025);
+  position: sticky;
+  top: 0;
+}
+
+.welcome[data-port="v1"] .repo-info-panel {
+  display: flex !important; flex-direction: column !important; gap: 14px !important;
+  padding: 0 0 20px 0 !important;
+  border-bottom: 1px solid var(--port-border) !important;
+  margin-bottom: 20px !important;
+  background: transparent !important;
+}
+.welcome[data-port="v1"] .port-id-row {
+  display: flex; align-items: center; gap: 14px;
+}
+.welcome[data-port="v1"] .port-monogram {
+  position: relative;
+  width: 48px; height: 48px;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: linear-gradient(135deg, var(--port-accent-soft), var(--port-surface-2));
+  border: 1px solid var(--port-border-accent);
+  border-radius: 6px;
+  font: 700 16px var(--port-font);
+  letter-spacing: -0.02em;
+  color: var(--accent);
+  flex-shrink: 0;
+  overflow: hidden;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.04), 0 4px 20px -8px var(--port-accent-soft);
+}
+.welcome[data-port="v1"] .port-monogram::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: repeating-linear-gradient(180deg, transparent 0px, transparent 2px, rgba(255,255,255,0.02) 2px, rgba(255,255,255,0.02) 3px);
+  pointer-events: none;
+}
+.welcome[data-port="v1"] .port-monogram .glint {
+  position: absolute;
+  width: 200%; height: 100%;
+  top: 0; left: -100%;
+  background: linear-gradient(110deg, transparent 30%, rgba(255,255,255,0.18) 50%, transparent 70%);
+  animation: port-glint 6s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes port-glint {
+  0%, 80% { transform: translateX(0); opacity: 0; }
+  85% { opacity: 1; }
+  100% { transform: translateX(100%); opacity: 0; }
+}
+
+.welcome[data-port="v1"] .repo-info-name {
+  font: 600 20px var(--port-font) !important;
+  color: var(--port-text) !important;
+  letter-spacing: -0.015em !important;
+  line-height: 1.1 !important;
+  margin: 0 !important;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1; min-width: 0;
+}
+.welcome[data-port="v1"] .port-path {
+  display: inline-flex; align-items: center; gap: 5px;
+  font: 400 10.5px var(--port-font);
+  color: var(--port-text-dim);
+  letter-spacing: 0.02em;
+  overflow: hidden;
+  margin-top: 4px;
+}
+.welcome[data-port="v1"] .port-path svg { color: var(--port-text-2); flex-shrink: 0; margin-right: 2px; }
+.welcome[data-port="v1"] .port-path .sep { color: var(--port-border-strong); }
+.welcome[data-port="v1"] .port-path .cwd { color: var(--accent); }
+
+.welcome[data-port="v1"] .repo-info-desc {
+  font: 400 12px/1.55 var(--port-font) !important;
+  color: var(--port-text-2) !important;
+  margin: 0 !important;
+}
+.welcome[data-port="v1"] .repo-info-desc:empty { display: none; }
+
+.welcome[data-port="v1"] .repo-info-tags {
+  display: flex !important; flex-wrap: wrap !important; gap: 6px !important;
+  margin: 0 !important;
+}
+.welcome[data-port="v1"] .repo-info-tag {
+  display: inline-flex !important; align-items: center !important;
+  height: 20px !important; padding: 0 8px !important;
+  font: 500 10px var(--port-font) !important;
+  letter-spacing: 0.02em !important;
+  border-radius: 2px !important;
+  border: 1px solid var(--port-border) !important;
+  background: var(--port-surface-2) !important;
+  color: var(--port-text-2) !important;
+}
+/* Tech-colored tags */
+.welcome[data-port="v1"] .repo-info-tag[data-tech="typescript"]   { color: #58a6ff !important; border-color: rgba(88,166,255,0.30) !important;  background: rgba(88,166,255,0.08) !important; }
+.welcome[data-port="v1"] .repo-info-tag[data-tech="javascript"]   { color: #f5cb5c !important; border-color: rgba(245,203,92,0.30) !important;  background: rgba(245,203,92,0.08) !important; }
+.welcome[data-port="v1"] .repo-info-tag[data-tech="react"]        { color: #61dafb !important; border-color: rgba(97,218,251,0.30) !important;  background: rgba(97,218,251,0.08) !important; }
+.welcome[data-port="v1"] .repo-info-tag[data-tech="nextjs"]       { color: #eaeaea !important; border-color: rgba(234,234,234,0.30) !important; background: rgba(234,234,234,0.06) !important; }
+.welcome[data-port="v1"] .repo-info-tag[data-tech="nodejs"]       { color: #6bba56 !important; border-color: rgba(107,186,86,0.30) !important;  background: rgba(107,186,86,0.08) !important; }
+.welcome[data-port="v1"] .repo-info-tag[data-tech="express"]      { color: #d2d2d2 !important; border-color: rgba(210,210,210,0.20) !important; background: rgba(210,210,210,0.06) !important; }
+.welcome[data-port="v1"] .repo-info-tag[data-tech="netc"]         { color: #b083ff !important; border-color: rgba(176,131,255,0.30) !important; background: rgba(176,131,255,0.08) !important; }
+.welcome[data-port="v1"] .repo-info-tag[data-tech="python"]       { color: #ffd43b !important; border-color: rgba(255,212,59,0.30) !important;  background: rgba(255,212,59,0.08) !important; }
+.welcome[data-port="v1"] .repo-info-tag[data-tech="go"]           { color: #00add8 !important; border-color: rgba(0,173,216,0.30) !important;   background: rgba(0,173,216,0.08) !important; }
+.welcome[data-port="v1"] .repo-info-tag[data-tech="rust"]         { color: #ce422b !important; border-color: rgba(206,66,43,0.30) !important;   background: rgba(206,66,43,0.08) !important; }
+.welcome[data-port="v1"] .repo-info-tag[data-tech="java"]         { color: #f89820 !important; border-color: rgba(248,152,32,0.30) !important;  background: rgba(248,152,32,0.08) !important; }
+
+/* CHOOSE AI label */
+.welcome[data-port="v1"] #cliSection .section-label {
+  display: block !important;
+  font: 500 10px var(--port-font) !important;
+  letter-spacing: 0.2em !important;
+  text-transform: uppercase !important;
+  color: var(--port-text-2) !important;
+  margin: 0 0 12px 0 !important;
+  background: transparent !important;
+  padding: 0 !important;
+}
+
+/* CLI picker grid */
+.welcome[data-port="v1"] .cli-picker {
+  display: grid !important;
+  grid-template-columns: repeat(3, 1fr) !important;
+  gap: 8px !important;
+  margin-bottom: 16px !important;
+}
+.welcome[data-port="v1"] .cli-btn {
+  display: flex !important; flex-direction: column !important;
+  align-items: center !important; gap: 8px !important;
+  padding: 18px 12px 14px !important;
+  background: var(--port-surface-2) !important;
+  border: 1px solid var(--port-border) !important;
+  border-radius: 6px !important;
+  cursor: pointer;
+  transition: all 0.14s ease !important;
+  position: relative;
+  color: var(--port-text) !important;
+}
+.welcome[data-port="v1"] .cli-btn:hover {
+  background: var(--port-surface) !important;
+  border-color: var(--port-border-accent) !important;
+  transform: translateY(-1px);
+}
+.welcome[data-port="v1"] .cli-btn .cli-logo {
+  width: 28px !important;
+  height: 28px !important;
+}
+.welcome[data-port="v1"] .cli-btn span {
+  font: 600 11px var(--port-font) !important;
+  letter-spacing: 0.14em !important;
+  text-transform: uppercase !important;
+  color: var(--port-text) !important;
+}
+
+.welcome[data-port="v1"] .worktree-option {
+  display: flex !important; align-items: center !important; gap: 8px !important;
+  padding: 10px 12px !important;
+  background: var(--port-surface-2) !important;
+  border: 1px solid var(--port-border) !important;
+  border-radius: 4px !important;
+  cursor: pointer;
+  font: 500 11.5px var(--port-font) !important;
+  color: var(--port-text) !important;
+}
+
+/* Welcome footer */
+.welcome[data-port="v1"] .welcome-footer {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  padding: 32px 0 0 !important;
+  font: 400 10.5px var(--port-font) !important;
+  color: var(--port-text-dim) !important;
+  letter-spacing: 0.06em !important;
+  background: transparent !important;
+  border-top: none !important;
+}
+.welcome[data-port="v1"] .welcome-footer .port-status {
+  color: var(--port-text-2);
+}
