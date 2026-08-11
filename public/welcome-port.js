@@ -71,7 +71,7 @@
     wrap.classList.add('has-items');
     wrap.querySelector('.port-recent-row').innerHTML = list.map(r => {
       const logo = r.cli && CLI_LOGOS[r.cli] ? CLI_LOGOS[r.cli] : svg('clock');
-      return `<button class="port-recent-chip" data-path="${escapeHtml(r.path)}" data-cli="${r.cli || ''}" type="button">
+      return `<button class="port-recent-chip" data-path="${escapeHtml(r.path)}" data-cli="${escapeHtml(r.cli)}" type="button">
         ${logo}
         <span>${escapeHtml(r.name)}</span>
         <span class="when">· ${relTime(r.at)}</span>
@@ -110,10 +110,11 @@
     });
   }
 
-  const _escDiv = document.createElement('div');
+  // Must escape quotes too — these values are interpolated into quoted
+  // attributes (data-path="…"), which textContent/innerHTML does not cover.
+  const _HTML_ESC = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
   function escapeHtml(str) {
-    _escDiv.textContent = String(str || '');
-    return _escDiv.innerHTML;
+    return String(str == null ? '' : str).replace(/[&<>"']/g, c => _HTML_ESC[c]);
   }
 
   // ─── Inject hero + filter + footer into welcome ──────────────

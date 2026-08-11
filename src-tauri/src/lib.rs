@@ -56,12 +56,44 @@ async fn install_update(app: tauri::AppHandle) -> Result<(), String> {
     app.restart();
 }
 
-/// Startup check. Stays silent when already current; offers the update through a
-/// native prompt so it is seen without the user opening Settings.
-async fn prompt_for_update(app: tauri::AppHandle) -> Result<(), String> {
+/// Reads the "install updates automatically" preference out of the settings file
+/// the Node backend owns (~/.catalyst/sessions.json, see lib/paths.js).
+///
+/// Rust reads the file instead of having the frontend hand the flag over: the
+/// startup check runs before the sidecar has even reported its port, so there is
+/// no page to ask yet, and waiting for one would either delay the check or race
+/// it. Anything unexpected — no file, bad JSON, missing key — means opted out,
+/// because an unattended install must only ever follow an explicit opt-in.
+fn auto_update_enabled(app: &tauri::AppHandle) -> bool {
+    let Ok(home) = app.path().home_dir() else {
+        return false;
+    };
+    let Ok(raw) = std::fs::read_to_string(home.join(".catalyst").join("sessions.json")) else {
+        return false;
+    };
+    let Ok(json) = serde_json::from_str::<serde_json::Value>(&raw) else {
+        return false;
+    };
+    json.get("settings")
+        .and_then(|s| s.get("autoUpdate"))
+        .and_then(serde_json::Value::as_bool)
+        .unwrap_or(false)
+}
+
+/// Startup check. Stays silent when already current; otherwise installs straight
+/// away if the user opted into automatic updates, and falls back to a native
+/// prompt so the update is seen without them opening Settings.
+async fn startup_update_check(app: tauri::AppHandle) -> Result<(), String> {
     let Some(info) = check_for_updates(app.clone()).await? else {
         return Ok(());
     };
+
+    // Opted in: skip the question, not the checks. install_update goes through
+    // the same updater, so the release signature is still verified before
+    // anything touches the installed app.
+    if auto_update_enabled(&app) {
+        return install_update(app).await;
+    }
 
     let notes = info.notes.trim();
     let prompt = if notes.is_empty() {
@@ -123,7 +155,7 @@ pub fn run() {
             // GitHub never delays the window or the backend spawn below.
             let updater_handle = app.handle().clone();
             tauri::async_runtime::spawn(async move {
-                if let Err(err) = prompt_for_update(updater_handle).await {
+                if let Err(err) = startup_update_check(updater_handle).await {
                     eprintln!("[updater] check failed: {err}");
                 }
             });

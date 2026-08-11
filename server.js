@@ -62,6 +62,24 @@ function isPathWithin(child, parent) {
   return resolvedChild.startsWith(resolvedParent + path.sep) || resolvedChild === resolvedParent;
 }
 
+// The PAT header must only ever reach real Azure DevOps hosts, over https. A
+// substring test on the remote URL also matched dev.azure.com.attacker.tld and
+// attacker.tld/dev.azure.com/repo.git.
+function isAzureHttpsRemote(remoteUrl) {
+  try {
+    const raw = String(remoteUrl || '').trim();
+    // The URL parser silently strips tabs/newlines, but the raw string is what
+    // becomes the http.<url>.extraheader config key — keep the two identical.
+    if (/\s/.test(raw)) return false;
+    const u = new URL(raw);
+    if (u.protocol !== 'https:') return false;
+    const h = u.hostname.toLowerCase();
+    return h === 'dev.azure.com' || h === 'visualstudio.com' || h.endsWith('.visualstudio.com');
+  } catch {
+    return false;
+  }
+}
+
 function refreshChangedFiles(session, sessionId, ws) {
   exec('git status --porcelain', { cwd: session.repoPath, encoding: 'utf-8', maxBuffer: 1024 * 1024, windowsHide: true }, (err, stdout) => {
     const statusMap = { 'M': 'modified', 'A': 'added', 'D': 'deleted', '??': 'untracked', 'R': 'renamed', 'C': 'copied', 'U': 'conflict' };
@@ -1405,6 +1423,13 @@ wss.on('connection', (ws) => {
         break;
       }
 
+      // Coerced to a real boolean: the Tauri startup check reads this key out of
+      // sessions.json and treats anything that isn't `true` as opted out.
+      case 'save-auto-update': {
+        store.saveSettings({ autoUpdate: msg.autoUpdate === true });
+        break;
+      }
+
       case 'save-settings': {
         try {
           store.saveSettings(msg.settings || {});
@@ -1635,15 +1660,18 @@ wss.on('connection', (ws) => {
           pullEnv.GCM_INTERACTIVE = 'never';
           exec('git remote get-url origin', { cwd: session.repoPath, encoding: 'utf-8' }, (remoteErr, remoteStdout) => {
             const remoteUrl = (remoteStdout || '').trim();
-            if (!remoteErr && (remoteUrl.includes('dev.azure.com') || remoteUrl.includes('visualstudio.com'))) {
+            if (!remoteErr && isAzureHttpsRemote(remoteUrl)) {
               const pullB64 = Buffer.from(':' + pullPat).toString('base64');
               const pullPatEscaped = pullPat.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
               const pullB64Escaped = pullB64.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
               const pullScrubRe = new RegExp(pullPatEscaped + '|' + pullB64Escaped, 'g');
               // Auth goes through GIT_CONFIG_* env vars, not `-c` on the command
               // line — argv is visible to every local process (Task Manager/WMI).
+              // URL-scoped so git cannot replay the header anywhere but this
+              // remote — the unscoped key travelled with redirects and
+              // submodule fetches to whatever host they pointed at.
               pullEnv.GIT_CONFIG_COUNT = '1';
-              pullEnv.GIT_CONFIG_KEY_0 = 'http.extraheader';
+              pullEnv.GIT_CONFIG_KEY_0 = `http.${remoteUrl}.extraheader`;
               pullEnv.GIT_CONFIG_VALUE_0 = `Authorization: Basic ${pullB64}`;
               execFile('git', ['pull'], { cwd: session.repoPath, encoding: 'utf-8', env: pullEnv, windowsHide: true }, (err, stdout, stderr) => {
                 const output = (stdout || stderr || '').replace(pullScrubRe, '***');
@@ -1694,15 +1722,16 @@ wss.on('connection', (ws) => {
               }
               return;
             }
-            if (pushRemote && (pushRemote.includes('dev.azure.com') || pushRemote.includes('visualstudio.com'))) {
+            if (isAzureHttpsRemote(pushRemote)) {
               const pushB64 = Buffer.from(':' + pushPat).toString('base64');
               const pushPatEscaped = pushPat.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
               const pushB64Escaped = pushB64.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
               const pushScrubRe = new RegExp(pushPatEscaped + '|' + pushB64Escaped, 'g');
               // Auth goes through GIT_CONFIG_* env vars, not `-c` on the command
               // line — argv is visible to every local process (Task Manager/WMI).
+              // URL-scoped: see the git-pull branch above.
               pushEnv.GIT_CONFIG_COUNT = '1';
-              pushEnv.GIT_CONFIG_KEY_0 = 'http.extraheader';
+              pushEnv.GIT_CONFIG_KEY_0 = `http.${pushRemote}.extraheader`;
               pushEnv.GIT_CONFIG_VALUE_0 = `Authorization: Basic ${pushB64}`;
               execFile('git', ['push', 'origin', pushBranch], { cwd: session.repoPath, encoding: 'utf-8', env: pushEnv, windowsHide: true }, (err, stdout, stderr) => {
                 const output = (stdout || stderr || '').replace(pushScrubRe, '***');

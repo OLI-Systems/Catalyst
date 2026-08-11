@@ -330,10 +330,12 @@
     Object.values(state.chatPanels).forEach(p => p.classList.remove('active'));
   }
 
-  const _escDiv = document.createElement('div');
+  // Hand-rolled rather than textContent/innerHTML: the HTML text-node serializer
+  // leaves " and ' alone, and these values land inside quoted attributes
+  // (title="…", data-path="…") where a repo-controlled quote would break out.
+  const HTML_ESC = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
   function escHtml(str) {
-    _escDiv.textContent = str;
-    return _escDiv.innerHTML;
+    return String(str == null ? '' : str).replace(/[&<>"']/g, c => HTML_ESC[c]);
   }
 
   function showToast(message, type) {
@@ -1855,8 +1857,18 @@
     }
   }
 
+  // Unattended installs are opt-in, so the box starts unchecked and only the
+  // stored preference can tick it (see the 'settings' message handler). Kept in
+  // the server-side store rather than localStorage because the Rust startup
+  // check reads it before any page exists.
+  const autoUpdateToggle = $('#autoUpdateToggle');
+
   if (isDesktopBuild) {
     checkUpdatesBtn?.addEventListener('click', runUpdateCheck);
+
+    autoUpdateToggle?.addEventListener('change', () => {
+      ws.send(JSON.stringify({ type: 'save-auto-update', autoUpdate: autoUpdateToggle.checked }));
+    });
 
     $('#installUpdateBtn')?.addEventListener('click', async () => {
       const btn = $('#installUpdateBtn');
@@ -2894,6 +2906,8 @@
           if (savedProvider === 'github' || savedProvider === 'azure' || savedProvider === 'none') {
             setIntegProvider(savedProvider);
           }
+          // Strict compare so a missing or malformed value stays off.
+          if (autoUpdateToggle) autoUpdateToggle.checked = msg.settings.autoUpdate === true;
         }
         const patStatus = $('#patStatus');
         if (msg.hasPat) {

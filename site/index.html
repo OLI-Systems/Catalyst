@@ -33,8 +33,36 @@
     --mono: 'Martian Mono', ui-monospace, 'Cascadia Mono', Consolas, monospace;
     --sans: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
 
+    /* The brand mark as a mask source, so anything tinting itself with a theme
+       colour can wear the real logo instead of a placeholder shape. */
+    --mk-mark: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 6 L24.66 11 L24.66 21 L16 26 L7.34 21 L7.34 11 Z' fill='none' stroke='%23000' stroke-width='2.6' stroke-linejoin='round'/%3E%3Cline x1='16' y1='6' x2='16' y2='3.6' stroke='%23000' stroke-width='2.6'/%3E%3Ccircle cx='16' cy='2.6' r='2.6' fill='%23000'/%3E%3C/svg%3E");
+
+    /* The agents' own marks, lifted from the app's CLI picker so the site shows
+       the real logos rather than stand-in shapes. Masks, so each keeps its brand
+       colour through background-color. */
+    --mk-claude: url("data:image/svg+xml,%3Csvg fill='%23000' viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M4.709 15.955l4.72-2.647.08-.23-.08-.128H9.2l-.79-.048-2.698-.073-2.339-.097-2.266-.122-.571-.121L0 11.784l.055-.352.48-.321.686.06 1.52.103 2.278.158 1.652.097 2.449.255h.389l.055-.157-.134-.098-.103-.097-2.358-1.596-2.552-1.688-1.336-.972-.724-.491-.364-.462-.158-1.008.656-.722.881.06.225.061.893.686 1.908 1.476 2.491 1.833.365.304.145-.103.019-.073-.164-.274-1.355-2.446-1.446-2.49-.644-1.032-.17-.619a2.97 2.97 0 01-.104-.729L6.283.134 6.696 0l.996.134.42.364.62 1.414 1.002 2.229 1.555 3.03.456.898.243.832.091.255h.158V9.01l.128-1.706.237-2.095.23-2.695.08-.76.376-.91.747-.492.584.28.48.685-.067.444-.286 1.851-.559 2.903-.364 1.942h.212l.243-.242.985-1.306 1.652-2.064.73-.82.85-.904.547-.431h1.033l.76 1.129-.34 1.166-1.064 1.347-.881 1.142-1.264 1.7-.79 1.36.073.11.188-.02 2.856-.606 1.543-.28 1.841-.315.833.388.091.395-.328.807-1.969.486-2.309.462-3.439.813-.042.03.049.061 1.549.146.662.036h1.622l3.02.225.79.522.474.638-.079.485-1.215.62-1.64-.389-3.829-.91-1.312-.329h-.182v.11l1.093 1.068 2.006 1.81 2.509 2.33.127.578-.322.455-.34-.049-2.205-1.657-.851-.747-1.926-1.62h-.128v.17l.444.649 2.345 3.521.122 1.08-.17.353-.608.213-.668-.122-1.374-1.925-1.415-2.167-1.143-1.943-.14.08-.674 7.254-.316.37-.729.28-.607-.461-.322-.747.322-1.476.389-1.924.315-1.53.286-1.9.17-.632-.012-.042-.14.018-1.434 1.967-2.18 2.945-1.726 1.845-.414.164-.717-.37.067-.662.401-.589 2.388-3.036 1.44-1.882.93-1.086-.006-.158h-.055L4.132 18.56l-1.13.146-.487-.456.061-.746.231-.243 1.908-1.312-.006.006z'/%3E%3C/svg%3E");
+    --mk-codex: url("data:image/svg+xml,%3Csvg fill='%23000' viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M13.796 23.785a5.947 5.947 0 005.827-4.756C22.287 18.339 24 15.84 24 13.296c0-1.665-.713-3.282-1.998-4.448.119-.5.19-.999.19-1.498 0-3.401-2.759-5.947-5.946-5.947-.642 0-1.26.095-1.88.31A5.962 5.962 0 0010.205 0a5.947 5.947 0 00-5.827 4.757C1.713 5.447 0 7.945 0 10.49c0 1.666.713 3.283 1.998 4.448-.119.5-.19 1-.19 1.499 0 3.401 2.759 5.946 5.946 5.946.642 0 1.26-.095 1.88-.309a5.96 5.96 0 004.162 1.713zM9.205 8.658v-2.26c0-.19.072-.333.238-.428l4.543-2.616c.619-.357 1.356-.523 2.117-.523 2.854 0 4.662 2.212 4.662 4.566 0 .167 0 .357-.024.547l-4.71-2.759a.797.797 0 00-.856 0l-5.97 3.473zm10.609 8.8V12.06c0-.333-.143-.57-.429-.737l-5.97-3.473 1.95-1.118a.433.433 0 01.476 0l4.543 2.617c1.309.76 2.189 2.378 2.189 3.948 0 1.808-1.07 3.473-2.76 4.163zM7.802 12.703l-1.95-1.142c-.167-.095-.239-.238-.239-.428V5.899c0-2.545 1.95-4.472 4.591-4.472 1 0 1.927.333 2.712.928L8.23 5.067c-.285.166-.428.404-.428.737v6.898zM12 15.128l-2.795-1.57v-3.33L12 8.658l2.795 1.57v3.33L12 15.128zm1.796 7.23c-1 0-1.927-.332-2.712-.927l4.686-2.712c.285-.166.428-.404.428-.737v-6.898l1.974 1.142c.167.095.238.238.238.428v5.233c0 2.545-1.974 4.472-4.614 4.472zm-5.637-5.303l-4.544-2.617c-1.308-.761-2.188-2.378-2.188-3.948A4.482 4.482 0 014.21 6.327v5.423c0 .333.143.571.428.738l5.947 3.449-1.95 1.118a.432.432 0 01-.476 0zm-.262 3.9c-2.688 0-4.662-2.021-4.662-4.519 0-.19.024-.38.047-.57l4.686 2.71c.286.167.571.167.856 0l5.97-3.448v2.26c0 .19-.07.333-.237.428l-4.543 2.616c-.619.357-1.356.523-2.117.523z'/%3E%3C/svg%3E");
+    --mk-gemini: url("data:image/svg+xml,%3Csvg fill='%23000' viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M20.616 10.835a14.147 14.147 0 01-4.45-3.001 14.111 14.111 0 01-3.678-6.452.503.503 0 00-.975 0 14.134 14.134 0 01-3.679 6.452 14.155 14.155 0 01-4.45 3.001c-.65.28-1.318.505-2.002.678a.502.502 0 000 .975c.684.172 1.35.397 2.002.677a14.147 14.147 0 014.45 3.001 14.112 14.112 0 013.679 6.453.502.502 0 00.975 0c.172-.685.397-1.351.677-2.003a14.145 14.145 0 013.001-4.45 14.113 14.113 0 016.453-3.678.503.503 0 000-.975 13.245 13.245 0 01-2.003-.678z'/%3E%3C/svg%3E");
+
     --gut: clamp(20px, 5vw, 64px);
     --max: 1140px;
+
+    /* Width of the fixed theme rail. Zero until the rail exists, so the page
+       gutter, the rail itself and the mock breakout all read one number. */
+    --rail: 0px;
+
+    /* Height of the fixed bottom dock. The rail reserves this much at its foot
+       so its last swatch stays clear of the dock, which paints over it. */
+    --dock-h: 56px;
+
+    /* ─── Mock window tokens ─────────────────────────────────────────────
+       Defaults are Midnight, the app's own default theme. They live on :root
+       rather than on a single wrapper because the page draws seven mocks and
+       the picker has to retint all of them at once. */
+    --m-bg: #06080d; --m-bg2: #0c1017; --m-card: #0f1319;
+    --m-border: rgba(56,189,248,0.08); --m-text: #fff; --m-muted: #9bafc6;
+    --m-accent: #38bdf8; --m-success: #34d399; --m-danger: #f87171;
+    --m-input: #0c1017;
   }
 
   *, *::before, *::after { box-sizing: border-box; }
@@ -259,7 +287,7 @@
     border: 1px solid var(--line);
     border-radius: 10px;
     background:
-      radial-gradient(120% 90% at 50% 0%, rgba(56,189,248,0.07), transparent 70%),
+      radial-gradient(120% 90% at 50% 0%, color-mix(in srgb, var(--accent) 7%, transparent), transparent 70%),
       var(--panel);
     padding: clamp(20px, 3vw, 34px);
   }
@@ -369,15 +397,8 @@
   }
   .reaction-read p { max-width: 76ch; }
 
-  /* ─── Proof shot ────────────────────────────────────────────────────── */
+  /* ─── Captions ──────────────────────────────────────────────────────── */
 
-  .shot {
-    border: 1px solid var(--line);
-    border-radius: 9px;
-    overflow: hidden;
-    background: var(--panel);
-    box-shadow: 0 30px 70px -30px rgba(0, 0, 0, 0.9);
-  }
   figure { margin: 0; }
   figcaption {
     font-family: var(--mono);
@@ -403,30 +424,27 @@
   }
   .feature-copy p { color: var(--body); }
 
-  /* Screenshots run the full content width so the app's own UI text stays
-     legible, but each frame is capped at the image's real pixel width — an
-     upscaled screenshot reads as blur, which is worse than a smaller one. */
-  .frame { margin-inline: auto; }
-  .frame--wide  { max-width: 1253px; }
-  .frame--modal { max-width: 900px; }
-  .frame--panel { max-width: 680px; }
+  /* ─── Mock stage ───────────────────────────────────────────────────────
+     Every mock on the page sits in one of these, so the whole sequence reads
+     as the same window in different states rather than a set of differently
+     cropped screenshots. Nothing is capped at a pixel width any more: the
+     mocks are drawn in CSS, so they stay sharp at whatever width they get. */
+  /* No `margin-inline: auto` here: nothing caps a stage's width, and an auto
+     inline margin would stop the theme mock — a grid item — from stretching to
+     its column. */
+  .stage + .stage { margin-top: clamp(18px, 2.5vw, 28px); }
+
+  /* No breakout: the prose column and every mock share one left edge, top to
+     bottom of the page. Widen --max if the mocks should be larger — that moves
+     text and mocks together and keeps them aligned. */
 
   /* ─── Theme picker ─────────────────────────────────────────────────────
      Swatches carry each theme's real background and accent, taken from the
      app's own CSS tokens, so the control previews the thing it selects. */
   .theme-lab {
     display: grid;
-    gap: clamp(20px, 3vw, 34px);
+    gap: clamp(14px, 2vw, 22px);
     align-items: start;
-  }
-  /* Swatches across the top, the window full width beneath them. On wide
-     screens the demo breaks out past the text column — it is the centrepiece of
-     this section, and prose measure should not cap it. */
-  @media (min-width: 1180px) {
-    .theme-lab { margin-inline: -90px; }
-  }
-  @media (min-width: 1400px) {
-    .theme-lab { margin-inline: -150px; }
   }
 
   .theme-foot {
@@ -435,102 +453,6 @@
     color: var(--body);
   }
 
-  .theme-swatches {
-    display: flex;
-    flex-direction: row;
-    gap: 8px;
-    overflow-x: auto;
-    padding-bottom: 4px;
-    scrollbar-width: thin;
-  }
-  @media (min-width: 860px) {
-    .theme-swatches { flex-direction: column; overflow: visible; padding-bottom: 0; }
-  }
-
-  .theme-swatch {
-    --sw-accent: var(--accent);
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    flex: none;
-    padding: 9px 12px;
-    border-radius: 8px;
-    border: 1px solid var(--line);
-    background: var(--panel);
-    color: var(--dim);
-    font-family: var(--mono);
-    font-size: 10px;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    cursor: pointer;
-    transition: border-color 0.2s, color 0.2s, transform 0.16s;
-    white-space: nowrap;
-  }
-  .theme-swatch:hover { color: var(--ice); transform: translateX(2px); }
-  @media (max-width: 859px) { .theme-swatch:hover { transform: translateY(-2px); } }
-
-  .theme-swatch[aria-pressed="true"] {
-    border-color: var(--sw-accent);
-    color: var(--ice);
-    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--sw-accent) 35%, transparent);
-  }
-
-  /* A miniature of the window: ground colour with the accent as the active site. */
-  .theme-chip {
-    width: 26px;
-    height: 18px;
-    border-radius: 4px;
-    flex: none;
-    position: relative;
-    background: var(--sw-bg);
-    border: 1px solid color-mix(in srgb, var(--sw-accent) 30%, transparent);
-    overflow: hidden;
-  }
-  .theme-chip::after {
-    content: '';
-    position: absolute;
-    left: 4px;
-    bottom: 4px;
-    width: 12px;
-    height: 3px;
-    border-radius: 2px;
-    background: var(--sw-accent);
-  }
-
-  .theme-stage {
-    position: relative;
-    border: 1px solid var(--line);
-    border-radius: 9px;
-    overflow: hidden;
-    background: var(--panel);
-    box-shadow: 0 30px 70px -34px rgba(0, 0, 0, 0.9);
-  }
-  .theme-stage img {
-    display: block;
-    width: 100%;
-    transition: opacity 0.28s ease;
-  }
-  .theme-stage.is-swapping img { opacity: 0; }
-
-  .theme-stage-bar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    padding: 8px 12px;
-    border-top: 1px solid var(--line);
-    font-family: var(--mono);
-    font-size: 9.5px;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
-    color: var(--dim);
-  }
-  .theme-stage-name { color: var(--ice); }
-  .theme-stage-hex {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-  }
   /* ─── Theme swatches ───────────────────────────────────────────────── */
   .sw-list {
     display: grid;
@@ -598,14 +520,7 @@
      Every colour here comes from the selected theme's own tokens. Inert on
      purpose: nothing is focusable and pointer events are off, so it reads as a
      picture of the app rather than a broken copy of it. */
-  /* Tokens live on the wrapper so both the window and the readout below it
-     inherit the selected theme. */
-  .mk-wrap {
-    min-width: 0;
-    --m-bg: #06080d; --m-bg2: #0c1017; --m-card: #0f1319;
-    --m-border: rgba(56,189,248,0.08); --m-text: #fff; --m-muted: #9bafc6;
-    --m-accent: #38bdf8; --m-success: #34d399; --m-input: #0c1017;
-  }
+  .mk-wrap { min-width: 0; }
 
   .mk {
     pointer-events: none;
@@ -616,6 +531,8 @@
     background: var(--m-bg);
     font-family: var(--mono);
     transition: background 0.25s ease;
+    /* Lifts the window off the page the way the old screenshots' frame did. */
+    box-shadow: 0 30px 70px -34px rgba(0, 0, 0, 0.85);
     container-type: inline-size;
   }
 
@@ -627,9 +544,15 @@
     background: var(--m-bg2);
     border-bottom: 1px solid var(--m-border);
   }
+  /* The real Catalyst mark — the benzene ring with its active site — rather than
+     a coloured square. Applied as a mask so the single rule covers every mock's
+     title bar and the mark still takes the theme's accent. */
   .mk-logo {
-    width: 15.62px; height: 15.62px; border-radius: 4.26px; flex: none;
-    background: var(--m-accent);
+    width: 15.62px; height: 15.62px; flex: none;
+    border-radius: 0;
+    background-color: var(--m-accent);
+    -webkit-mask: var(--mk-mark) center / contain no-repeat;
+    mask: var(--mk-mark) center / contain no-repeat;
   }
   .mk-title {
     font-size: 11.36px; letter-spacing: 0.22em; color: var(--m-text); opacity: 0.85;
@@ -646,6 +569,10 @@
   }
 
   .mk-body { padding: 19.88px 19.88px 14.2px; }
+  /* Views that are a column in the app — the repo panel, the extra-repos block —
+     keep that column instead of stretching to the window's full width, which is
+     also how the app's own welcome card sits inside the window. */
+  .mk-body--panel { max-width: 560px; margin-inline: auto; }
 
   .mk-row { display: flex; align-items: center; gap: 11.36px; }
   .mk-row-head { margin: 17.04px 0 9.94px; }
@@ -756,17 +683,336 @@
     background: var(--m-accent);
   }
 
+  /* ─── Mock views ────────────────────────────────────────────────────────
+     Six more views drawn from the same tokens as the workspace above: repo
+     detail, session, settings, updates, and the two modals. Every measurement
+     here is the app's own pixel value scaled by 0.71, matching the original
+     window mock — mixing scales would make the set look like screenshots taken
+     at different zooms. */
+
+  /* Views with nothing beneath them close off the window on all four corners. */
+  .mk--solo { border-radius: 12.78px; }
+
+  /* ─── Repo detail ─────────────────────────────────────────────────────── */
+  .mk-id { display: flex; align-items: center; gap: 11.36px; }
+  .mk-mono {
+    width: 34px; height: 34px; flex: none;
+    display: grid; place-items: center;
+    border-radius: 7.1px;
+    font-size: 12.78px; font-weight: 700; letter-spacing: 0.06em;
+    color: var(--m-accent);
+    background: color-mix(in srgb, var(--m-accent) 12%, transparent);
+    border: 1px solid color-mix(in srgb, var(--m-accent) 30%, transparent);
+  }
+  .mk-id-name { font-size: 14.2px; font-weight: 600; color: var(--m-text); }
+  .mk-id .mk-tech { margin: 2.84px 0 0; }
+
+  .mk-path {
+    display: flex; align-items: center; flex-wrap: wrap; gap: 4.26px;
+    margin-top: 11.36px;
+    font-size: 9.94px; color: var(--m-muted);
+  }
+  .mk-path .sep { opacity: 0.45; }
+  .mk-path .cwd { color: var(--m-accent); }
+
+  .mk-tags { display: flex; flex-wrap: wrap; gap: 5.68px; margin-top: 9.94px; }
+  .mk-tag {
+    font-size: 8.52px; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--m-muted);
+    background: var(--m-card);
+    border: 1px solid var(--m-border);
+    border-radius: 99px; padding: 2.84px 8.52px;
+  }
+
+  .mk-spark { display: flex; align-items: center; gap: 12.78px; margin-top: 14.2px; }
+  .mk-spark-bars { display: flex; align-items: flex-end; gap: 2.13px; height: 32px; flex: none; }
+  .mk-spark-bars i {
+    width: 5.68px; border-radius: 1px;
+    height: var(--h);
+    background: color-mix(in srgb, var(--m-accent) 60%, transparent);
+  }
+  /* The most recent day is the one the reader is looking for. */
+  .mk-spark-bars i:last-child { background: var(--m-accent); }
+  .mk-spark-num { font-size: 17.04px; font-weight: 600; color: var(--m-text); line-height: 1; }
+  .mk-spark-lbl {
+    display: block; margin-top: 3.55px;
+    font-size: 8.52px; letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--m-muted);
+  }
+
+  .mk-snap {
+    background: var(--m-card);
+    border: 1px solid var(--m-border);
+    border-radius: 7.1px;
+    padding: 9.94px 11.36px;
+  }
+  .mk-snap-row { display: flex; align-items: center; gap: 7.1px; font-size: 10.65px; color: var(--m-text); }
+  .mk-snap-sync { margin-left: auto; font-size: 9.23px; color: var(--m-success); }
+  .mk-snap-dot { width: 6.39px; height: 6.39px; border-radius: 50%; background: var(--m-success); flex: none; }
+  .mk-snap-div { height: 1px; background: var(--m-border); margin: 8.52px 0; }
+  .mk-snap-stats {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 7.1px;
+    margin-top: 11.36px; padding-top: 9.94px;
+    border-top: 1px solid var(--m-border);
+  }
+  .mk-snap-stat .num { display: block; font-size: 13.49px; font-weight: 600; color: var(--m-text); line-height: 1.2; }
+  .mk-snap-stat .lbl {
+    display: block;
+    font-size: 8px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--m-muted);
+  }
+
+  .mk-agents { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7.1px; }
+  .mk-agent {
+    display: flex; flex-direction: column; align-items: center; gap: 5.68px;
+    padding: 11.36px 5.68px;
+    background: var(--m-card);
+    border: 1px solid var(--m-border);
+    border-radius: 7.1px;
+    font-size: 9.23px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--m-text);
+  }
+  /* Each agent's own brand colour, as the app's picker shows it. These are the
+     only colours on the page that do not retint — they identify a product. */
+  .mk-agent i {
+    width: 15.6px; height: 15.6px; flex: none;
+    background-color: var(--a);
+    -webkit-mask: var(--mark) center / contain no-repeat;
+    mask: var(--mark) center / contain no-repeat;
+  }
+
+  /* ─── Session ─────────────────────────────────────────────────────────── */
+  .mk-tabs { display: flex; align-items: center; gap: 4.26px; padding: 5.68px 9.94px 0; background: var(--m-bg2); }
+  .mk-tab {
+    display: flex; align-items: center; gap: 5.68px;
+    max-width: 150px;
+    padding: 5.68px 9.94px;
+    font-size: 9.94px; color: var(--m-muted);
+    background: var(--m-bg);
+    border: 1px solid var(--m-border);
+    border-bottom: none;
+    border-radius: 5.68px 5.68px 0 0;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .mk-tab.is-on {
+    color: var(--m-text);
+    background: var(--m-card);
+    border-color: color-mix(in srgb, var(--m-accent) 35%, transparent);
+  }
+  .mk-tab i { width: 6.39px; height: 6.39px; border-radius: 50%; background: var(--a, var(--m-accent)); flex: none; }
+  .mk-tab .x { opacity: 0.45; }
+  .mk-tab-add { font-size: 11.36px; color: var(--m-muted); padding: 0 5.68px; }
+
+  .mk-session { display: grid; grid-template-columns: 1fr 190px; border-top: 1px solid var(--m-border); }
+  @container (max-width: 620px) { .mk-session { grid-template-columns: 1fr; } }
+
+  .mk-term { min-width: 0; padding: 11.36px 12.78px; background: var(--m-bg); font-size: 9.94px; line-height: 1.8; }
+  .mk-term div { color: var(--m-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mk-term .p { color: var(--m-accent); }
+  .mk-term .u { color: var(--m-text); }
+  .mk-term .ok { color: var(--m-success); }
+  .mk-caret {
+    display: inline-block; width: 5.68px; height: 11.36px;
+    background: var(--m-accent); vertical-align: -1.5px;
+    animation: mkCaret 1.1s steps(1) infinite;
+  }
+  @keyframes mkCaret { 50% { opacity: 0; } }
+
+  .mk-panel { min-width: 0; padding: 11.36px; background: var(--m-bg2); border-left: 1px solid var(--m-border); }
+  @container (max-width: 620px) { .mk-panel { border-left: none; border-top: 1px solid var(--m-border); } }
+  .mk-panel-head { font-size: 8.52px; letter-spacing: 0.24em; color: var(--m-muted); margin-bottom: 9.94px; }
+  .mk-select {
+    display: flex; align-items: center; gap: 5.68px;
+    padding: 5.68px 8.52px;
+    font-size: 9.94px; color: var(--m-text);
+    background: var(--m-input);
+    border: 1px solid var(--m-border);
+    border-radius: 5.68px;
+  }
+  .mk-select .caret { margin-left: auto; opacity: 0.6; }
+  .mk-gitrow { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4.26px; margin-top: 7.1px; }
+  .mk-gitbtn {
+    padding: 5.68px 0;
+    text-align: center;
+    font-size: 8.52px; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--m-text);
+    background: var(--m-card);
+    border: 1px solid var(--m-border);
+    border-radius: 4.26px;
+  }
+  .mk-files { list-style: none; margin: 0; padding: 0; display: grid; gap: 4.26px; }
+  .mk-files li {
+    display: flex; gap: 5.68px;
+    font-size: 9.23px; color: var(--m-muted);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .mk-files b { flex: none; width: 8.52px; font-weight: 600; }
+  .mk-f-m { color: var(--m-accent); }
+  .mk-f-a { color: var(--m-success); }
+  .mk-f-d { color: var(--m-danger); }
+
+  /* ─── Settings shell, shared by the settings and updates views ────────── */
+  .mk-set { display: grid; grid-template-columns: 150px 1fr; }
+  @container (max-width: 620px) { .mk-set { grid-template-columns: 1fr; } }
+  .mk-set-nav { padding: 11.36px 8.52px; background: var(--m-bg2); border-right: 1px solid var(--m-border); }
+  .mk-set-navt {
+    margin: 0 0 9.94px 4.26px;
+    font-size: 8.52px; letter-spacing: 0.24em; text-transform: uppercase;
+    color: var(--m-muted);
+  }
+  .mk-set-item {
+    display: flex; align-items: center; gap: 7.1px;
+    padding: 5.68px 7.1px; border-radius: 4.26px;
+    font-size: 9.94px; color: var(--m-muted);
+  }
+  .mk-set-item.is-on {
+    color: var(--m-text);
+    background: var(--m-card);
+    box-shadow: inset 2.13px 0 0 var(--m-accent);
+  }
+  .mk-set-item .nb { margin-left: auto; width: 5.68px; height: 5.68px; border-radius: 50%; background: var(--m-accent); }
+  /* Stand-in for the nav's line icons: the app's own 16px glyphs would be eight
+     more SVG paths per mock for a shape the reader reads as "icon" anyway. */
+  .mk-set-item .ic {
+    width: 10.65px; height: 10.65px; flex: none;
+    border: 1px solid currentColor; border-radius: 2.84px; opacity: 0.5;
+  }
+
+  .mk-set-body { min-width: 0; padding: 14.2px 17.04px 17.04px; }
+  .mk-set-h { font-size: 14.2px; font-weight: 600; color: var(--m-text); margin-bottom: 12.78px; }
+  .mk-set-sec {
+    padding: 11.36px 12.78px;
+    background: var(--m-card);
+    border: 1px solid var(--m-border);
+    border-radius: 7.1px;
+  }
+  .mk-set-sec + .mk-set-sec { margin-top: 9.94px; }
+  .mk-set-sect { font-size: 9.94px; font-weight: 600; letter-spacing: 0.06em; color: var(--m-text); }
+  .mk-hint { margin-top: 5.68px; font-size: 9.23px; line-height: 1.6; color: var(--m-muted); }
+  .mk-set-row { display: flex; align-items: center; gap: 5.68px; margin-top: 9.94px; }
+  .mk-btn-sm {
+    flex: none; padding: 5.68px 9.94px; border-radius: 4.26px;
+    font-size: 8.52px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
+    background: var(--m-accent); color: var(--m-bg);
+  }
+  .mk-btn-2 {
+    background: var(--m-card);
+    border: 1px solid var(--m-border);
+    color: var(--m-text);
+  }
+  /* The app fences destructive actions rather than only tinting them. */
+  .mk-set-sec.is-danger {
+    border-color: color-mix(in srgb, var(--m-danger) 45%, transparent);
+    background: color-mix(in srgb, var(--m-danger) 7%, var(--m-card));
+  }
+  .mk-set-sec.is-danger .mk-set-sect { color: var(--m-danger); }
+  .mk-btn-danger { background: transparent; border: 1px solid var(--m-danger); color: var(--m-danger); }
+
+  /* ─── Updates ─────────────────────────────────────────────────────────── */
+  .mk-ver { display: flex; align-items: center; gap: 9.94px; margin-top: 9.94px; }
+  .mk-ver span { font-size: 8.52px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--m-muted); }
+  .mk-ver b { font-size: 11.36px; font-weight: 600; color: var(--m-text); }
+  .mk-set-sec.is-new {
+    border-color: color-mix(in srgb, var(--m-accent) 45%, transparent);
+    background: color-mix(in srgb, var(--m-accent) 8%, var(--m-card));
+  }
+  .mk-notes { display: grid; gap: 4.26px; margin: 8.52px 0 11.36px; font-size: 9.23px; color: var(--m-muted); }
+  .mk-notes span::before { content: '– '; opacity: 0.6; }
+
+  /* ─── Modals ──────────────────────────────────────────────────────────── */
+  /* The app dims the window behind a modal; the mock says that with a scrim
+     rather than redrawing a workspace nobody is meant to read. */
+  .mk-scrim {
+    padding: 22.72px 14.2px;
+    background:
+      radial-gradient(120% 100% at 50% 0%, color-mix(in srgb, var(--m-accent) 7%, transparent), transparent 70%),
+      var(--m-bg2);
+  }
+  .mk-modal {
+    max-width: 364px;
+    margin-inline: auto;
+    background: var(--m-card);
+    border: 1px solid color-mix(in srgb, var(--m-accent) 20%, transparent);
+    box-shadow: 0 20px 50px -22px rgba(0, 0, 0, 0.75);
+  }
+  .mk-modal-head {
+    display: flex; align-items: center; justify-content: space-between; gap: 9.94px;
+    padding: 9.94px 14.2px;
+    border-bottom: 1px solid var(--m-border);
+    font-size: 8.52px; font-weight: 600; letter-spacing: 0.22em; text-transform: uppercase;
+    color: var(--m-text);
+  }
+  .mk-x { flex: none; font-size: 11.36px; line-height: 1; color: var(--m-muted); }
+  .mk-modal-foot {
+    display: flex; align-items: center; gap: 5.68px;
+    padding: 8.52px 14.2px;
+    border-top: 1px solid var(--m-border);
+    font-size: 8.52px;
+  }
+  .mk-modal-note { padding: 0 14.2px 11.36px; font-size: 8.52px; line-height: 1.6; color: var(--m-muted); }
+  .mk-modal-top { padding: 9.94px 14.2px; border-bottom: 1px solid var(--m-border); }
+  .mk-modal-top .mk-input { margin-top: 7.1px; font-size: 9.94px; }
+
+  .mk-group {
+    padding: 8.52px 14.2px 5.68px;
+    background: var(--m-bg2);
+    font-size: 8px; letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--m-muted);
+  }
+  .mk-sess-row {
+    display: flex; align-items: center; gap: 8.52px;
+    padding: 8.52px 14.2px;
+    border-top: 1px solid var(--m-border);
+  }
+  .mk-live {
+    width: 6.39px; height: 6.39px; border-radius: 50%; flex: none;
+    background: var(--m-success);
+    box-shadow: 0 0 0 3.55px color-mix(in srgb, var(--m-success) 22%, transparent);
+  }
+  .mk-sess-main { flex: 1; min-width: 0; }
+  /* Both lines are spans in the markup — nothing in a mock should be a heading
+     or a paragraph — so they are blocked out here to stack and to ellipsize. */
+  .mk-sess-l, .mk-sess-m { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mk-sess-l { font-size: 10.65px; color: var(--m-text); }
+  .mk-sess-m { margin-top: 2.13px; font-size: 8.52px; color: var(--m-muted); }
+  .mk-trash { flex: none; width: 13px; height: 13px; color: var(--m-muted); opacity: 0.7; }
+
+  .mk-mr-primary { font-size: 9.23px; color: var(--m-muted); }
+  .mk-mr-primary b { color: var(--m-text); font-weight: 600; }
+  .mk-mr-row {
+    display: flex; align-items: center; gap: 8.52px;
+    padding: 6.39px 14.2px;
+    border-top: 1px solid var(--m-border);
+    font-size: 9.94px; color: var(--m-text);
+  }
+  .mk-mr-row .tech { margin-left: auto; font-size: 8.52px; color: var(--m-muted); }
+  .mk-mr-row.is-primary { color: var(--m-muted); }
+  .mk-box {
+    width: 9.94px; height: 9.94px; flex: none;
+    display: grid; place-items: center;
+    border-radius: 2.84px;
+    background: var(--m-input);
+    border: 1px solid var(--m-border);
+  }
+  .mk-box.is-on { background: var(--m-accent); border-color: var(--m-accent); }
+  .mk-box.is-on::after { content: '✓'; font-size: 7.1px; line-height: 1; color: var(--m-bg); }
+
+  /* The extra-repos block on the welcome screen, where the picked repos land. */
+  .mk-extra-head { display: flex; align-items: center; gap: 9.94px; }
+  .mk-extra-head .mk-label { margin: 0; }
+  .mk-chips { display: flex; flex-wrap: wrap; gap: 5.68px; margin-top: 8.52px; }
+
 
   /* ─── Fixed dock ────────────────────────────────────────────────────────
      Palette-aware like the rest of the page, so it retints with whatever the
      reader picks. Collapsed to just the meta line until the themes section
      comes into view. */
   .dock {
-    position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 60;
+    /* In normal flow at the end of the page. The theme picker lives in the left
+       rail now, so nothing here needs to stay reachable while scrolling — and a
+       footer that is not fixed cannot cover the rail's last swatch. */
+    position: static;
+    margin-top: clamp(40px, 6vw, 72px);
     background: color-mix(in srgb, var(--void) 86%, transparent);
     backdrop-filter: blur(16px);
     border-top: 1px solid var(--line);
@@ -788,6 +1034,16 @@
   .dock-meta a:hover { color: var(--ice); }
   .dock-sp { flex: 1; }
   .dock-brand { white-space: nowrap; }
+  .dock-attrib {
+    font-size: 8.5px;
+    letter-spacing: 0.06em;
+    text-transform: none;
+    color: var(--dim);
+    opacity: 0.75;
+    max-width: 62ch;
+    line-height: 1.45;
+  }
+  @media (max-width: 900px) { .dock-attrib { display: none; } }
   .dock-now { color: var(--accent); white-space: nowrap; }
   @media (max-width: 620px) {
     .dock-meta a:not(:last-child) { display: none; }
@@ -839,8 +1095,6 @@
   }
 
   /* Keep the dock from covering the end of the page. */
-  body { padding-bottom: 92px; }
-  @media (max-width: 620px) { body { padding-bottom: 108px; } }
 
   /* ─── Wide screens: the picker becomes a fixed left rail ────────────────
      Same element as the dock strip, repositioned — 20 themes read far better
@@ -848,16 +1102,20 @@
      the start so revealing the rail never shifts the page; only the rail
      itself animates. Body padding also pushes the nav and dock clear of it. */
   @media (min-width: 1100px) {
-    body { padding-left: 132px; }
+    :root { --rail: 132px; }
+    body { padding-left: var(--rail); }
 
     .dock-sw {
       position: fixed;
       left: 0;
       top: 0;
       bottom: 0;
-      width: 132px;
+      width: var(--rail);
       display: block;
       grid-template-rows: none;
+      /* The bottom padding clears the fixed dock, which spans the full window
+         width at a higher z-index: without it the twentieth swatch lands under
+         the dock and cannot be clicked at all. */
       padding: 12px 7px;
       /* The swatches are sized to fit the viewport exactly, so the rail must
          never scroll — a scrollbar here would be pure noise. */
@@ -936,7 +1194,7 @@
       position: fixed;
       left: 0;
       top: 0;
-      width: 132px;
+      width: var(--rail);
       height: 160px;
       pointer-events: none;
       background: linear-gradient(
@@ -982,9 +1240,8 @@
        so the rail collapses to chips only. The name still reaches the reader
        via the title attribute and the active theme shown in the dock. */
     @media (max-height: 720px) {
-      body { padding-left: 52px; }
-      .dock-sw { width: 52px; padding: 10px 6px; }
-      .dock-sw::after { width: 52px; }
+      :root { --rail: 52px; }
+      .dock-sw { padding: 10px 6px; }
       .dock-sw .sw-name { display: none; }
       .dock-sw .sw { padding: 0; justify-content: center; gap: 0; }
       .dock-hint { display: none; }
@@ -1038,13 +1295,6 @@
   }
   .privacy-grid .privacy-note h4 { color: var(--flare); }
 
-  .theme-stage-hex i {
-    width: 9px;
-    height: 9px;
-    border-radius: 50%;
-    background: var(--stage-accent, var(--accent));
-  }
-
   .spec {
     list-style: none;
     margin: 20px 0 0;
@@ -1061,6 +1311,22 @@
     color: var(--body);
     line-height: 1.5;
   }
+  /* Real argv, for a claim about argv. */
+  .argv {
+    margin: 0 0 1.1em;
+    padding: 13px 15px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    overflow-x: auto;
+    font-family: var(--mono);
+    font-size: 11px;
+    line-height: 1.8;
+    color: var(--dim);
+  }
+  .argv b { font-weight: 400; color: var(--ice); }
+  .argv i { font-style: normal; color: var(--accent); }
+
   .spec li::before {
     content: '';
     position: absolute;
@@ -1078,7 +1344,7 @@
     border-top: 1px solid var(--line);
     padding: clamp(48px, 7vw, 88px) 0;
     background:
-      radial-gradient(80% 120% at 15% 0%, rgba(56,189,248,0.06), transparent 65%);
+      radial-gradient(80% 120% at 15% 0%, color-mix(in srgb, var(--accent) 6%, transparent), transparent 65%);
   }
   .band-copy {
     max-width: 68ch;
@@ -1151,7 +1417,10 @@
   .foot-in a:hover { color: var(--ice); }
   .foot-sp { flex: 1; }
 
-  /* ─── Scroll reveal ─────────────────────────────────────────────────── */
+  /* ─── Scroll reveal ─────────────────────────────────────────────────────
+     One IntersectionObserver adds .in to each section wrapper; everything else
+     here rides that single class change, so no second mechanism and no extra
+     observers. Nothing animates a property that affects layout. */
 
   .rise {
     opacity: 0;
@@ -1160,6 +1429,65 @@
   }
   .rise.in { opacity: 1; transform: none; }
 
+  /* The parts a section is made of arrive a beat behind the sentence that
+     introduces them, in reading order. */
+  .rise .stage,
+  .rise .spec li,
+  .rise .privacy-grid li,
+  .rise .plat {
+    opacity: 0;
+    transform: translateY(12px);
+    transition: opacity 0.6s ease, transform 0.6s cubic-bezier(0.2, 0.7, 0.2, 1);
+  }
+  .rise.in .stage,
+  .rise.in .spec li,
+  .rise.in .privacy-grid li,
+  .rise.in .plat {
+    opacity: 1;
+    transform: none;
+  }
+
+  .rise .stage { transition-delay: 0.16s; }
+  .rise .stage + .stage { transition-delay: 0.26s; }
+  .rise .spec li:nth-child(2), .rise .privacy-grid li:nth-child(2), .rise .plat:nth-child(2) { transition-delay: 0.07s; }
+  .rise .spec li:nth-child(3), .rise .privacy-grid li:nth-child(3) { transition-delay: 0.13s; }
+  .rise .spec li:nth-child(4), .rise .privacy-grid li:nth-child(4) { transition-delay: 0.19s; }
+  .rise .privacy-grid li:nth-child(5) { transition-delay: 0.25s; }
+  .rise .privacy-grid li:nth-child(6) { transition-delay: 0.31s; }
+
+  /* Where scroll-driven animation exists, each window settles as it enters —
+     transform only, tied to the element's own progress through the viewport, so
+     it cannot shift layout or drag against the fixed rail. */
+  @supports (animation-timeline: view()) {
+    .mk {
+      animation: mkSettle linear both;
+      animation-timeline: view();
+      animation-range: entry 6% entry 60%;
+    }
+    @keyframes mkSettle {
+      from { transform: translateY(14px) scale(0.988); }
+      to   { transform: none; }
+    }
+
+    /* Reading position, drawn on the nav's own bottom edge. */
+    .nav::after {
+      content: '';
+      position: absolute;
+      left: 0;
+      bottom: -1px;
+      width: 100%;
+      height: 2px;
+      background: var(--accent);
+      transform-origin: 0 50%;
+      animation: navProgress linear both;
+      animation-timeline: scroll(root);
+    }
+    @keyframes navProgress {
+      from { transform: scaleX(0); }
+      to   { transform: scaleX(1); }
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     html { scroll-behavior: auto; }
     *, *::before, *::after {
@@ -1167,8 +1495,16 @@
       animation-delay: 0s !important;
       transition-duration: 0.001ms !important;
     }
-    .rise { opacity: 1; transform: none; }
+    .rise,
+    .rise .stage, .rise .spec li, .rise .privacy-grid li, .rise .plat {
+      opacity: 1;
+      transform: none;
+    }
     .rx-draw, .rx-late { stroke-dashoffset: 0; opacity: 1; }
+    /* Duration zero does not stop an infinite or scroll-driven animation, so
+       these are switched off by name. */
+    .rx-pulse, .mk-caret, .mk { animation: none; }
+    .nav::after { display: none; }
   }
 </style>
 </head>
@@ -1281,96 +1617,35 @@
     </div>
   </section>
 
-  <!-- ─── Proof ────────────────────────────────────────────────────────── -->
-  <section class="proof">
-    <div class="wrap rise">
-      <figure>
-        <div class="shot">
-          <img src="img/workspace.jpg" width="1253" height="545"
-               alt="The Catalyst workspace: a folder path bar above a grid of eight repository cards, each showing its detected stack, current branch and uncommitted change count.">
-        </div>
-        <figcaption>Every git repository under one folder, with its stack and branch already read</figcaption>
-      </figure>
-    </div>
-  </section>
-
-  <!-- ─── What it does ─────────────────────────────────────────────────── -->
-  <section class="feature" id="what">
+  <!-- ─── Proof: the workspace, in whichever theme the reader picked ─────
+       One mock serves two claims — this is both the workspace view and the
+       live theme demo, so the page shows the window once rather than twice. -->
+  <section class="proof" id="themes">
     <div class="wrap rise">
       <div class="feature-copy">
-        <p class="eyebrow eyebrow--tight">Choose AI</p>
-        <h3>Pick a repo, pick an agent.</h3>
+        <p class="eyebrow eyebrow--tight">Workspace</p>
+        <h3>Every repository under one folder.</h3>
         <p>
-          Selecting a repository shows you what you're walking into before you
-          start: the branch, whether the tree is clean, how many branches and open
-          PRs it has, and how recent the commits are.
+          Point Catalyst at the folder your repositories live in and it reads all
+          of them: the stack each one is built on, the branch it is on, and how
+          much uncommitted work is sitting in it.
         </p>
-        <ul class="spec">
-          <li>Claude Code, Codex and Gemini CLI, detected on your PATH</li>
-          <li>Stack read from the repo — Node, .NET, Python, Rust, Go, React</li>
-          <li>Optional worktree isolation, so your main checkout stays untouched</li>
-        </ul>
-      </div>
-      <figure class="frame frame--panel">
-        <div class="shot">
-          <img src="img/repo-detail.jpg" width="645" height="550"
-               alt="A selected repository showing a commit sparkline, a snapshot of branch and working tree state, and buttons to launch Claude, Codex or Gemini.">
-        </div>
-      </figure>
-    </div>
-  </section>
-
-  <section class="feature">
-    <div class="wrap rise">
-      <div class="feature-copy">
-        <p class="eyebrow eyebrow--tight">Session</p>
-        <h3>Real terminals, not a chat box.</h3>
         <p>
-          Catalyst doesn't wrap or re-implement any AI. It spawns the actual CLI in
-          a pseudo-terminal and bridges it to a full xterm.js terminal, so
-          everything the tool can do, it still does — prompts, slash commands,
-          permission dialogs, colour and all.
-        </p>
-        <ul class="spec">
-          <li>One tab per session, up to eight, plus inner split terminals</li>
-          <li>Paste an image straight into the terminal</li>
-          <li>Branch, diff and changed files in the panel beside it</li>
-          <li>Pull, push and PR without leaving the session</li>
-        </ul>
-      </div>
-      <figure class="frame frame--wide">
-        <div class="shot">
-          <img src="img/session.jpg" width="1253" height="300"
-               alt="A Catalyst session running Claude Code in a terminal, with a repository panel on the right showing the branch, pull, push and PR controls, and a changed-files list.">
-        </div>
-      </figure>
-    </div>
-  </section>
-
-  <!-- ─── Themes ───────────────────────────────────────────────────────── -->
-  <section class="feature" id="themes">
-    <div class="wrap rise">
-      <div class="feature-copy">
-        <p class="eyebrow eyebrow--tight">Appearance</p>
-        <h3>Twenty themes, light and dark.</h3>
-        <p>
-          Pick the one you can look at all day. Each theme retints the whole
-          window — sidebar, cards, terminal and status bar together — so nothing
-          is left on the old palette. Font family and size are yours to set too.
+          It comes in twenty themes, light and dark. Every window on this page is
+          drawn from the same token values the app itself uses, so picking one
+          here shows you the real thing.
         </p>
       </div>
 
-      <!-- A mock of the Catalyst window, drawn in CSS from each theme's real
-           token values, so it stays sharp at any size and every one of the 20
+      <!-- Mocks of the Catalyst window, drawn in CSS from each theme's real
+           token values, so they stay sharp at any size and every one of the 20
            themes can be previewed. Inert by design: no inputs, no controls,
            pointer-events off and hidden from assistive tech — only the swatches
-           on the left are operable. -->
+           in the rail are operable. -->
       <div class="theme-lab">
+        <p class="theme-cue">Pick a palette from the theme rail — this page and every window on it follow.</p>
 
-
-        <p class="theme-cue">Pick a palette in the bar at the bottom — the whole page follows.</p>
-
-        <div class="mk-wrap">
+        <div class="mk-wrap stage">
           <div class="mk" id="themeMock" aria-hidden="true">
             <div class="mk-bar">
               <span class="mk-logo"></span>
@@ -1464,6 +1739,366 @@
     </div>
   </section>
 
+  <!-- ─── What it does ─────────────────────────────────────────────────── -->
+  <section class="feature" id="what">
+    <div class="wrap rise">
+      <div class="feature-copy">
+        <p class="eyebrow eyebrow--tight">Choose AI</p>
+        <h3>Pick a repo, pick an agent.</h3>
+        <p>
+          Selecting a repository shows you what you're walking into before you
+          start: the branch, whether the tree is clean, how many branches and open
+          PRs it has, and how recent the commits are.
+        </p>
+        <ul class="spec">
+          <li>Claude Code, Codex and Gemini CLI, detected on your PATH</li>
+          <li>Stack read from the repo — Node, .NET, Python, Rust, Go, React</li>
+          <li>Optional worktree isolation, so your main checkout stays untouched</li>
+        </ul>
+      </div>
+      <figure class="stage">
+        <div class="mk mk--solo" aria-hidden="true">
+          <div class="mk-bar">
+            <span class="mk-logo"></span>
+            <span class="mk-title">CATALYST</span>
+            <span class="mk-spacer"></span>
+            <span class="mk-pill-ghost">Run</span>
+            <span class="mk-gear"></span>
+          </div>
+
+          <div class="mk-body mk-body--panel">
+            <div class="mk-id">
+              <div class="mk-mono">AG</div>
+              <div>
+                <div class="mk-id-name">api-gateway</div>
+                <div class="mk-tech">Edge routing and rate limiting for the public API</div>
+              </div>
+            </div>
+
+            <div class="mk-path">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+              <span>~</span><span class="sep">/</span>
+              <span>source</span><span class="sep">/</span>
+              <span>repos</span><span class="sep">/</span>
+              <span class="cwd">api-gateway</span>
+            </div>
+
+            <div class="mk-tags">
+              <span class="mk-tag">Node.js</span>
+              <span class="mk-tag">Express</span>
+              <span class="mk-tag">TypeScript</span>
+            </div>
+
+            <div class="mk-spark">
+              <div class="mk-spark-bars">
+                <i style="--h:34%"></i><i style="--h:58%"></i><i style="--h:22%"></i>
+                <i style="--h:71%"></i><i style="--h:46%"></i><i style="--h:12%"></i>
+                <i style="--h:64%"></i><i style="--h:88%"></i><i style="--h:40%"></i>
+                <i style="--h:26%"></i><i style="--h:55%"></i><i style="--h:79%"></i>
+                <i style="--h:33%"></i><i style="--h:100%"></i>
+              </div>
+              <div>
+                <span class="mk-spark-num">63</span>
+                <span class="mk-spark-lbl">Commits · last 7 days</span>
+              </div>
+            </div>
+
+            <div class="mk-label">Snapshot</div>
+            <div class="mk-snap">
+              <div class="mk-snap-row">
+                <span>⑂</span><span>main</span>
+                <span class="mk-snap-sync">up to date</span>
+              </div>
+              <div class="mk-snap-div"></div>
+              <div class="mk-snap-row">
+                <span class="mk-snap-dot"></span><span>Working tree clean</span>
+              </div>
+              <div class="mk-snap-stats">
+                <div class="mk-snap-stat"><span class="num">7</span><span class="lbl">Branches</span></div>
+                <div class="mk-snap-stat"><span class="num">2</span><span class="lbl">Open PRs</span></div>
+                <div class="mk-snap-stat"><span class="num">4 min</span><span class="lbl">Last Open</span></div>
+              </div>
+            </div>
+
+            <div class="mk-label">Choose AI</div>
+            <div class="mk-agents">
+              <div class="mk-agent"><i style="--a:#d97757;--mark:var(--mk-claude)"></i>Claude</div>
+              <div class="mk-agent"><i style="--a:#10a37f;--mark:var(--mk-codex)"></i>Codex</div>
+              <div class="mk-agent"><i style="--a:#3186ff;--mark:var(--mk-gemini)"></i>Gemini</div>
+            </div>
+          </div>
+
+          <div class="mk-status">
+            <span class="mk-status-dot"></span>
+            <span>main</span><span class="mk-status-sep">·</span><span>clean</span>
+            <span class="mk-spacer"></span>
+            <span>Connected</span>
+          </div>
+        </div>
+        <figcaption>A selected repository: monogram, path, stack, commit activity, snapshot, and the three agents</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- ─── Multi-repo ───────────────────────────────────────────────────── -->
+  <section class="feature">
+    <div class="wrap rise">
+      <div class="feature-copy">
+        <p class="eyebrow eyebrow--tight">Additional repos</p>
+        <h3>Hand it more than one repo.</h3>
+        <p>
+          The card you clicked is the primary repo — the agent's working
+          directory. Alongside it you can pick any of the others under the same
+          root, which is how a change to an API and the dashboard that calls it
+          happens in one session instead of two.
+        </p>
+        <p>
+          Catalyst passes them using each CLI's own flag, so the agent gets real
+          directories rather than pasted paths:
+        </p>
+        <pre class="argv"><code><b>claude</b>  <i>--add-dir</i> ../web-dashboard ../edge-cache
+<b>gemini</b>  <i>--include-directories</i> ../web-dashboard <i>--include-directories</i> ../edge-cache
+<b>codex</b>   <i>-c</i> sandbox_workspace_write.writable_roots=['../web-dashboard', '../edge-cache']</code></pre>
+        <p>
+          Claude and Gemini treat those as additional workspace roots.
+          <strong>Codex has no equivalent</strong> — its workspace is its working
+          directory, and the closest lever is widening the sandbox's writable
+          roots. That grants write access without adding a workspace, so multi-repo
+          is genuinely weaker with Codex, and the app says so where you pick them
+          rather than implying parity.
+        </p>
+      </div>
+
+      <figure class="stage">
+        <div class="mk mk--solo" aria-hidden="true">
+          <div class="mk-bar">
+            <span class="mk-logo"></span>
+            <span class="mk-title">CATALYST</span>
+            <span class="mk-spacer"></span>
+            <span class="mk-pill-ghost">Run</span>
+            <span class="mk-gear"></span>
+          </div>
+
+          <div class="mk-scrim">
+            <div class="mk-modal">
+              <div class="mk-modal-head">
+                <span>Additional repos</span><span class="mk-x">✕</span>
+              </div>
+              <div class="mk-modal-top">
+                <div class="mk-mr-primary">Primary: <b>api-gateway</b> — the agent runs here</div>
+                <div class="mk-input">Filter repos…</div>
+              </div>
+              <div class="mk-mr-row is-primary"><span class="mk-box"></span>api-gateway<span class="tech">primary</span></div>
+              <div class="mk-mr-row"><span class="mk-box is-on"></span>web-dashboard<span class="tech">Node.js · React · Next.js</span></div>
+              <div class="mk-mr-row"><span class="mk-box is-on"></span>edge-cache<span class="tech">Rust</span></div>
+              <div class="mk-mr-row"><span class="mk-box"></span>auth-service<span class="tech">.NET / C#</span></div>
+              <div class="mk-mr-row"><span class="mk-box"></span>data-pipeline<span class="tech">Python</span></div>
+              <div class="mk-modal-foot">
+                <span class="mk-count">2 additional repos selected</span>
+                <span class="mk-spacer"></span>
+                <span class="mk-btn-sm mk-btn-2">Clear</span>
+                <span class="mk-btn-sm">Done</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <figcaption>Picking the extra repos — the primary one is checked off and cannot be removed</figcaption>
+      </figure>
+
+      <figure class="stage">
+        <div class="mk mk--solo" aria-hidden="true">
+          <div class="mk-body mk-body--panel">
+            <div class="mk-extra-head">
+              <span class="mk-label">Additional repos</span>
+              <span class="mk-spacer"></span>
+              <span class="mk-btn-sm mk-btn-2">Add repos</span>
+            </div>
+            <div class="mk-chips">
+              <span class="mk-chip">web-dashboard ✕</span>
+              <span class="mk-chip">edge-cache ✕</span>
+            </div>
+            <div class="mk-hint">
+              Claude and Gemini receive these as extra workspace directories. Codex
+              has no equivalent — it only gets write access to them, and stays
+              focused on the primary repo.
+            </div>
+          </div>
+        </div>
+        <figcaption>And where they land, under the agent picker, caveat included</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- ─── Sessions ─────────────────────────────────────────────────────── -->
+  <section class="feature">
+    <div class="wrap rise">
+      <div class="feature-copy">
+        <p class="eyebrow eyebrow--tight">Sessions</p>
+        <h3>It shows you what's already there.</h3>
+        <p>
+          Pick an agent for a repo you have worked in before and Catalyst doesn't
+          quietly start a second one. It asks what already exists and lists it:
+          sessions running right now, and past conversations that CLI can resume.
+          Starting fresh is still one click — it is just no longer the only
+          option.
+        </p>
+        <ul class="spec">
+          <li>Switch to a session that is already running, worktree and all</li>
+          <li>Resume a past conversation, labelled with how it started</li>
+          <li>Delete one conversation — the name is quoted back before it goes</li>
+          <li>Nothing to offer? The dialog never appears and the launch is one click</li>
+        </ul>
+      </div>
+
+      <figure class="stage">
+        <div class="mk mk--solo" aria-hidden="true">
+          <div class="mk-bar">
+            <span class="mk-logo"></span>
+            <span class="mk-title">CATALYST</span>
+            <span class="mk-spacer"></span>
+            <span class="mk-pill-ghost">Run</span>
+            <span class="mk-gear"></span>
+          </div>
+
+          <div class="mk-scrim">
+            <div class="mk-modal">
+              <div class="mk-modal-head">
+                <span>Claude · api-gateway</span><span class="mk-x">✕</span>
+              </div>
+
+              <div class="mk-group">Running now (1)</div>
+              <div class="mk-sess-row">
+                <span class="mk-live"></span>
+                <span class="mk-sess-main">
+                  <span class="mk-sess-l">Open session</span>
+                  <span class="mk-sess-m">up 24m · worktree: catalyst/claude-1 · +2 repos</span>
+                </span>
+                <span class="mk-btn-sm mk-btn-2">Switch to</span>
+              </div>
+
+              <div class="mk-group">Past conversations (3)</div>
+              <div class="mk-sess-row">
+                <span class="mk-sess-main">
+                  <span class="mk-sess-l">add a token bucket limiter to the edge router</span>
+                  <span class="mk-sess-m">2h ago · 48 messages</span>
+                </span>
+                <span class="mk-btn-sm mk-btn-2">Resume</span>
+                <svg class="mk-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>
+              </div>
+              <div class="mk-sess-row">
+                <span class="mk-sess-main">
+                  <span class="mk-sess-l">why does the gateway 502 under load</span>
+                  <span class="mk-sess-m">yesterday · 121 messages</span>
+                </span>
+                <span class="mk-btn-sm mk-btn-2">Resume</span>
+                <svg class="mk-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>
+              </div>
+              <div class="mk-sess-row">
+                <span class="mk-sess-main">
+                  <span class="mk-sess-l">split the router into middleware</span>
+                  <span class="mk-sess-m">3d ago · 62 KB</span>
+                </span>
+                <span class="mk-btn-sm mk-btn-2">Resume</span>
+                <svg class="mk-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>
+              </div>
+
+              <div class="mk-modal-foot">
+                <span class="mk-btn-sm mk-btn-danger">Close all</span>
+                <span class="mk-btn-sm mk-btn-danger">Clear history</span>
+                <span class="mk-spacer"></span>
+                <span class="mk-btn-sm">Start fresh</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <figcaption>What exists for this repo and agent, before anything new is started</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section class="feature">
+    <div class="wrap rise">
+      <div class="feature-copy">
+        <p class="eyebrow eyebrow--tight">Session</p>
+        <h3>Real terminals, not a chat box.</h3>
+        <p>
+          Catalyst doesn't wrap or re-implement any AI. It spawns the actual CLI in
+          a pseudo-terminal and bridges it to a full xterm.js terminal, so
+          everything the tool can do, it still does — prompts, slash commands,
+          permission dialogs, colour and all.
+        </p>
+        <ul class="spec">
+          <li>One tab per session, up to eight, plus inner split terminals</li>
+          <li>Paste an image straight into the terminal</li>
+          <li>Branch, diff and changed files in the panel beside it</li>
+          <li>Pull, push and PR without leaving the session</li>
+        </ul>
+      </div>
+      <figure class="stage">
+        <div class="mk mk--solo" aria-hidden="true">
+          <div class="mk-bar">
+            <span class="mk-logo"></span>
+            <span class="mk-title">CATALYST</span>
+            <span class="mk-spacer"></span>
+            <span class="mk-pill-ghost">Run</span>
+            <span class="mk-gear"></span>
+          </div>
+
+          <div class="mk-tabs">
+            <span class="mk-tab is-on"><i style="--a:#d97757"></i>api-gateway<span class="x">✕</span></span>
+            <span class="mk-tab"><i style="--a:#10a37f"></i>web-dashboard<span class="x">✕</span></span>
+            <span class="mk-tab"><i style="--a:#3186ff"></i>edge-cache<span class="x">✕</span></span>
+            <span class="mk-tab-add">+</span>
+          </div>
+
+          <div class="mk-session">
+            <div class="mk-term">
+              <div><span class="p">❯</span> <span class="u">claude</span></div>
+              <div><span class="p">✻</span> Claude Code · api-gateway · main</div>
+              <div>&nbsp;&nbsp;/help for commands · esc to interrupt</div>
+              <div>&nbsp;</div>
+              <div><span class="p">&gt;</span> <span class="u">add a token bucket limiter to the edge router</span></div>
+              <div>● Read <span class="u">src/router.ts</span> (218 lines)</div>
+              <div>● Write <span class="u">src/limiter.ts</span> <span class="ok">+94</span></div>
+              <div>● Bash <span class="u">npm test</span></div>
+              <div>&nbsp;&nbsp;<span class="ok">✓ 42 passing</span> · 1.8s</div>
+              <div>● Done · 3 files changed</div>
+              <div><span class="p">&gt;</span> <span class="mk-caret"></span></div>
+            </div>
+
+            <div class="mk-panel">
+              <div class="mk-panel-head">REPOSITORY</div>
+              <div class="mk-select">
+                <span>⑂</span><span>feat/rate-limit</span><span class="caret">▾</span>
+              </div>
+              <div class="mk-gitrow">
+                <span class="mk-gitbtn">Pull</span>
+                <span class="mk-gitbtn">Push</span>
+                <span class="mk-gitbtn">PR</span>
+              </div>
+              <div class="mk-label">Changes · 4</div>
+              <ul class="mk-files">
+                <li><b class="mk-f-m">M</b>src/limiter.ts</li>
+                <li><b class="mk-f-m">M</b>src/router.ts</li>
+                <li><b class="mk-f-a">A</b>test/limiter.test.ts</li>
+                <li><b class="mk-f-d">D</b>src/throttle.ts</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="mk-status">
+            <span class="mk-status-dot"></span>
+            <span>feat/rate-limit</span><span class="mk-status-sep">·</span><span>4 changes</span>
+            <span class="mk-spacer"></span>
+            <span>claude · pid 24118</span>
+          </div>
+        </div>
+        <figcaption>One tab per session, the real CLI in a terminal, and the repository panel beside it</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- ─── Settings ─────────────────────────────────────────────────────── -->
   <section class="feature">
     <div class="wrap rise">
       <div class="feature-copy">
@@ -1481,11 +2116,47 @@
           <li>Reset wipes cached data and both tokens in one action</li>
         </ul>
       </div>
-      <figure class="frame frame--modal">
-        <div class="shot">
-          <img src="img/settings.jpg" width="845" height="380"
-               alt="Catalyst settings, showing the git root folder field and a reset action that clears cached repository data, sessions and stored tokens.">
+      <figure class="stage">
+        <div class="mk mk--solo" aria-hidden="true">
+          <div class="mk-set">
+            <div class="mk-set-nav">
+              <div class="mk-set-navt">Settings</div>
+              <div class="mk-set-item is-on"><i class="ic"></i>General</div>
+              <div class="mk-set-item"><i class="ic"></i>Appearance</div>
+              <div class="mk-set-item"><i class="ic"></i>Catalyst Pilot</div>
+              <div class="mk-set-item"><i class="ic"></i>Integrations</div>
+              <div class="mk-set-item"><i class="ic"></i>AI CLI</div>
+              <div class="mk-set-item"><i class="ic"></i>Shortcuts</div>
+              <div class="mk-set-item"><i class="ic"></i>Updates</div>
+              <div class="mk-set-item"><i class="ic"></i>About</div>
+            </div>
+
+            <div class="mk-set-body">
+              <div class="mk-set-h">General</div>
+
+              <div class="mk-set-sec">
+                <div class="mk-set-sect">Git Root Folder</div>
+                <div class="mk-hint">The folder containing all your git repositories</div>
+                <div class="mk-set-row">
+                  <div class="mk-input">C:\Source\repos</div>
+                  <span class="mk-btn-sm">Browse</span>
+                  <span class="mk-btn-sm mk-btn-2">Save</span>
+                </div>
+              </div>
+
+              <div class="mk-set-sec is-danger">
+                <div class="mk-set-sect">Reset Catalyst</div>
+                <div class="mk-hint">
+                  Wipes cached repo info, sessions, saved settings, and both PATs from
+                  the OS credential store. The onboarding wizard runs again on next
+                  launch.
+                </div>
+                <div class="mk-set-row"><span class="mk-btn-sm mk-btn-danger">Reset Catalyst</span></div>
+              </div>
+            </div>
+          </div>
         </div>
+        <figcaption>Settings: one root folder to scan, and one action that puts everything back</figcaption>
       </figure>
     </div>
   </section>
@@ -1507,11 +2178,48 @@
             installed version and checks again whenever you ask.
           </p>
         </div>
-        <figure class="frame frame--modal">
-          <div class="shot">
-            <img src="img/updates.jpg" width="845" height="417"
-                 alt="The Updates settings page, showing the installed version with a check button and a highlighted panel offering version 1.1.0 with release notes and an Install and Restart action.">
+        <figure class="stage">
+          <div class="mk mk--solo" aria-hidden="true">
+            <div class="mk-set">
+              <div class="mk-set-nav">
+                <div class="mk-set-navt">Settings</div>
+                <div class="mk-set-item"><i class="ic"></i>General</div>
+                <div class="mk-set-item"><i class="ic"></i>Appearance</div>
+                <div class="mk-set-item"><i class="ic"></i>Catalyst Pilot</div>
+                <div class="mk-set-item"><i class="ic"></i>Integrations</div>
+                <div class="mk-set-item"><i class="ic"></i>AI CLI</div>
+                <div class="mk-set-item"><i class="ic"></i>Shortcuts</div>
+                <div class="mk-set-item is-on"><i class="ic"></i>Updates<span class="nb"></span></div>
+                <div class="mk-set-item"><i class="ic"></i>About</div>
+              </div>
+
+              <div class="mk-set-body">
+                <div class="mk-set-h">Updates</div>
+
+                <div class="mk-set-sec">
+                  <div class="mk-set-sect">Version</div>
+                  <div class="mk-hint">
+                    Catalyst checks GitHub for a newer release each time it starts. Every
+                    release is signed, and the signature is verified before anything is
+                    installed.
+                  </div>
+                  <div class="mk-ver"><span>Installed</span><b>1.0.0</b></div>
+                  <div class="mk-set-row"><span class="mk-btn-sm mk-btn-2">Check for updates</span></div>
+                </div>
+
+                <div class="mk-set-sec is-new">
+                  <div class="mk-set-sect">Version 1.1.0 is available</div>
+                  <div class="mk-notes">
+                    <span>Sessions modal: switch to a running session or resume a past one</span>
+                    <span>Additional repos handed to the agent via its own flag</span>
+                    <span>Twenty themes, light and dark</span>
+                  </div>
+                  <span class="mk-btn-sm">Install &amp; Restart</span>
+                </div>
+              </div>
+            </div>
           </div>
+          <figcaption>A newer build, its release notes, and one button that installs it</figcaption>
         </figure>
       </div>
     </div>
@@ -1614,11 +2322,10 @@
   </section>
 </main>
 
-<!-- Fixed dock. Carries the footer meta at all times and reveals the theme
-     picker once the reader reaches the themes section, so choosing a palette
-     stays possible for the rest of the page. -->
+<!-- The theme picker: a left rail on wide screens, a strip above the dock on
+     narrow ones. Fixed either way, so choosing a palette stays possible for the
+     whole page rather than only at the section that introduces it. -->
 <div class="dock-sw" id="dockSw">
-  <span class="dock-hint">Theme</span>
   <div class="sw-list" role="radiogroup" aria-label="Preview a theme">
     <button class="sw" type="button" role="radio" aria-checked="true" tabindex="0"
             data-theme="midnight" title="Midnight"
@@ -1727,6 +2434,7 @@
   <div class="wrap dock-in">
     <div class="dock-meta">
       <span class="dock-brand">Catalyst · MIT</span>
+      <span class="dock-attrib">Claude Code, Codex and Gemini CLI are trademarks of Anthropic, OpenAI and Google. Catalyst is an independent launcher and is not affiliated with them.</span>
       <span class="dock-sp"></span>
       <span class="dock-now" id="dockNow"></span>
       <a href="https://github.com/OLI-Systems/Catalyst" target="_blank" rel="noopener">GitHub</a>
@@ -1741,16 +2449,15 @@
   // app's own palettes — no images involved, so switching is instant and crisp.
   (function () {
     var THEMES = {"midnight":{"label":"Midnight","light":false,"bg":"#06080d","bg-secondary":"#0c1017","bg-card":"#0f1319","border":"rgba(56, 189, 248, 0.08)","accent":"#38bdf8","text":"#ffffff","text-muted":"#9bafc6","input-bg":"#0c1017","success":"#34d399","danger":"#f87171"},"graphite":{"label":"Graphite","light":false,"bg":"#1a1a1a","bg-secondary":"#1f1f1f","bg-card":"#222222","border":"rgba(160, 160, 160, 0.12)","accent":"#a0a0a0","text":"#e0e0e0","text-muted":"#707070","input-bg":"#1f1f1f","success":"#6ec96e","danger":"#e06060"},"ocean":{"label":"Ocean","light":false,"bg":"#0a1628","bg-secondary":"#0f1d32","bg-card":"#13243d","border":"rgba(96, 165, 250, 0.1)","accent":"#60a5fa","text":"#ffffff","text-muted":"#7da0c9","input-bg":"#0f1d32","success":"#34d399","danger":"#fb7185"},"nord":{"label":"Nord","light":false,"bg":"#2e3440","bg-secondary":"#3b4252","bg-card":"#434c5e","border":"rgba(136, 192, 208, 0.12)","accent":"#88c0d0","text":"#ffffff","text-muted":"#8b9ab5","input-bg":"#3b4252","success":"#a3be8c","danger":"#bf616a"},"dracula":{"label":"Dracula","light":false,"bg":"#1e1f29","bg-secondary":"#282a36","bg-card":"#2c2e3a","border":"rgba(189, 147, 249, 0.1)","accent":"#bd93f9","text":"#ffffff","text-muted":"#7a7896","input-bg":"#282a36","success":"#50fa7b","danger":"#ff5555"},"monokai":{"label":"Monokai","light":false,"bg":"#1e1f1c","bg-secondary":"#272822","bg-card":"#2d2e27","border":"rgba(249, 38, 114, 0.1)","accent":"#a6e22e","text":"#ffffff","text-muted":"#8a8a76","input-bg":"#272822","success":"#a6e22e","danger":"#f92672"},"vsdark":{"label":"VS Dark","light":false,"bg":"#1e1e1e","bg-secondary":"#252526","bg-card":"#2d2d2d","border":"rgba(77, 77, 77, 0.4)","accent":"#007acc","text":"#d4d4d4","text-muted":"#808080","input-bg":"#3c3c3c","success":"#4ec9b0","danger":"#f44747"},"forest":{"label":"Forest","light":false,"bg":"#0a1410","bg-secondary":"#0f1e16","bg-card":"#14261c","border":"rgba(74, 222, 128, 0.1)","accent":"#4ade80","text":"#ffffff","text-muted":"#7db899","input-bg":"#0f1e16","success":"#4ade80","danger":"#fb7185"},"sunset":{"label":"Sunset","light":false,"bg":"#1a1008","bg-secondary":"#241810","bg-card":"#2e1e14","border":"rgba(251, 191, 36, 0.1)","accent":"#fbbf24","text":"#ffffff","text-muted":"#c9a87a","input-bg":"#241810","success":"#34d399","danger":"#fb7185"},"ember":{"label":"Ember","light":false,"bg":"#110808","bg-secondary":"#1a0e0e","bg-card":"#221414","border":"rgba(248, 113, 113, 0.1)","accent":"#f87171","text":"#ffffff","text-muted":"#b88a8a","input-bg":"#1a0e0e","success":"#34d399","danger":"#f87171"},"copper":{"label":"Copper","light":false,"bg":"#12100e","bg-secondary":"#1c1814","bg-card":"#24201a","border":"rgba(217, 168, 120, 0.1)","accent":"#d9a878","text":"#ffffff","text-muted":"#a0907c","input-bg":"#1c1814","success":"#7ec87e","danger":"#e87070"},"void":{"label":"Void","light":false,"bg":"#000000","bg-secondary":"#0a0a0a","bg-card":"#111111","border":"rgba(255, 255, 255, 0.06)","accent":"#ffffff","text":"#ffffff","text-muted":"#777777","input-bg":"#0a0a0a","success":"#4ade80","danger":"#f87171"},"bluepill":{"label":"Blue Pill","light":false,"bg":"#000000","bg-secondary":"#040a16","bg-card":"#06101e","border":"rgba(34, 211, 238, 0.12)","accent":"#22d3ee","text":"#d8e4f0","text-muted":"#5a7a96","input-bg":"#040a16","success":"#34d399","danger":"#f87171"},"lavender":{"label":"Lavender","light":true,"bg":"#f5f0fa","bg-secondary":"#ede5f5","bg-card":"#ffffff","border":"rgba(139, 92, 246, 0.12)","accent":"#8b5cf6","text":"#000000","text-muted":"#5e5070","input-bg":"#ede5f5","success":"#5a9e6f","danger":"#dc2626"},"rose":{"label":"Rosé","light":true,"bg":"#faf5f3","bg-secondary":"#f3ebe7","bg-card":"#ffffff","border":"rgba(180, 120, 100, 0.12)","accent":"#c2665a","text":"#000000","text-muted":"#6b5550","input-bg":"#f5ece8","success":"#5a9e6f","danger":"#c94a4a"},"sand":{"label":"Sand","light":true,"bg":"#f7f3ee","bg-secondary":"#efe9e0","bg-card":"#ffffff","border":"rgba(140, 110, 70, 0.12)","accent":"#8c6e46","text":"#000000","text-muted":"#6b5e50","input-bg":"#efe9e0","success":"#5a8c5a","danger":"#b84040"},"arctic":{"label":"Arctic","light":true,"bg":"#f0f5fa","bg-secondary":"#e4ecf5","bg-card":"#ffffff","border":"rgba(30, 80, 160, 0.1)","accent":"#2563eb","text":"#000000","text-muted":"#4a5568","input-bg":"#e4ecf5","success":"#059669","danger":"#dc2626"},"silver":{"label":"Silver","light":true,"bg":"#f0f0f0","bg-secondary":"#e6e6e6","bg-card":"#f5f5f5","border":"rgba(0, 0, 0, 0.1)","accent":"#555555","text":"#1a1a1a","text-muted":"#666666","input-bg":"#ffffff","success":"#2e7d32","danger":"#c62828"},"vslight":{"label":"VS Light","light":true,"bg":"#ffffff","bg-secondary":"#f3f3f3","bg-card":"#ffffff","border":"rgba(0, 0, 0, 0.1)","accent":"#007acc","text":"#1e1e1e","text-muted":"#616161","input-bg":"#ffffff","success":"#16825d","danger":"#cd3131"},"newsprint":{"label":"Newsprint","light":true,"bg":"#f5f0e8","bg-secondary":"#ebe5da","bg-card":"#faf5ed","border":"rgba(0, 0, 0, 0.1)","accent":"#333333","text":"#111111","text-muted":"#555555","input-bg":"#faf5ed","success":"#2e5e1e","danger":"#a82020"}};
-    // Set on the wrapper, not the window, so the readout inherits too.
-    var mock = document.querySelector('.mk-wrap');
     var list = document.querySelector('.sw-list');
-    if (!mock || !list) return;
+    if (!list) return;
     var buttons = [].slice.call(list.querySelectorAll('.sw'));
 
     var MAP = {
       bg: '--m-bg', 'bg-secondary': '--m-bg2', 'bg-card': '--m-card',
       border: '--m-border', text: '--m-text', 'text-muted': '--m-muted',
-      accent: '--m-accent', success: '--m-success', 'input-bg': '--m-input'
+      accent: '--m-accent', success: '--m-success', danger: '--m-danger',
+      'input-bg': '--m-input'
     };
 
     // The page's own palette, remapped from the selected theme. --flare stays
@@ -1764,11 +2471,13 @@
     function apply(key) {
       var t = THEMES[key];
       if (!t) return;
+      // Both sets land on the root element: the page draws seven mocks, and one
+      // wrapper's inline styles could only ever retint the first of them.
+      var root = document.documentElement;
       Object.keys(MAP).forEach(function (k) {
-        if (t[k]) mock.style.setProperty(MAP[k], t[k]);
+        if (t[k]) root.style.setProperty(MAP[k], t[k]);
       });
       // Retint the whole page, so choosing a theme shows what living in it feels like.
-      var root = document.documentElement;
       Object.keys(PAGE).forEach(function (cssVar) {
         var v = t[PAGE[cssVar]];
         if (v) root.style.setProperty(cssVar, v);
@@ -1823,41 +2532,6 @@
     select(start);
   })();
 
-
-  // Reveal the dock's picker once the themes section is reached, and keep it
-  // open afterwards — having it vanish again would be worse than never showing.
-  (function () {
-    var dock = document.getElementById('dock');
-    var themes = document.getElementById('themes');
-    if (!dock || !themes) return;
-
-    var opened = false;
-    function open() {
-      if (opened) return;
-      opened = true;
-      dock.classList.add('is-open');
-      window.removeEventListener('scroll', onScroll);
-    }
-
-    // A plain scroll test rather than an observer: it also fires for
-    // programmatic jumps and for a page restored mid-scroll, both of which an
-    // IntersectionObserver can miss.
-    function check() {
-      var top = themes.getBoundingClientRect().top;
-      if (top < window.innerHeight * 0.85) open();
-    }
-
-    var queued = false;
-    function onScroll() {
-      if (queued) return;
-      queued = true;
-      requestAnimationFrame(function () { queued = false; check(); });
-    }
-
-    window.addEventListener('scroll', onScroll, { passive: true });
-    window.addEventListener('resize', onScroll, { passive: true });
-    check(); // in case the page loads already scrolled down
-  })();
 
   // Reveal on scroll. Anything already in view when the page loads is shown
   // immediately, so the hero never waits on an intersection callback.
