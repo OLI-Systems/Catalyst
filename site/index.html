@@ -67,7 +67,13 @@
 
   *, *::before, *::after { box-sizing: border-box; }
 
-  html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+  html {
+    -webkit-text-size-adjust: 100%;
+    scroll-behavior: smooth;
+    /* Contains any horizontal overflow without turning body into a scroll
+       container and without clipping body-level fixed elements. */
+    overflow-x: clip;
+  }
 
   body {
     margin: 0;
@@ -81,12 +87,11 @@
     font-size: clamp(15px, 0.55vw + 13px, 17px);
     line-height: 1.65;
     -webkit-font-smoothing: antialiased;
-    /* clip, not hidden: `overflow-x: hidden` forces the computed overflow-y to
-       `auto`, which makes body itself the scroll container. The viewport then
-       never scrolls — window scroll events stop firing and viewport-rooted
-       IntersectionObservers mis-measure. `clip` contains horizontal overflow
-       without creating a scroll container. */
-    overflow-x: clip;
+    /* Deliberately no overflow-x here. Setting it to hidden forces the computed
+       overflow-y to auto, which makes body the scroll container and stops the
+       window scrolling at all. Setting it to clip avoids that but clips
+       fixed-position descendants, which would hide the theme dial the moment the
+       page scrolls. The clip lives on the html element instead. */
   }
 
   a { color: inherit; }
@@ -1103,7 +1108,6 @@
      itself animates. Body padding also pushes the nav and dock clear of it. */
   @media (min-width: 1100px) {
     :root { --rail: 132px; }
-    body { padding-left: var(--rail); }
 
     .dock-sw {
       position: fixed;
@@ -1311,21 +1315,6 @@
     color: var(--body);
     line-height: 1.5;
   }
-  /* Real argv, for a claim about argv. */
-  .argv {
-    margin: 0 0 1.1em;
-    padding: 13px 15px;
-    background: var(--panel);
-    border: 1px solid var(--line);
-    border-radius: 6px;
-    overflow-x: auto;
-    font-family: var(--mono);
-    font-size: 11px;
-    line-height: 1.8;
-    color: var(--dim);
-  }
-  .argv b { font-weight: 400; color: var(--ice); }
-  .argv i { font-style: normal; color: var(--accent); }
 
   .spec li::before {
     content: '';
@@ -1505,6 +1494,142 @@
        these are switched off by name. */
     .rx-pulse, .mk-caret, .mk { animation: none; }
     .nav::after { display: none; }
+  }
+
+  /* ─── Theme dial ─────────────────────────────────────────────────────────
+     Replaces the left rail. Twenty chips ride a circle pinned top-right;
+     picking one rotates the ring so that chip travels to north. The ring is a
+     single element with one plain transform — driving the orbit from a
+     transitioned transform built out of an inherited custom property lags a
+     whole step behind the click. */
+  .dock-sw {
+    position: fixed;
+    top: 132px;
+    right: clamp(24px, 20vw, 380px);
+    left: auto;
+    bottom: auto;
+    z-index: 70;
+    width: var(--dial);
+    height: var(--dial);
+    --dial: 324px;
+    --orbit: 131px;
+    display: block;
+    padding: 0;
+    margin: 0;
+    border: none;
+    background: none;
+    backdrop-filter: none;
+    overflow: visible;
+    pointer-events: none;   /* only the chips and hub are clickable */
+    animation: none;
+  }
+
+  .dock-sw .sw-list {
+    position: absolute;
+    inset: 0;
+    display: block;
+    margin: 0;
+    padding: 0;
+    overflow: visible;
+    border-radius: 50%;
+    border: 1px solid var(--line);
+    background: color-mix(in srgb, var(--void) 66%, transparent);
+    backdrop-filter: blur(14px);
+    transform: rotate(0deg);   /* set inline by the picker; see note in JS */
+    /* No animation here: a filled animation on transform overrides the inline
+       rotation the picker writes, which silently froze the ring. */
+    animation: none;
+    transition: transform 0.62s cubic-bezier(0.2, 0.7, 0.2, 1),
+                border-color 0.45s ease, background-color 0.45s ease;
+    pointer-events: auto;
+  }
+
+  /* The chip is the button itself: bigger target, and it already carries the
+     theme's own --sw-bg / --sw-accent inline. */
+  .dock-sw .sw {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 34px;
+    height: 34px;
+    margin: -17px 0 0 -17px;
+    padding: 0;
+    gap: 0;
+    min-height: 0;
+    border-radius: 6px;
+    border: 1px solid color-mix(in srgb, var(--sw-accent) 45%, transparent);
+    background: var(--sw-bg);
+    box-shadow: none;
+    transform: rotate(var(--a, 0deg)) translateY(calc(-1 * var(--orbit)));
+    transition: box-shadow 0.25s ease, border-color 0.25s ease;
+    animation: none;
+  }
+  .dock-sw .sw:hover { box-shadow: 0 0 0 3px color-mix(in srgb, var(--sw-accent) 26%, transparent); }
+  .dock-sw .sw[aria-checked="true"] {
+    box-shadow: 0 0 0 2px var(--sw-accent), 0 0 16px -3px var(--sw-accent);
+  }
+  /* Accent bar, so a chip reads as a theme rather than a plain square. */
+  .dock-sw .sw::after {
+    content: '';
+    position: absolute;
+    left: 6px;
+    bottom: 6px;
+    width: 14px;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--sw-accent);
+  }
+  .dock-sw .sw-chip, .dock-sw .sw-name { display: none; }
+  .dock-sw::after { display: none; }   /* the rail's sweep overlay */
+
+  /* Hub: what is currently selected, at the centre. */
+  .dial-hub {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 152px;
+    height: 152px;
+    border-radius: 50%;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    text-align: center;
+    pointer-events: auto;
+    transition: background-color 0.45s ease, border-color 0.45s ease;
+  }
+  .dial-hub-name {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ice);
+    padding: 0 5px;
+    line-height: 1.25;
+  }
+  .dial-hub-hex {
+    font-family: var(--mono);
+    font-size: 7px;
+    letter-spacing: 0.06em;
+    color: var(--dim);
+  }
+
+  /* Tuck it away where there is no room beside the nav. */
+  @media (max-width: 720px), (max-height: 560px) {
+    .dock-sw { --dial: 132px; --orbit: 52px; top: 66px; }
+    .dock-sw .sw { width: 17px; height: 17px; margin: -8.5px 0 0 -8.5px; border-radius: 5px; }
+    .dock-sw .sw::after { left: 3px; bottom: 3px; width: 8px; height: 2px; }
+    .dial-hub { width: 62px; height: 62px; }
+    .dial-hub-name { font-size: 6.5px; }
+    .dial-hub-hex { display: none; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .dock-sw .sw-list { transition: none; }
   }
 </style>
 </head>
@@ -1853,19 +1978,16 @@
           happens in one session instead of two.
         </p>
         <p>
-          Catalyst passes them using each CLI's own flag, so the agent gets real
-          directories rather than pasted paths:
+          Catalyst hands each agent the extra repositories the way that agent
+          expects, so they arrive as real working directories rather than paths
+          pasted into a prompt.
         </p>
-        <pre class="argv"><code><b>claude</b>  <i>--add-dir</i> ../web-dashboard ../edge-cache
-<b>gemini</b>  <i>--include-directories</i> ../web-dashboard <i>--include-directories</i> ../edge-cache
-<b>codex</b>   <i>-c</i> sandbox_workspace_write.writable_roots=['../web-dashboard', '../edge-cache']</code></pre>
         <p>
-          Claude and Gemini treat those as additional workspace roots.
-          <strong>Codex has no equivalent</strong> — its workspace is its working
-          directory, and the closest lever is widening the sandbox's writable
-          roots. That grants write access without adding a workspace, so multi-repo
-          is genuinely weaker with Codex, and the app says so where you pick them
-          rather than implying parity.
+          Claude and Gemini treat them as additional places they are allowed to
+          read and edit. <strong>Codex works differently</strong> — it stays
+          focused on the primary repository, and the most Catalyst can do is let
+          it write to the others. So multi-repo is genuinely weaker there, and it
+          would be misleading to claim otherwise.
         </p>
       </div>
 
@@ -2022,10 +2144,9 @@
         <p class="eyebrow eyebrow--tight">Session</p>
         <h3>Real terminals, not a chat box.</h3>
         <p>
-          Catalyst doesn't wrap or re-implement any AI. It spawns the actual CLI in
-          a pseudo-terminal and bridges it to a full xterm.js terminal, so
-          everything the tool can do, it still does — prompts, slash commands,
-          permission dialogs, colour and all.
+          Catalyst doesn't wrap or re-implement any AI. It runs the real tool in a
+          real terminal, so everything the agent can normally do, it still does —
+          prompts, slash commands, permission requests, colour and all.
         </p>
         <ul class="spec">
           <li>One tab per session, up to eight, plus inner split terminals</li>
@@ -2295,11 +2416,11 @@
           <p class="os">macOS · Apple Silicon</p>
           <h3>Open the disk image</h3>
           <p>
-            Download the <code>.dmg</code> and drag Catalyst to Applications. The
-            build isn't notarized yet, so clear the quarantine flag once:
+            Download the disk image and drag Catalyst to your Applications
+            folder. This build is not notarised by Apple yet, so the first launch
+            is blocked — right-click Catalyst and choose Open to get past it. The
+            README has a one-line alternative if you prefer the terminal.
           </p>
-          <pre><code>xattr -dr com.apple.quarantine \
-  /Applications/Catalyst.app</code></pre>
         </div>
       </div>
 
@@ -2452,6 +2573,7 @@
     var list = document.querySelector('.sw-list');
     if (!list) return;
     var buttons = [].slice.call(list.querySelectorAll('.sw'));
+    var mockOrRail = document.getElementById('dockSw') || list.parentElement;
 
     var MAP = {
       bg: '--m-bg', 'bg-secondary': '--m-bg2', 'bg-card': '--m-card',
@@ -2500,6 +2622,15 @@
         b.tabIndex = on ? 0 : -1;
       });
       apply(btn.dataset.theme);
+      // Carry the picked chip to north. Negative: it sits +index*STEP from there.
+      var idx = buttons.indexOf(btn);
+      // Written as a real transform, not a custom property: a transform built
+      // from var() does not re-resolve when the property changes, so the ring
+      // would latch at its first value and never turn.
+      list.style.transform = 'rotate(' + (-idx * (360 / buttons.length)) + 'deg)';
+      var nm = document.getElementById('dialName'), hx = document.getElementById('dialHex');
+      if (nm) nm.textContent = THEMES[btn.dataset.theme].label;
+      if (hx) hx.textContent = THEMES[btn.dataset.theme].accent;
       if (focus) btn.focus();
       // Remember the choice for the next visit. Storage can throw when it is
       // disabled or the page is in private mode, and a preference is not worth
@@ -2508,7 +2639,19 @@
     }
 
     // Index drives the staggered entrance animation in CSS.
-    buttons.forEach(function (b, n) { b.style.setProperty('--i', n); });
+    // Place each chip on the circle; --i still drives any staggered entrance.
+    var STEP = 360 / buttons.length;
+    buttons.forEach(function (b, n) {
+      b.style.setProperty('--i', n);
+      b.style.setProperty('--a', (n * STEP) + 'deg');
+    });
+
+    // Hub showing the current selection, built here so the markup stays simple.
+    var hub = document.createElement('div');
+    hub.className = 'dial-hub';
+    hub.innerHTML = '<span class="dial-hub-name" id="dialName"></span>' +
+                    '<span class="dial-hub-hex" id="dialHex"></span>';
+    mockOrRail.appendChild(hub);
 
     buttons.forEach(function (btn, i) {
       btn.addEventListener('click', function () { select(btn); });
