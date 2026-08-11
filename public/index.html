@@ -483,6 +483,17 @@
                 <div class="worktree-desc">Run in a separate git worktree so your main checkout stays untouched</div>
               </div>
             </label>
+            <!-- Multi-repo: the selected card is the primary repo (the agent's
+                 cwd); these extras are handed to it as additional working
+                 directories via each CLI's own flag. -->
+            <div class="extra-repos" id="extraReposBlock">
+              <div class="extra-repos-head">
+                <span class="extra-repos-label">Additional repos</span>
+                <button class="btn-add-repos" id="addReposBtn" type="button">Add repos</button>
+              </div>
+              <div class="extra-repos-chips" id="extraReposChips"></div>
+              <div class="extra-repos-note hidden" id="extraReposNote"></div>
+            </div>
             <button class="btn-reveal" id="revealBtn" type="button">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
               <span>Reveal in Explorer</span>
@@ -1472,6 +1483,34 @@
   </div>
 
   <!-- Branch Modal -->
+  <!-- Pick additional repos to hand the agent alongside the primary one. -->
+  <div id="multiRepoModal" class="fixed inset-0 z-[200] hidden items-center justify-center">
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" id="multiRepoOverlay"></div>
+    <div class="relative z-10 w-full max-w-md mx-4 shadow-2xl flex flex-col max-h-[80vh]" style="background:var(--bg-card);border:1px solid color-mix(in srgb, var(--accent) 20%, transparent);">
+      <div class="flex items-center justify-between px-5 py-4" style="border-bottom:1px solid var(--border);">
+        <h3 class="text-xs font-semibold uppercase tracking-[3px]" style="color:var(--text)">Additional repos</h3>
+        <button id="multiRepoClose" class="hover-text-theme transition-colors" style="color:var(--text-muted)">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <div class="px-5 py-3" style="border-bottom:1px solid var(--border);">
+        <div class="multi-repo-primary" id="multiRepoPrimary"></div>
+        <input type="text" id="multiRepoFilter" class="w-full px-3 py-2 text-xs font-mono outline-none focus-border-accent transition-colors" style="background:var(--input-bg);border:1px solid var(--border);color:var(--text);" placeholder="Filter repos...">
+      </div>
+
+      <div class="flex-1 overflow-y-auto" id="multiRepoList"></div>
+
+      <div class="flex items-center justify-between gap-3 px-5 py-3" style="border-top:1px solid var(--border);">
+        <span class="text-[10px] font-mono" style="color:var(--text-muted)" id="multiRepoCount">None selected</span>
+        <div class="flex gap-2">
+          <button id="multiRepoClear" class="btn btn-secondary btn-sm" type="button">Clear</button>
+          <button id="multiRepoDone" class="btn btn-primary btn-sm" type="button">Done</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div id="branchModal" class="fixed inset-0 z-[200] hidden items-center justify-center">
     <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" id="branchModalOverlay"></div>
     <div class="relative z-10 w-full max-w-md mx-4 shadow-2xl flex flex-col max-h-[80vh]" style="background:var(--bg-card);border:1px solid color-mix(in srgb, var(--accent) 20%, transparent);">

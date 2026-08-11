@@ -361,7 +361,12 @@
   position: sticky;
   top: 0;
   margin-top: 8px;
-  overflow: hidden !important;
+  /* Clip horizontally (keeps the rounded card edge) but let the pane scroll
+     vertically — with the worktree option and the additional-repos block the
+     content is taller than the column, and `overflow: hidden` made the lower
+     part unreachable. */
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
   contain: layout style;
 }
 

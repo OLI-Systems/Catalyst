@@ -1640,7 +1640,11 @@ body.is-desktop .welcome-settings-btn {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  /* "safe" keeps short content centred but stops the top being clipped and
+     unreachable once the panel is taller than the column — which it is with
+     the worktree option and the additional-repos block both present. */
+  justify-content: safe center;
+  overflow-y: auto;
   min-height: min(340px, 45vh);
   animation: cli-slide-in 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
   padding: clamp(16px, 3vw, 28px) clamp(12px, 2vw, 24px);
@@ -2714,6 +2718,125 @@ body.is-desktop .welcome-settings-btn {
 .shortcut-desc {
   font-size: 10px;
   color: var(--text-muted);
+}
+
+/* Multi-repo selection */
+.extra-repos {
+  margin-top: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-card);
+}
+
+.extra-repos-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.extra-repos-label {
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.btn-add-repos {
+  font-family: inherit;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+.btn-add-repos:hover { color: var(--text); border-color: var(--accent); }
+
+.extra-repos-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.extra-repo-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  font-family: var(--font-mono, monospace);
+  padding: 3px 6px 3px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  color: var(--text);
+  background: var(--bg-secondary);
+}
+.extra-repo-chip button {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 1;
+  padding: 0 1px;
+}
+.extra-repo-chip button:hover { color: var(--danger); }
+
+.extra-repos-empty {
+  font-size: 10px;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.extra-repos-note {
+  margin-top: 9px;
+  font-size: 10px;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+.multi-repo-primary {
+  font-size: 10px;
+  font-family: var(--font-mono, monospace);
+  color: var(--text-muted);
+  margin-bottom: 10px;
+}
+.multi-repo-primary b { color: var(--text); font-weight: 600; }
+
+.multi-repo-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 20px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--border);
+}
+.multi-repo-row:hover { background: var(--bg-hover, var(--bg-secondary)); }
+.multi-repo-row input { accent-color: var(--accent); flex: none; }
+.multi-repo-row .mr-name {
+  font-size: 11px;
+  font-family: var(--font-mono, monospace);
+  color: var(--text);
+}
+.multi-repo-row .mr-tech {
+  font-size: 9px;
+  color: var(--text-muted);
+  margin-left: auto;
+  text-align: right;
+}
+.multi-repo-row.is-primary { opacity: 0.45; cursor: not-allowed; }
+.multi-repo-row.is-primary .mr-tech { color: var(--accent); }
+
+.multi-repo-none {
+  padding: 20px;
+  font-size: 11px;
+  color: var(--text-muted);
+  text-align: center;
 }
 
 /* Updates settings page */

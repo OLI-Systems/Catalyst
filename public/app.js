@@ -109,6 +109,9 @@
     sessions: [],
     activeSessionId: null,
     selectedRepo: null,
+    allRepos: [],
+    // Additional repos handed to the agent alongside the primary one.
+    extraRepos: [],
     chatPanels: {},
     terminals: {},
     rootDir: null,
@@ -2057,6 +2060,134 @@
     wsSend({ type: 'create-session', cli, repo: repoName, repoPath, useWorktree: false });
   };
 
+  // ─── Additional repos ─────────────────────────────────────────────────
+  // The selected card is the primary repo (the agent's cwd). Extras are passed
+  // as additional working directories using each CLI's own flag, so which CLI
+  // is chosen changes how well this is supported.
+  const multiRepoModal = $('#multiRepoModal');
+  const extraReposChips = $('#extraReposChips');
+  const extraReposNote = $('#extraReposNote');
+
+  function clearExtraRepos() {
+    state.extraRepos = [];
+    renderExtraRepos();
+  }
+
+  function renderExtraRepos() {
+    if (!extraReposChips) return;
+    if (!state.extraRepos.length) {
+      extraReposChips.innerHTML = '<span class="extra-repos-empty">Primary repo only</span>';
+    } else {
+      extraReposChips.innerHTML = state.extraRepos
+        .map((r, i) => `<span class="extra-repo-chip">${escHtml(r.name)}<button type="button" data-idx="${i}" title="Remove">×</button></span>`)
+        .join('');
+      extraReposChips.querySelectorAll('button').forEach(b => {
+        b.addEventListener('click', (e) => {
+          e.stopPropagation();
+          state.extraRepos.splice(Number(b.dataset.idx), 1);
+          renderExtraRepos();
+        });
+      });
+    }
+    updateExtraReposNote();
+  }
+
+  // Codex has no --add-dir equivalent, so say that plainly rather than let the
+  // chips imply the same behaviour across all three CLIs.
+  function updateExtraReposNote() {
+    if (!extraReposNote) return;
+    const show = state.extraRepos.length > 0;
+    extraReposNote.classList.toggle('hidden', !show);
+    if (show) {
+      extraReposNote.textContent =
+        'Claude and Gemini receive these as extra workspace directories. '
+        + 'Codex has no equivalent — it only gets write access to them, and stays focused on the primary repo.';
+    }
+  }
+
+  function renderMultiRepoList(filter) {
+    const list = $('#multiRepoList');
+    if (!list) return;
+    const primary = state.selectedRepo;
+    const q = (filter || '').trim().toLowerCase();
+    const rows = (state.allRepos || []).filter(r => !q || r.name.toLowerCase().includes(q));
+
+    if (!rows.length) {
+      list.innerHTML = '<div class="multi-repo-none">No repos match that filter.</div>';
+      return;
+    }
+
+    list.innerHTML = rows.map(r => {
+      const isPrimary = primary && r.path === primary.path;
+      const checked = state.extraRepos.some(x => x.path === r.path);
+      const tech = isPrimary ? 'primary' : ((r.repoInfo && (r.repoInfo.technologies || []).join(' · ')) || '');
+      return `<label class="multi-repo-row${isPrimary ? ' is-primary' : ''}">
+        <input type="checkbox" data-path="${escHtml(r.path)}" ${checked ? 'checked' : ''} ${isPrimary ? 'disabled' : ''}>
+        <span class="mr-name">${escHtml(r.name)}</span>
+        <span class="mr-tech">${escHtml(tech)}</span>
+      </label>`;
+    }).join('');
+
+    list.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+      cb.addEventListener('change', () => {
+        const repo = (state.allRepos || []).find(r => r.path === cb.dataset.path);
+        if (!repo) return;
+        if (cb.checked) {
+          if (!state.extraRepos.some(x => x.path === repo.path)) state.extraRepos.push(repo);
+        } else {
+          state.extraRepos = state.extraRepos.filter(x => x.path !== repo.path);
+        }
+        updateMultiRepoCount();
+      });
+    });
+    updateMultiRepoCount();
+  }
+
+  function updateMultiRepoCount() {
+    const el = $('#multiRepoCount');
+    if (el) {
+      const n = state.extraRepos.length;
+      el.textContent = n ? `${n} additional repo${n === 1 ? '' : 's'} selected` : 'None selected';
+    }
+  }
+
+  function openMultiRepoModal() {
+    if (!state.selectedRepo || !multiRepoModal) return;
+    $('#multiRepoPrimary').innerHTML = `Primary: <b>${escHtml(state.selectedRepo.name)}</b> — the agent runs here`;
+    $('#multiRepoFilter').value = '';
+    renderMultiRepoList('');
+    multiRepoModal.classList.remove('hidden');
+    multiRepoModal.classList.add('flex');
+    setTimeout(() => $('#multiRepoFilter')?.focus(), 30);
+  }
+
+  function closeMultiRepoModal() {
+    if (!multiRepoModal) return;
+    multiRepoModal.classList.add('hidden');
+    multiRepoModal.classList.remove('flex');
+    renderExtraRepos();
+  }
+
+  $('#addReposBtn')?.addEventListener('click', openMultiRepoModal);
+  $('#multiRepoClose')?.addEventListener('click', closeMultiRepoModal);
+  $('#multiRepoOverlay')?.addEventListener('click', closeMultiRepoModal);
+  $('#multiRepoDone')?.addEventListener('click', closeMultiRepoModal);
+  $('#multiRepoClear')?.addEventListener('click', () => {
+    state.extraRepos = [];
+    renderMultiRepoList($('#multiRepoFilter')?.value || '');
+  });
+  $('#multiRepoFilter')?.addEventListener('input', (e) => renderMultiRepoList(e.target.value));
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && multiRepoModal && !multiRepoModal.classList.contains('hidden')) {
+      closeMultiRepoModal();
+    }
+  });
+
+  renderExtraRepos();
+
+  // Paths only — this is what the server expects and validates.
+  const extraDirPaths = () => state.extraRepos.map(r => r.path);
+
   _cliBtns.forEach(btn => {
     btn.addEventListener('click', () => {
       if (!state.selectedRepo || btn.disabled) return;
@@ -2096,7 +2227,8 @@
         cli: cliId,
         repo: state.selectedRepo.name,
         repoPath: state.selectedRepo.path,
-        useWorktree
+        useWorktree,
+        extraDirs: extraDirPaths()
       });
     });
   });
@@ -2349,6 +2481,8 @@
           return;
         }
         welcomeScreen.classList.add('has-repos');
+        // Kept for the additional-repos picker, which needs the full list.
+        state.allRepos = msg.repos;
         state.repoInfoCache = state.repoInfoCache || {};
         let metaCount = 0;
         msg.repos.forEach(r => {
@@ -2370,7 +2504,11 @@
           card.addEventListener('click', () => {
             repoGrid.querySelectorAll('.repo-card.selected').forEach(c => c.classList.remove('selected'));
             card.classList.add('selected');
+            const changedPrimary = !state.selectedRepo || state.selectedRepo.path !== r.path;
             state.selectedRepo = r;
+            // Extras belong to a particular primary; keeping them across a
+            // change would silently hand the agent the wrong set.
+            if (changedPrimary) clearExtraRepos();
             $('#repoCliLayout').classList.add('has-selection');
             setTimeout(() => {
               const grid = document.getElementById('repoGrid');

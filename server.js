@@ -1000,6 +1000,19 @@ wss.on('connection', (ws) => {
             if (!isAllowedRepoPath(msg.repoPath)) {
               throw new Error('Repository path is outside the configured projects folder');
             }
+
+            // Additional repos for multi-repo sessions. Validated individually:
+            // without this a client could hand the agent any directory on disk.
+            const extraDirs = Array.isArray(msg.extraDirs) ? msg.extraDirs.filter(Boolean) : [];
+            for (const dir of extraDirs) {
+              if (!isAllowedRepoPath(dir)) {
+                throw new Error(`Additional repository is outside the configured projects folder: ${dir}`);
+              }
+            }
+            if (extraDirs.includes(msg.repoPath)) {
+              throw new Error('The primary repository cannot also be listed as an additional repository');
+            }
+
             let spawnPath = msg.repoPath;
             let worktreePath = null;
             let worktreeBranch = null;
@@ -1020,7 +1033,8 @@ wss.on('connection', (ws) => {
                 trackBuildOutput(msg.repoPath, msg.repo, data);
               },
               (sessionId, exitCode) => broadcast({ type: 'session-ended', sessionId, exitCode }),
-              { worktreePath, worktreeBranch, originalRepoPath: msg.repoPath }
+              { worktreePath, worktreeBranch, originalRepoPath: msg.repoPath },
+              { extraDirs, resume: typeof msg.resume === 'string' ? msg.resume : null }
             );
             broadcast({ type: 'session-created', ...info });
           } catch (err) {
