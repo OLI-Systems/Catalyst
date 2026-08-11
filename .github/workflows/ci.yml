@@ -35,6 +35,14 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # tauri.conf.json declares sidecar/**/* as a bundle resource, and
+      # tauri-build fails the build script if that glob matches nothing. The
+      # directory is generated, not committed, so it must be staged before any
+      # cargo command runs — including clippy. `tauri build` below re-stages it
+      # via beforeBuildCommand, which is idempotent.
+      - name: Stage the Node sidecar
+        run: npm run stage
+
       - name: Check Rust
         run: cargo clippy --manifest-path src-tauri/Cargo.toml -- -D warnings
 
