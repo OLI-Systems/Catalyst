@@ -19,7 +19,7 @@ Grab the latest build from
 
 | Platform | File | Notes |
 |---|---|---|
-| Windows x64 | `Catalyst_<version>_x64-setup.exe` | Installs per-user — no administrator prompt. |
+| Windows x64 | `Catalyst_<version>_x64-setup.zip` | Unzip, then run the installer. Installs per-user — no administrator prompt. |
 | macOS (Apple Silicon) | `Catalyst_<version>_aarch64.dmg` | Drag Catalyst to Applications. See the note below on Gatekeeper. |
 
 The release workflow codesigns and notarizes the macOS bundle when Apple
@@ -239,20 +239,20 @@ footer, About and Settings → Updates all follow the bump with no further edits
 
 ### Optional: a signed Windows installer
 
-Unsigned installers have no reputation with Chrome or SmartScreen. Chrome
-downloads the file completely but withholds the rename, leaving
-`Unconfirmed <n>.crdownload` in your downloads folder, and SmartScreen warns on
-first run. The bytes are fine — it is the missing publisher identity that trips
-both. Signing is the only real fix.
+Unsigned installers have no reputation with Chrome or SmartScreen, which is why
+releases currently ship a `.zip` as well. The workflow is already wired to sign;
+it needs only these secrets:
 
 | Secret | What it is |
 |---|---|
 | `WINDOWS_CERTIFICATE` | Your code-signing certificate as a base64 `.pfx` |
 | `WINDOWS_CERTIFICATE_PASSWORD` | The export password for that `.pfx` |
 
-An OV certificate accumulates reputation over the first few hundred downloads;
-an EV certificate carries it from the first release. With neither secret set the
-workflow publishes unsigned and says so in the log.
+With neither set, the workflow publishes unsigned and says so in the log.
+
+**[SIGNING.md](SIGNING.md)** covers the whole picture: what the warnings actually
+mean, why a self-signed certificate makes things worse rather than better, and a
+checklist for free open-source signing via SignPath Foundation.
 
 ### Optional: signed and notarized macOS builds
 

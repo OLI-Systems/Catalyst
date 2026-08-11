@@ -179,3 +179,27 @@ jobs:
           # Emits and merges latest.json across matrix legs for the updater.
           includeUpdaterJson: true
           updaterJsonPreferNsis: true
+
+      # Chrome will not name a finished .exe download from a publisher with no
+      # reputation: the bytes arrive complete but it leaves
+      # "Unconfirmed <n>.crdownload" behind. It does not treat archives that
+      # way, so publish a zipped installer too and let the download page link
+      # that instead. Remove this step once the installer is signed — the .exe
+      # is the better download when it carries a valid signature.
+      #
+      # Tag pushes only: on workflow_dispatch there is no release to upload to.
+      - name: Publish a zipped installer
+        if: runner.os == 'Windows' && startsWith(github.ref, 'refs/tags/')
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $exe = Get-ChildItem "src-tauri/target/release/bundle/nsis/*-setup.exe" -ErrorAction SilentlyContinue | Select-Object -First 1
+          if (-not $exe) {
+            Write-Output "::warning::No NSIS installer found - skipping the zip. The .exe is still published."
+            exit 0
+          }
+          $zip = Join-Path $exe.DirectoryName ($exe.BaseName + ".zip")
+          Compress-Archive -LiteralPath $exe.FullName -DestinationPath $zip -Force
+          gh release upload $env:GITHUB_REF_NAME $zip --clobber --repo $env:GITHUB_REPOSITORY
+          Write-Output "::notice::Published $($exe.BaseName).zip alongside the installer."

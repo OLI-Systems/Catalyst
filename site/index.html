@@ -1697,6 +1697,21 @@
     padding: 24px;
     background: var(--panel);
   }
+  /* Code signing policy. Same card language as .plat, three across instead of
+     two, since the three statements are equal in weight. */
+  .signing { border-top: 1px solid var(--line); padding: clamp(48px, 7vw, 88px) 0; }
+  .sign-grid { display: grid; gap: 18px; margin-top: 34px; }
+  @media (min-width: 720px) { .sign-grid { grid-template-columns: 1fr 1fr; } }
+  @media (min-width: 1040px) { .sign-grid { grid-template-columns: repeat(3, 1fr); } }
+  .sign-item {
+    border: 1px solid var(--line);
+    border-radius: 9px;
+    padding: 24px;
+    background: var(--panel);
+  }
+  .sign-item h3 { font-size: 15px; margin-bottom: 8px; }
+  .sign-item p { font-size: 13.5px; line-height: 1.65; color: var(--body); }
+
   .plat h3 { font-size: 17px; margin-bottom: 6px; }
   .plat .os {
     font-family: var(--mono);
@@ -3086,9 +3101,12 @@
           <p class="os">Windows</p>
           <h3>Run the installer</h3>
           <p>
-            Download <code>Catalyst_&lt;version&gt;_x64-setup.exe</code> from the
-            latest release and run it. It installs for the current user, so it
-            doesn't ask for an administrator.
+            The download is a zip holding
+            <code>Catalyst_&lt;version&gt;_x64-setup.exe</code>. Unzip it and run
+            the installer — it installs for the current user, so it never asks
+            for an administrator. Windows may ask you to confirm an app from an
+            unrecognised publisher; see
+            <a href="#signing">code signing</a> for why.
           </p>
         </div>
         <div class="plat">
@@ -3119,6 +3137,57 @@
         <a class="btn btn-ghost" data-dl="mac" href="https://github.com/OLI-Systems/Catalyst/releases/latest" rel="noopener">macOS disk image</a>
         <a class="btn btn-ghost" href="https://github.com/OLI-Systems/Catalyst#readme" target="_blank" rel="noopener">Build from source</a>
       </div>
+    </div>
+  </section>
+
+  <!-- ─── Code signing policy ──────────────────────────────────────────────
+       Published here deliberately: a code signing policy on the project
+       homepage is one of SignPath Foundation's conditions for free OSS
+       signing, and it is the honest place to explain the warnings a visitor
+       will actually hit. -->
+  <section class="signing" id="signing">
+    <div class="wrap rise">
+      <p class="eyebrow">Code signing</p>
+      <h2>What is signed, and what isn't.</h2>
+
+      <div class="sign-grid">
+        <div class="sign-item">
+          <h3>Updates are signed</h3>
+          <p>
+            Every release is signed with a key held by the maintainers, and
+            Catalyst verifies that signature before it installs an update.
+            An update that fails verification is refused. This is what protects
+            you from a tampered update.
+          </p>
+        </div>
+        <div class="sign-item">
+          <h3>The installer is not</h3>
+          <p>
+            The Windows installer and the macOS app are not yet signed with an
+            operating-system certificate, which is a separate thing entirely.
+            So Windows may warn about an unrecognised publisher, and macOS may
+            refuse the first launch. Both are reputation warnings, not a sign
+            that anything is wrong with the download.
+          </p>
+        </div>
+        <div class="sign-item">
+          <h3>Built in the open</h3>
+          <p>
+            Every release is built by GitHub Actions from the tagged commit in
+            the public repository — never from a maintainer's machine. You can
+            read the workflow, the source it built, and the log of the build
+            that produced the file you downloaded.
+          </p>
+        </div>
+      </div>
+
+      <p class="req">
+        Catalyst collects no telemetry and phones home only to check GitHub for a
+        newer release. We are applying for free open-source code signing so these
+        warnings go away; until then, the download links above serve a zip on
+        Windows, because browsers treat an unsigned installer with suspicion it
+        has not earned.
+      </p>
     </div>
   </section>
 </main>
@@ -3442,25 +3511,36 @@
     // What counts as "the installer" differs per platform: NSIS .exe on
     // Windows, the disk image on macOS. The .sig files sit beside both and must
     // never be handed to a visitor.
-    var MATCH = {
-      win: function (n) { return /-setup\.exe$/.test(n) || /\.exe$/.test(n); },
-      mac: function (n) { return /\.dmg$/.test(n); }
+    // Candidates in order of preference, first match wins.
+    //
+    // Windows prefers the zipped installer. Chrome will not name a finished
+    // .exe download from a publisher with no signing reputation — it leaves
+    // "Unconfirmed <n>.crdownload" behind, which reads as a failed download
+    // even though the bytes are complete. It treats archives normally. Once the
+    // installer carries a trusted signature, delete the .zip entry and the .exe
+    // becomes first choice again.
+    //
+    // Order also means older releases still resolve: a release published before
+    // the zip existed simply falls through to the .exe.
+    var PREFER = {
+      win: [/-setup\.zip$/, /-setup\.exe$/, /\.exe$/],
+      mac: [/\.dmg$/]
     };
 
     function findInstaller(release, platform) {
-      var assets = (release && release.assets) || [];
-      var test = MATCH[platform] || MATCH.win;
-      var fallback = null;
-      for (var i = 0; i < assets.length; i++) {
-        var n = (assets[i].name || '').toLowerCase();
-        if (/\.sig$/.test(n)) continue;
-        if (!test(n)) continue;
-        // Prefer the canonical name; keep any other match as a backstop in case
-        // the release naming changes.
-        if (platform === 'win' && n.indexOf('setup') === -1) { fallback = fallback || assets[i]; continue; }
-        return assets[i].browser_download_url;
+      // .sig files sit beside the real artefacts and must never be served.
+      var assets = ((release && release.assets) || []).filter(function (a) {
+        return !/\.sig$/.test((a.name || '').toLowerCase());
+      });
+      var order = PREFER[platform] || PREFER.win;
+      for (var p = 0; p < order.length; p++) {
+        for (var i = 0; i < assets.length; i++) {
+          if (order[p].test((assets[i].name || '').toLowerCase())) {
+            return assets[i].browser_download_url;
+          }
+        }
       }
-      return fallback ? fallback.browser_download_url : null;
+      return null;
     }
 
     buttons.forEach(function (btn) {
