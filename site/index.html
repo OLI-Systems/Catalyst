@@ -667,26 +667,6 @@
   .mk-status-dot { width: 5.68px; height: 5.68px; border-radius: 50%; background: var(--m-success); flex: none; }
   .mk-status-sep { opacity: 0.5; }
 
-  .mk-readout {
-    display: flex; align-items: center; justify-content: space-between; gap: 17.04px;
-    padding: 12.78px 17.04px;
-    border: 1px solid var(--line);
-    border-top: none;
-    border-radius: 0 0 12.78px 12.78px;
-    background: var(--panel);
-    font-family: var(--mono);
-    font-size: 13.49px;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: var(--dim);
-  }
-  .mk-readout-name { color: var(--ice); }
-  .mk-readout-right { display: inline-flex; align-items: center; gap: 19.88px; }
-  .mk-readout-hex { display: inline-flex; align-items: center; gap: 8.52px; }
-  .mk-readout-hex i {
-    width: 12.78px; height: 12.78px; border-radius: 50%;
-    background: var(--m-accent);
-  }
 
   /* ─── Mock views ────────────────────────────────────────────────────────
      Six more views drawn from the same tokens as the workspace above: repo
@@ -1511,8 +1491,11 @@
     z-index: 70;
     width: var(--dial);
     height: var(--dial);
-    --dial: 324px;
-    --orbit: 131px;
+    /* Sized from whichever viewport axis is tighter, so the circle always
+       fits. Everything below is a fraction of this one number. */
+    --dial: clamp(148px, min(25vw, 33vh), 340px);
+    --chip: calc(var(--dial) * 0.105);
+    --orbit: calc(var(--dial) * 0.404);
     display: block;
     padding: 0;
     margin: 0;
@@ -1550,9 +1533,9 @@
     position: absolute;
     left: 50%;
     top: 50%;
-    width: 34px;
-    height: 34px;
-    margin: -17px 0 0 -17px;
+    width: var(--chip);
+    height: var(--chip);
+    margin: calc(var(--chip) / -2) 0 0 calc(var(--chip) / -2);
     padding: 0;
     gap: 0;
     min-height: 0;
@@ -1572,10 +1555,10 @@
   .dock-sw .sw::after {
     content: '';
     position: absolute;
-    left: 6px;
-    bottom: 6px;
-    width: 14px;
-    height: 4px;
+    left: calc(var(--chip) * 0.18);
+    bottom: calc(var(--chip) * 0.18);
+    width: calc(var(--chip) * 0.41);
+    height: calc(var(--chip) * 0.12);
     border-radius: 2px;
     background: var(--sw-accent);
   }
@@ -1588,8 +1571,8 @@
     left: 50%;
     top: 50%;
     transform: translate(-50%, -50%);
-    width: 152px;
-    height: 152px;
+    width: calc(var(--dial) * 0.47);
+    height: calc(var(--dial) * 0.47);
     border-radius: 50%;
     background: var(--panel);
     border: 1px solid var(--line);
@@ -1604,7 +1587,7 @@
   }
   .dial-hub-name {
     font-family: var(--mono);
-    font-size: 10px;
+    font-size: clamp(6px, calc(var(--dial) * 0.031), 10px);
     letter-spacing: 0.1em;
     text-transform: uppercase;
     color: var(--ice);
@@ -1613,23 +1596,68 @@
   }
   .dial-hub-hex {
     font-family: var(--mono);
-    font-size: 7px;
+    font-size: clamp(5px, calc(var(--dial) * 0.023), 8px);
     letter-spacing: 0.06em;
     color: var(--dim);
   }
 
-  /* Tuck it away where there is no room beside the nav. */
+  /* On a small window the hex reads as clutter, and the dial can sit closer to
+     the nav. Sizes are already handled by the clamp above. */
   @media (max-width: 720px), (max-height: 560px) {
-    .dock-sw { --dial: 132px; --orbit: 52px; top: 66px; }
-    .dock-sw .sw { width: 17px; height: 17px; margin: -8.5px 0 0 -8.5px; border-radius: 5px; }
-    .dock-sw .sw::after { left: 3px; bottom: 3px; width: 8px; height: 2px; }
-    .dial-hub { width: 62px; height: 62px; }
-    .dial-hub-name { font-size: 6.5px; }
+    .dock-sw { top: 74px; }
     .dial-hub-hex { display: none; }
   }
 
   @media (prefers-reduced-motion: reduce) {
     .dock-sw .sw-list { transition: none; }
+  }
+
+  /* ─── Dial retraction ────────────────────────────────────────────────────
+     Away from the top of the page the dial folds itself up: the chips draw in
+     toward the hub, the hub shrinks, and the whole assembly scales back into the
+     corner it is anchored to. Scrolling home reverses it. Transitions rather
+     than keyframes, so the two directions are the same motion played each way
+     and an interrupted scroll picks up from wherever it got to. */
+  .dock-sw {
+    transform-origin: 82% 18%;
+    transition: opacity 0.42s ease,
+                transform 0.62s cubic-bezier(0.22, 0.68, 0.16, 1),
+                filter 0.42s ease;
+  }
+  .dock-sw .sw {
+    /* transform joins the existing transitions so the chips can travel */
+    transition: box-shadow 0.25s ease, border-color 0.25s ease,
+                transform 0.52s cubic-bezier(0.22, 0.68, 0.16, 1);
+  }
+  .dial-hub {
+    transition: transform 0.52s cubic-bezier(0.22, 0.68, 0.16, 1),
+                opacity 0.36s ease,
+                background-color 0.45s ease, border-color 0.45s ease;
+  }
+
+  .dock-sw.is-away {
+    opacity: 0;
+    transform: scale(0.62) rotate(-16deg);
+    filter: blur(2.5px);
+  }
+  /* Chips collapse toward the centre, each a beat after the one before. The
+     delay reverses on the way back so it unfolds outward-in rather than
+     replaying the same order. */
+  .dock-sw.is-away .sw {
+    transform: rotate(var(--a, 0deg)) translateY(calc(-1 * var(--orbit) * 0.34));
+    transition-delay: calc(var(--i, 0) * 9ms);
+  }
+  .dock-sw.is-away .dial-hub {
+    transform: translate(-50%, -50%) scale(0.66);
+    opacity: 0;
+  }
+  /* Nothing to click once it has folded away. */
+  .dock-sw.is-away, .dock-sw.is-away .sw-list, .dock-sw.is-away .sw { pointer-events: none; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .dock-sw, .dock-sw .sw, .dial-hub { transition: none; }
+    .dock-sw.is-away { transform: none; filter: none; }
+    .dock-sw.is-away .sw { transform: rotate(var(--a, 0deg)) translateY(calc(-1 * var(--orbit))); }
   }
 </style>
 </head>
@@ -1845,14 +1873,6 @@
               <span class="mk-spacer"></span>
               <span>Connected</span>
             </div>
-          </div>
-
-          <div class="mk-readout">
-            <span class="mk-readout-name" id="themeName">Midnight</span>
-            <span class="mk-readout-right">
-              <span class="mk-readout-kind" id="themeKind">dark</span>
-              <span class="mk-readout-hex"><i aria-hidden="true"></i><span id="themeHex">#38bdf8</span></span>
-            </span>
           </div>
         </div>
       </div>
@@ -2606,16 +2626,21 @@
       });
       root.setAttribute('data-theme-kind', t.light ? 'light' : 'dark');
 
-      document.getElementById('themeName').textContent = t.label;
-      document.getElementById('themeHex').textContent = t.accent;
-      document.getElementById('themeKind').textContent = t.light ? 'light' : 'dark';
+      // The readout bar under the mocks is gone; the dial hub shows this now.
+      // Guarded so a missing node cannot throw and kill the picker.
+      var rName = document.getElementById('themeName');
+      var rHex = document.getElementById('themeHex');
+      var rKind = document.getElementById('themeKind');
+      if (rName) rName.textContent = t.label;
+      if (rHex) rHex.textContent = t.accent;
+      if (rKind) rKind.textContent = t.light ? 'light' : 'dark';
       var now = document.getElementById('dockNow');
       if (now) now.textContent = t.label;
     }
 
     var STORE_KEY = 'catalyst-site-theme';
 
-    function select(btn, focus) {
+    function select(btn, focus, persist) {
       buttons.forEach(function (b) {
         var on = b === btn;
         b.setAttribute('aria-checked', String(on));
@@ -2632,10 +2657,14 @@
       if (nm) nm.textContent = THEMES[btn.dataset.theme].label;
       if (hx) hx.textContent = THEMES[btn.dataset.theme].accent;
       if (focus) btn.focus();
-      // Remember the choice for the next visit. Storage can throw when it is
-      // disabled or the page is in private mode, and a preference is not worth
+      // Remember the choice for the next visit — but only when this came from
+      // the visitor. A random first-load pick is not a preference, and saving it
+      // would freeze whichever theme happened to come up. Storage can throw when
+      // it is disabled or the page is private, and a preference is not worth
       // breaking the picker over.
-      try { localStorage.setItem(STORE_KEY, btn.dataset.theme); } catch (e) {}
+      if (persist !== false) {
+        try { localStorage.setItem(STORE_KEY, btn.dataset.theme); } catch (e) {}
+      }
     }
 
     // Index drives the staggered entrance animation in CSS.
@@ -2664,17 +2693,58 @@
       });
     });
 
-    // Restore the last choice. Validated against the known themes so a stale or
-    // tampered value falls back to the default rather than leaving the page
-    // half-tinted.
+    // A saved choice wins. Without one, open on a random theme so the page
+    // shows off a different palette each visit rather than always Midnight.
+    // Validated against the known themes, so a stale or tampered value falls
+    // back to random rather than leaving the page half-tinted.
     var saved = null;
     try { saved = localStorage.getItem(STORE_KEY); } catch (e) {}
-    var start = (saved && THEMES[saved] && buttons.filter(function (b) {
-      return b.dataset.theme === saved;
-    })[0]) || buttons[0];
-    select(start);
+
+    var chosen = null;
+    if (saved && THEMES[saved]) {
+      chosen = buttons.filter(function (b) { return b.dataset.theme === saved; })[0] || null;
+    }
+    var isRandom = !chosen;
+    if (isRandom) {
+      chosen = buttons[Math.floor(Math.random() * buttons.length)];
+    }
+
+    // persist=false either way: a restored value is already stored, and a random
+    // one is deliberately not remembered.
+    select(chosen, false, false);
   })();
 
+
+
+  // Fold the dial away once the page leaves the top, and unfold it on return.
+  // Two thresholds rather than one so a scroll hovering at the boundary cannot
+  // flap the state back and forth.
+  (function () {
+    var dial = document.getElementById('dockSw');
+    if (!dial) return;
+
+    var AWAY_AT = 150;   // fold once past this
+    var HOME_AT = 40;    // unfold only after coming back inside this
+    var away = false;
+    var queued = false;
+
+    function settle() {
+      queued = false;
+      var y = window.scrollY || document.documentElement.scrollTop || 0;
+      if (!away && y > AWAY_AT) { away = true; dial.classList.add('is-away'); }
+      else if (away && y < HOME_AT) { away = false; dial.classList.remove('is-away'); }
+    }
+
+    function onScroll() {
+      if (queued) return;
+      queued = true;
+      requestAnimationFrame(settle);
+    }
+
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll, { passive: true });
+    settle();   // a page restored mid-scroll should start folded
+  })();
 
   // Reveal on scroll. Anything already in view when the page loads is shown
   // immediately, so the hero never waits on an intersection callback.
