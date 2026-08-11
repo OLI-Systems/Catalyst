@@ -200,7 +200,7 @@ reads.
 |---|---|---|
 | `TAURI_SIGNING_PRIVATE_KEY` | Settings → Secrets → Actions | Signs updater artifacts. Must match the `pubkey` in `src-tauri/tauri.conf.json`. |
 | `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` | Same | Only if the key has a password. |
-| Pages source = **GitHub Actions** | Settings → Pages | Lets `pages.yml` deploy `site/`. |
+| Pages source = **GitHub Actions** | Settings → Pages | Lets `pages.yml` deploy `site/`. Required — the workflow cannot do this itself, because `configure-pages`' `enablement` input does not accept the default `GITHUB_TOKEN`. Until it is set, Deploy Pages fails with `Get Pages site failed`. |
 
 To generate a keypair:
 

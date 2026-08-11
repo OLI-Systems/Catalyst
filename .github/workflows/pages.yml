@@ -31,17 +31,16 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      # enablement turns Pages on (source = GitHub Actions) via the API on first
-      # run, so a fresh clone of this repo deploys without a manual settings trip.
-      - uses: actions/configure-pages@v5
-        with:
-          enablement: true
+      # Note: this cannot enable Pages for the repository. configure-pages'
+      # `enablement` input explicitly requires a token other than GITHUB_TOKEN,
+      # so the Pages site has to be created once by hand — see README.
+      - uses: actions/configure-pages@v6
 
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: site
 
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
