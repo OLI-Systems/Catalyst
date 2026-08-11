@@ -2188,6 +2188,138 @@
   // Paths only — this is what the server expects and validates.
   const extraDirPaths = () => state.extraRepos.map(r => r.path);
 
+  // ─── Sessions modal ───────────────────────────────────────────────────
+  // Offers what already exists for this repo+agent — sessions running now, and
+  // conversations the CLI can resume — instead of silently starting another.
+  const sessionsModal = $('#sessionsModal');
+
+  function relTime(ms) {
+    if (!ms) return '';
+    const s = Math.max(1, Math.round((Date.now() - ms) / 1000));
+    if (s < 60) return s + 's ago';
+    const m = Math.round(s / 60);
+    if (m < 60) return m + 'm ago';
+    const h = Math.round(m / 60);
+    if (h < 24) return h + 'h ago';
+    return Math.round(h / 24) + 'd ago';
+  }
+
+  function closeSessionsModal() {
+    if (!sessionsModal) return;
+    sessionsModal.classList.add('hidden');
+    sessionsModal.classList.remove('flex');
+    state._pendingLaunch = null;
+  }
+
+  function launchPending(extra) {
+    const p = state._pendingLaunch;
+    if (!p) return;
+    closeSessionsModal();
+    if (state.sessions.filter(s => !s.ended).length >= MAX_TABS) {
+      alert(`Maximum ${MAX_TABS} sessions allowed. Close a tab first.`);
+      return;
+    }
+    disableCliButtons();
+    wsSend(Object.assign({
+      type: 'create-session',
+      cli: p.cli,
+      repo: p.repo,
+      repoPath: p.repoPath,
+      useWorktree: p.useWorktree,
+      extraDirs: p.extraDirs
+    }, extra || {}));
+  }
+
+  function renderSessionsModal(data) {
+    const body = $('#sessionsBody');
+    const cliName = (data.cli || '').replace(/^./, c => c.toUpperCase());
+    $('#sessionsTitle').textContent = `${cliName} · ${state._pendingLaunch?.repo || ''}`;
+
+    const parts = [];
+    if (data.running.length) {
+      parts.push(`<div class="sess-group-label">Running now (${data.running.length})</div>`);
+      data.running.forEach(s => {
+        const bits = [];
+        if (s.startedAt) bits.push('up ' + relTime(s.startedAt).replace(' ago', ''));
+        if (s.worktreeBranch) bits.push('worktree: ' + s.worktreeBranch);
+        if (s.extraDirs?.length) bits.push(`+${s.extraDirs.length} repo${s.extraDirs.length === 1 ? '' : 's'}`);
+        parts.push(`<div class="sess-row">
+          <span class="sess-live-dot"></span>
+          <div class="sess-main">
+            <div class="sess-label">Open session</div>
+            <div class="sess-meta">${escHtml(bits.join(' · ') || 'running')}</div>
+          </div>
+          <button class="btn btn-secondary btn-sm" data-switch="${escHtml(s.id)}" type="button">Switch to</button>
+        </div>`);
+      });
+    }
+
+    if (data.conversations.length) {
+      parts.push(`<div class="sess-group-label">Past conversations (${data.conversations.length})</div>`);
+      data.conversations.slice(0, 20).forEach(c => {
+        const bits = [relTime(c.updatedAt)];
+        if (c.messages != null) bits.push(c.messages + ' messages');
+        else if (c.bytes) bits.push(Math.round(c.bytes / 1024) + ' KB');
+        const disabled = c.resumeByIndexOnly ? ' disabled title="This CLI resumes by position, not id"' : '';
+        parts.push(`<div class="sess-row">
+          <div class="sess-main">
+            <div class="sess-label">${escHtml(c.label)}</div>
+            <div class="sess-meta">${escHtml(bits.join(' · '))}</div>
+          </div>
+          <button class="btn btn-secondary btn-sm" data-resume="${escHtml(c.id)}"${disabled} type="button">Resume</button>
+        </div>`);
+      });
+    }
+
+    if (!parts.length) parts.push('<div class="sess-empty">Nothing to resume here yet.</div>');
+    body.innerHTML = parts.join('');
+
+    body.querySelectorAll('[data-switch]').forEach(b => b.addEventListener('click', () => {
+      const id = b.dataset.switch;
+      closeSessionsModal();
+      switchToSession(id);
+    }));
+    body.querySelectorAll('[data-resume]').forEach(b => b.addEventListener('click', () => {
+      launchPending({ resume: b.dataset.resume });
+    }));
+
+    $('#sessionsKillAll').classList.toggle('hidden', !data.running.length);
+    $('#sessionsClearHistory').classList.toggle('hidden', !data.conversations.length);
+    const note = $('#sessionsNote');
+    note.classList.toggle('hidden', !data.note);
+    note.textContent = data.note || '';
+  }
+
+  $('#sessionsClose')?.addEventListener('click', closeSessionsModal);
+  $('#sessionsOverlay')?.addEventListener('click', closeSessionsModal);
+  $('#sessionsStartFresh')?.addEventListener('click', () => launchPending());
+
+  $('#sessionsKillAll')?.addEventListener('click', () => {
+    const p = state._pendingLaunch;
+    if (!p) return;
+    // Killing happens server-side; the modal refreshes from the response.
+    wsSend({ type: 'kill-sessions-for', cli: p.cli, repoPath: p.repoPath });
+  });
+
+  $('#sessionsClearHistory')?.addEventListener('click', async () => {
+    const p = state._pendingLaunch;
+    if (!p) return;
+    const ok = await showConfirm(
+      'Clear conversation history',
+      `This permanently deletes ${p.cli}'s saved conversations for ${p.repo}. Running sessions are not affected.`,
+      'This cannot be undone.',
+      'Delete history'
+    );
+    if (!ok) return;
+    wsSend({ type: 'clear-conversations-for', cli: p.cli, repoPath: p.repoPath });
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && sessionsModal && !sessionsModal.classList.contains('hidden')) {
+      closeSessionsModal();
+    }
+  });
+
   _cliBtns.forEach(btn => {
     btn.addEventListener('click', () => {
       if (!state.selectedRepo || btn.disabled) return;
@@ -2209,12 +2341,18 @@
         state._pendingInstallCmd = info.install;
         return;
       }
+      // Ask what already exists first; the modal only appears if there is
+      // something to offer, so the common path stays a single click.
       if (cliId !== 'terminal') {
-        const existing = state.sessions.find(s => !s.ended && s.repoPath === state.selectedRepo.path && s.cli === cliId);
-        if (existing) {
-          switchToSession(existing.id);
-          return;
-        }
+        state._pendingLaunch = {
+          cli: cliId,
+          repo: state.selectedRepo.name,
+          repoPath: state.selectedRepo.path,
+          useWorktree: !!$('#useWorktree')?.checked,
+          extraDirs: extraDirPaths()
+        };
+        wsSend({ type: 'list-sessions-for', cli: cliId, repoPath: state.selectedRepo.path });
+        return;
       }
       if (state.sessions.filter(s => !s.ended).length >= MAX_TABS) {
         alert(`Maximum ${MAX_TABS} sessions allowed. Close a tab first.`);
@@ -2539,6 +2677,36 @@
           $('#repoCliLayout').classList.remove('has-selection');
         }
         console.log(`[repos] Created ${msg.repos.length} cards, ${metaCount} with metadata`);
+        break;
+      }
+
+      case 'sessions-for': {
+        // Nothing worth interrupting for — launch straight away.
+        if (!msg.running.length && !msg.conversations.length) {
+          launchPending();
+          break;
+        }
+        renderSessionsModal(msg);
+        sessionsModal.classList.remove('hidden');
+        sessionsModal.classList.add('flex');
+        break;
+      }
+
+      case 'sessions-killed': {
+        // Re-ask so the modal reflects what is left.
+        if (state._pendingLaunch) {
+          wsSend({ type: 'list-sessions-for', cli: msg.cli, repoPath: msg.repoPath });
+        }
+        break;
+      }
+
+      case 'conversations-cleared': {
+        if (msg.errors && msg.errors.length) {
+          alert('Some history could not be deleted:\n' + msg.errors.join('\n'));
+        }
+        if (state._pendingLaunch) {
+          wsSend({ type: 'list-sessions-for', cli: msg.cli, repoPath: msg.repoPath });
+        }
         break;
       }
 

@@ -1483,6 +1483,31 @@
   </div>
 
   <!-- Branch Modal -->
+  <!-- Shown when a repo+agent already has running sessions or resumable
+       conversations, so a fresh launch is a deliberate choice. -->
+  <div id="sessionsModal" class="fixed inset-0 z-[200] hidden items-center justify-center">
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" id="sessionsOverlay"></div>
+    <div class="relative z-10 w-full max-w-lg mx-4 shadow-2xl flex flex-col max-h-[85vh]" style="background:var(--bg-card);border:1px solid color-mix(in srgb, var(--accent) 20%, transparent);">
+      <div class="flex items-center justify-between px-5 py-4" style="border-bottom:1px solid var(--border);">
+        <h3 class="text-xs font-semibold uppercase tracking-[3px]" style="color:var(--text)" id="sessionsTitle">Sessions</h3>
+        <button id="sessionsClose" class="hover-text-theme transition-colors" style="color:var(--text-muted)">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <div class="flex-1 overflow-y-auto" id="sessionsBody"></div>
+
+      <div class="flex items-center justify-between gap-3 px-5 py-3" style="border-top:1px solid var(--border);">
+        <div class="flex gap-2">
+          <button id="sessionsKillAll" class="btn btn-danger btn-sm hidden" type="button">Close all</button>
+          <button id="sessionsClearHistory" class="btn btn-danger btn-sm hidden" type="button">Clear history</button>
+        </div>
+        <button id="sessionsStartFresh" class="btn btn-primary btn-sm" type="button">Start fresh</button>
+      </div>
+      <div class="px-5 pb-3 hidden" id="sessionsNote"></div>
+    </div>
+  </div>
+
   <!-- Pick additional repos to hand the agent alongside the primary one. -->
   <div id="multiRepoModal" class="fixed inset-0 z-[200] hidden items-center justify-center">
     <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" id="multiRepoOverlay"></div>

@@ -12,6 +12,15 @@ const credStore = require('./lib/credential-store');
 const worktreeManager = require('./lib/worktree-manager');
 const repoStore = require('./lib/repo-store');
 const paths = require('./lib/paths');
+const conversationStore = require('./lib/conversation-store');
+
+// Loose path comparison for grouping sessions by repo: case-insensitive and
+// trailing-separator agnostic, which matters on Windows.
+function samePathish(a, b) {
+  if (!a || !b) return false;
+  const norm = (p) => path.resolve(String(p)).replace(/[\\/]+$/, '').toLowerCase();
+  try { return norm(a) === norm(b); } catch { return false; }
+}
 
 const IS_WIN = process.platform === 'win32';
 const IS_MAC = process.platform === 'darwin';
@@ -991,6 +1000,77 @@ wss.on('connection', (ws) => {
         }).catch(() => {
           ws.send(JSON.stringify({ type: 'dir-validated', valid: false, dir: msg.dir }));
         });
+        break;
+      }
+
+      // What is already available for this repo + CLI: sessions Catalyst has
+      // running right now, and conversations the CLI itself can resume.
+      case 'list-sessions-for': {
+        (async () => {
+          const { cli, repoPath } = msg;
+          let running = [];
+          let conversations = [];
+          let note = null;
+          try {
+            running = sessionManager.getAllSessions()
+              .filter(s => s.cli === cli && samePathish(s.originalRepoPath || s.repoPath, repoPath))
+              .map(s => ({
+                id: s.id,
+                repo: s.repo,
+                startedAt: s.startedAt || null,
+                worktreeBranch: s.worktreeBranch || null,
+                extraDirs: s.extraDirs || [],
+                resumedFrom: s.resumedFrom || null
+              }));
+          } catch (e) { note = 'Could not read running sessions: ' + e.message; }
+
+          if (isAllowedRepoPath(repoPath)) {
+            const res = conversationStore.list(cli, repoPath);
+            conversations = res.conversations.map(c => ({
+              id: c.id, label: c.label, updatedAt: c.updatedAt,
+              messages: c.messages, bytes: c.bytes,
+              resumeByIndexOnly: !!c.resumeByIndexOnly
+            }));
+            if (res.note) note = res.note;
+          }
+
+          if (ws.readyState === 1) {
+            ws.send(JSON.stringify({ type: 'sessions-for', cli, repoPath, running, conversations, note }));
+          }
+        })();
+        break;
+      }
+
+      case 'kill-sessions-for': {
+        (async () => {
+          const { cli, repoPath } = msg;
+          let killed = 0;
+          try {
+            for (const s of sessionManager.getAllSessions()) {
+              if (s.cli !== cli || !samePathish(s.originalRepoPath || s.repoPath, repoPath)) continue;
+              sessionManager.killSession(s.id);
+              killed++;
+            }
+          } catch {}
+          if (ws.readyState === 1) ws.send(JSON.stringify({ type: 'sessions-killed', cli, repoPath, killed }));
+        })();
+        break;
+      }
+
+      // Destructive: removes the CLI's own transcript files. The client confirms
+      // with the user before sending this.
+      case 'clear-conversations-for': {
+        (async () => {
+          const { cli, repoPath } = msg;
+          let result = { removed: 0, errors: ['Repository path is outside the configured projects folder'] };
+          if (isAllowedRepoPath(repoPath)) {
+            try { result = conversationStore.clear(cli, repoPath); }
+            catch (e) { result = { removed: 0, errors: [e.message] }; }
+          }
+          if (ws.readyState === 1) {
+            ws.send(JSON.stringify({ type: 'conversations-cleared', cli, repoPath, ...result }));
+          }
+        })();
         break;
       }
 
