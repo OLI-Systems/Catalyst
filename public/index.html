@@ -319,11 +319,13 @@
                 <div class="ob-flag"><span class="ob-flag-cli">Gemini</span><code>--include-directories</code></div>
               </div>
 
-              <div class="ob-feature-desc">The picker lists every repo Catalyst discovered, with a filter box for long lists. The primary repo's own row is fixed and marked <b>primary</b>, so it can't be handed to the agent twice.</div>
+              <div class="ob-feature-desc">The picker only offers repos that agent has already been opened in and trusted &mdash; a folder Claude has never been let into answers with a blocking trust prompt, which inside a session tab looks like a session that started but is really waiting on a question nobody asked. Rows no agent knows yet are greyed out and say so; open a repo once with an agent to make it addable.</div>
+
+              <div class="ob-feature-desc">A session started with extras is labelled <b>&lt;repo&gt; +N</b> in the tab bar, and hovering that tab lists every repo it was started with, primary first. Clearing the conversation with <code>/clear</code> drops the label back to the plain name.</div>
 
               <div class="ob-warn">
                 <span class="ob-warn-tag">Codex</span>
-                <span>Codex has no equivalent flag &mdash; its workspace is its working directory. The extra repos are added to its writable roots instead, so it can edit them, but it stays focused on the primary repo. Catalyst repeats this under the chips whenever an extra repo is selected.</span>
+                <span>Codex has no equivalent flag &mdash; its workspace is its working directory, and nothing widens it. So while any extra repo is selected Codex is unavailable, and says why on hover. Clear the extras to use it.</span>
               </div>
 
               <div class="ob-tools-hint">Nothing to set up here &mdash; the picker is on the welcome screen whenever you want it.</div>
