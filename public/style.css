@@ -61,7 +61,9 @@ body.theme-rose {
   --success:       #5a9e6f;
   --danger:        #c94a4a;
   --grid-line:     rgba(180, 120, 100, 0.04);
-  --xterm-bg:      #faf5f3;
+  /* One step into the palette rather than the page's lightest tone — at --bg the
+     terminal read as a white slab dropped into a tinted UI. */
+  --xterm-bg:      #f3ebe7;
   --xterm-fg:      #000000;
   --btn-primary-text: #ffffff;
 }
@@ -185,7 +187,7 @@ body.theme-lavender {
   --success:       #5a9e6f;
   --danger:        #dc2626;
   --grid-line:     rgba(139, 92, 246, 0.04);
-  --xterm-bg:      #f5f0fa;
+  --xterm-bg:      #ede5f5;
   --xterm-fg:      #000000;
   --btn-primary-text: #ffffff;
 }
@@ -216,7 +218,7 @@ body.theme-sand {
   --success:       #5a8c5a;
   --danger:        #b84040;
   --grid-line:     rgba(140, 110, 70, 0.04);
-  --xterm-bg:      #f7f3ee;
+  --xterm-bg:      #efe9e0;
   --xterm-fg:      #000000;
   --btn-primary-text: #ffffff;
 }
@@ -247,7 +249,7 @@ body.theme-arctic {
   --success:       #059669;
   --danger:        #dc2626;
   --grid-line:     rgba(30, 80, 160, 0.04);
-  --xterm-bg:      #f0f5fa;
+  --xterm-bg:      #e4ecf5;
   --xterm-fg:      #0f172a;
   --btn-primary-text: #ffffff;
 }
@@ -495,7 +497,8 @@ body.theme-vslight {
   --success:       #16825d;
   --danger:        #cd3131;
   --grid-line:     rgba(0, 0, 0, 0.02);
-  --xterm-bg:      #ffffff;
+  /* Kept close to VS Code's own light editor, just off pure white. */
+  --xterm-bg:      #f8f8f8;
   --xterm-fg:      #1e1e1e;
   --btn-primary-text: #ffffff;
 }
@@ -590,7 +593,7 @@ body.theme-silver {
   --success:       #2e7d32;
   --danger:        #c62828;
   --grid-line:     rgba(0, 0, 0, 0.03);
-  --xterm-bg:      #f0f0f0;
+  --xterm-bg:      #e6e6e6;
   --xterm-fg:      #1a1a1a;
   --btn-primary-text: #ffffff;
 }
@@ -621,7 +624,7 @@ body.theme-newsprint {
   --success:       #2e5e1e;
   --danger:        #a82020;
   --grid-line:     rgba(0, 0, 0, 0.03);
-  --xterm-bg:      #f5f0e8;
+  --xterm-bg:      #ebe5da;
   --xterm-fg:      #111111;
   --btn-primary-text: #f5f0e8;
 }
@@ -968,6 +971,19 @@ body.is-desktop #win-controls {
   border-color: var(--border-bright);
 }
 .repo-tab-name { overflow: hidden; text-overflow: ellipsis; }
+/* "+2" on a session started with extra repos. Quiet enough that the repo name
+   stays the thing you read; the tab's tooltip names every repo. */
+.repo-tab-extra {
+  flex: none;
+  font-size: 9px;
+  font-family: var(--font-mono, monospace);
+  line-height: 1;
+  padding: 2px 4px;
+  border-radius: 6px;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 28%, transparent);
+}
 .repo-tab-close {
   opacity: 0;
   display: flex;
@@ -1663,10 +1679,39 @@ body.is-desktop .welcome-settings-btn {
   to   { opacity: 1; transform: translateX(0) scale(1); }
 }
 
+/* Reveal in Explorer. Icon only, tucked into the corner of the repo's identity
+   panel — it is about where the repo lives, and it never needed a full-width
+   labelled button. The title attribute carries the name. */
+.btn-reveal {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+.btn-reveal:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--accent-subtle);
+}
+.btn-reveal:active { transform: translateY(1px); }
+
 .repo-info-panel {
   width: 100%;
   text-align: center;
   margin-bottom: 24px;
+  position: relative;
   animation: repo-info-fade 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
   animation-delay: 0.15s;
 }
@@ -2060,6 +2105,26 @@ body.is-desktop .welcome-settings-btn {
   filter: saturate(0) brightness(0.6);
 }
 
+/* Installed, but it cannot do what is currently being asked of it — Codex with
+   additional repos selected. Reads as out of service rather than missing: still
+   solid-bordered, but greyed, static on hover, and cursor says no. Its title
+   attribute carries the reason. */
+.cli-btn.cli-unsupported,
+.cli-btn[aria-disabled="true"] {
+  opacity: 0.34;
+  cursor: not-allowed;
+}
+.cli-btn.cli-unsupported:hover {
+  transform: none;
+  box-shadow: none;
+  border-color: rgba(255, 255, 255, 0.08);
+  color: var(--text-muted);
+}
+.cli-btn.cli-unsupported:hover::before { opacity: 0; }
+.cli-btn.cli-unsupported:hover::after { transform: scaleX(0); }
+.cli-btn.cli-unsupported .cli-logo { filter: saturate(0) brightness(0.7); }
+.cli-btn.cli-unsupported:hover .cli-logo { transform: none; opacity: 0.75; }
+
 .worktree-option {
   display: flex;
   align-items: center;
@@ -2131,7 +2196,10 @@ body.is-desktop .welcome-settings-btn {
 .inner-tabs-left {
   display: flex;
   align-items: center;
-  flex: 1;
+  /* Deliberately not flex:1 — growing it pushed the add button to the far right
+     of the row, marooned from the tabs it adds to. Shrinks (and scrolls) when the
+     tabs outgrow the bar. */
+  flex: 0 1 auto;
   overflow-x: auto;
   min-width: 0;
 }
@@ -2143,6 +2211,15 @@ body.is-desktop .welcome-settings-btn {
   align-items: center;
   flex-shrink: 0;
   position: relative;
+  /* Sits immediately after the last tab; this soaks up the leftover row width. */
+  margin-right: auto;
+}
+
+/* The dropdown hangs off the button, which is no longer at the row's edge, so
+   anchor it to the button's left instead of the far right. */
+.inner-tabs-right .inner-add-dropdown {
+  right: auto;
+  left: 0;
 }
 
 .inner-add-btn {
@@ -2302,7 +2379,10 @@ body.is-desktop .welcome-settings-btn {
 }
 
 .terminal-container .xterm {
-  padding: 4px;
+  /* No padding on the right: it was part of a ~24px dead strip between the last
+     column of output and the right panel. What remains there is only the
+     sub-character remainder of the column grid. */
+  padding: 4px 0 4px 4px;
   height: 100%;
   width: 100%;
 }
@@ -2318,6 +2398,17 @@ body.is-desktop .welcome-settings-btn {
 
 .terminal-container .xterm-viewport {
   overflow-y: auto !important;
+  /* Firefox */
+  scrollbar-width: none;
+}
+
+/* The fit addon subtracts the viewport scrollbar's width from the space it has
+   to lay columns into, so a 15px classic scrollbar cost a whole column and left
+   a permanent gap at the right edge. Zero-width here reclaims it; the wheel,
+   keyboard and xterm's own scrollback all still work. */
+.terminal-container .xterm-viewport::-webkit-scrollbar {
+  width: 0;
+  height: 0;
 }
 
 .terminal-container .xterm a,
@@ -2913,6 +3004,11 @@ body.is-desktop .welcome-settings-btn {
 }
 .multi-repo-row.is-primary { opacity: 0.45; cursor: not-allowed; }
 .multi-repo-row.is-primary .mr-tech { color: var(--accent); }
+/* No agent has been let into this folder yet, so none of them can be handed it
+   as an extra directory. Row explains itself on hover. */
+.multi-repo-row.is-blocked { opacity: 0.5; cursor: not-allowed; }
+.multi-repo-row.is-blocked .mr-name { text-decoration: line-through; text-decoration-thickness: 1px; }
+.multi-repo-row.is-blocked .mr-tech { color: var(--danger); }
 
 .multi-repo-none {
   padding: 20px;
@@ -3382,7 +3478,9 @@ body.is-desktop .welcome-settings-btn {
   min-width: 200px;
   max-width: 600px;
   background: var(--sidebar-bg);
-  border-left: none;
+  /* A defined seam. Without it the terminal's background running into the
+     panel's read as an accidental gap rather than a boundary. */
+  border-left: 1px solid var(--border);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -3406,6 +3504,117 @@ body.is-desktop .welcome-settings-btn {
   background: var(--accent);
   opacity: 0.5;
 }
+
+/* Panel hide/show. These two buttons had no styling at all and rendered as a
+   stray chevron nobody could find, so they now share one look: a tab that grips
+   the panel's edge, rounded on the outward side only so it reads as part of the
+   panel rather than a floating button. Hide sits on the panel's left edge, show
+   docks to the window's right edge in its place — same shape either way, so the
+   control stays where the eye left it. */
+.rp-minimize-btn,
+.rp-restore-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 11;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 62px;
+  padding: 0;
+  cursor: pointer;
+  color: var(--accent);
+  background: linear-gradient(
+    to right,
+    color-mix(in srgb, var(--accent) 22%, var(--sidebar-bg)),
+    color-mix(in srgb, var(--accent) 8%, var(--sidebar-bg))
+  );
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  box-shadow: 0 2px 10px -4px rgba(0, 0, 0, 0.6);
+  transition: width 0.16s ease, background 0.16s ease, box-shadow 0.16s ease, color 0.16s ease;
+}
+
+.rp-minimize-btn svg,
+.rp-restore-btn svg {
+  flex: none;
+  transition: transform 0.16s ease;
+}
+
+.rp-minimize-btn:hover,
+.rp-restore-btn:hover {
+  width: 28px;
+  color: var(--text);
+  background: linear-gradient(
+    to right,
+    color-mix(in srgb, var(--accent) 42%, var(--sidebar-bg)),
+    color-mix(in srgb, var(--accent) 18%, var(--sidebar-bg))
+  );
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 55%, transparent),
+              0 6px 18px -6px var(--accent);
+}
+
+.rp-minimize-btn:active,
+.rp-restore-btn:active { box-shadow: none; }
+
+.rp-minimize-btn:focus-visible,
+.rp-restore-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Hide: hangs off the panel's outer edge, over the terminal rather than over the
+   panel's own content — inside the panel it covered the section labels. Fixed
+   positioning for the same reason the restore button uses it: the panel is a
+   flex child and clips its overflow. --rp-width tracks the panel's live width
+   (set in app.js on load, on drag, and when it is toggled). */
+.rp-minimize-btn {
+  position: fixed;
+  left: auto;
+  right: var(--rp-width, 300px);
+  border-right: none;
+  border-radius: 8px 0 0 8px;
+  background: linear-gradient(
+    to left,
+    color-mix(in srgb, var(--accent) 22%, var(--sidebar-bg)),
+    color-mix(in srgb, var(--accent) 8%, var(--sidebar-bg))
+  );
+}
+.rp-minimize-btn:hover {
+  background: linear-gradient(
+    to left,
+    color-mix(in srgb, var(--accent) 42%, var(--sidebar-bg)),
+    color-mix(in srgb, var(--accent) 18%, var(--sidebar-bg))
+  );
+}
+/* Nudges the way the panel is about to go. */
+.rp-minimize-btn:hover svg { transform: translateX(2px); }
+
+/* Show: the panel is gone, so this pins to the window edge. Fixed rather than
+   absolute — its parent is the flex row the panel used to sit in. */
+.rp-restore-btn {
+  position: fixed;
+  right: 0;
+  border-right: none;
+  border-radius: 8px 0 0 8px;
+  background: linear-gradient(
+    to left,
+    color-mix(in srgb, var(--accent) 22%, var(--sidebar-bg)),
+    color-mix(in srgb, var(--accent) 8%, var(--sidebar-bg))
+  );
+}
+.rp-restore-btn:hover {
+  background: linear-gradient(
+    to left,
+    color-mix(in srgb, var(--accent) 42%, var(--sidebar-bg)),
+    color-mix(in srgb, var(--accent) 18%, var(--sidebar-bg))
+  );
+}
+.rp-restore-btn:hover svg { transform: translateX(-2px); }
+
+/* The resize strip runs the full height and the tab sits in the middle of it;
+   the tab wins there, which is why it carries its own cursor. */
+.rp-minimize-btn { cursor: pointer; }
 
 .rp-page {
   display: none;
@@ -3914,6 +4123,59 @@ body.is-desktop .welcome-settings-btn {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  /* The counts in the toggle made this row wide enough to push the refresh
+     button off the edge of a 300px panel. Wrapping keeps every control reachable
+     at any panel width instead of clipping the last one. */
+  flex-wrap: wrap;
+  gap: 6px 8px;
+}
+
+/* "Changes" and "All Files" are two views of the same tree, but unstyled they
+   ran together as one line of text. Segmented control: one bordered track, the
+   selected half filled, so it is obvious both that these are two choices and
+   which one you are looking at. */
+.changes-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-card);
+}
+
+.changes-toggle-btn {
+  background: none;
+  border: none;
+  border-radius: 4px;
+  padding: 3px 5px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 9px;
+  font-weight: 600;
+  /* No tracking: with counts in the labels, the row has to earn every pixel to
+     keep the three action controls beside it on one line at 300px. */
+  letter-spacing: 0;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--text-muted);
+  transition: color 0.15s, background 0.15s;
+}
+
+.changes-toggle-btn:hover { color: var(--text); }
+
+/* "(6)" after the label. A shade smaller and lighter, so the name still leads. */
+.changes-toggle-num {
+  font-size: 8.5px;
+  font-weight: 700;
+  opacity: 0.7;
+  letter-spacing: 0;
+}
+
+.changes-toggle-btn.active {
+  color: var(--accent);
+  background: var(--accent-subtle);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 35%, transparent);
 }
 
 .changes-view-btn {
@@ -3921,7 +4183,7 @@ body.is-desktop .welcome-settings-btn {
   border: 1px solid var(--border);
   color: var(--text-muted);
   border-radius: 4px;
-  padding: 1px 6px;
+  padding: 1px 5px;
   cursor: pointer;
   font-size: 9px;
   font-weight: 500;
@@ -3970,17 +4232,14 @@ body.is-desktop .welcome-settings-btn {
 .changes-title-actions {
   display: flex;
   align-items: center;
-  gap: 6px;
+  /* Tight enough that the toggle's counts and these three controls share one
+     line at the panel's default 300px. */
+  gap: 4px;
+  margin-left: auto;
 }
 
-.changes-inline-count {
-  font-size: 9px;
-  font-weight: 700;
-  color: var(--accent);
-  background: var(--accent-subtle);
-  padding: 1px 7px;
-  border-radius: 10px;
-}
+/* The standalone count badge is gone — each view now carries its own total in
+   its toggle label, which says what is being counted without a second element. */
 
 .changes-inline-tree {
   flex: 1;

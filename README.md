@@ -141,6 +141,21 @@ through its own mechanism for additional roots:
 | Gemini CLI | `--include-directories` |
 | Codex | `sandbox_workspace_write.writable_roots` |
 
+Only repositories the chosen agent has already been opened in can be added. Each
+of these CLIs keeps its own record of the folders it has been let into, and a
+folder that has never been through that gate is not a safe thing to hand over —
+Claude Code, for instance, answers with a blocking "do you trust the files in
+this folder?" prompt, which inside a session tab means a tab that looks started
+but is really waiting on an unexpected question. The picker greys out repositories
+no agent has accepted yet and names the agents that will take each of the rest;
+to make one eligible, start a session in it once and accept its trust prompt.
+Catalyst reads this from each CLI's own configuration and never writes to it.
+
+A session started with extra repositories is labelled `<repo> +N` in the tab bar,
+and the tab's tooltip lists every repository it was started with. Clearing the
+conversation with `/clear` drops the label back to the repository name (the agent
+process keeps the directories it was launched with).
+
 ### Git
 - Branch display with auto-refresh, switching and creation
 - Pull, push, and PR creation

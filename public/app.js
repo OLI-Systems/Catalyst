@@ -112,6 +112,11 @@
     allRepos: [],
     // Additional repos handed to the agent alongside the primary one.
     extraRepos: [],
+    // repoPath → { claude, codex, gemini } trust state, as reported by the
+    // server reading each CLI's own config. Empty until the picker asks.
+    repoTrust: {},
+    // Which CLIs keep an explicit trust record we insist on.
+    trustEnforced: { claude: true, codex: true, gemini: true },
     chatPanels: {},
     terminals: {},
     rootDir: null,
@@ -174,7 +179,12 @@
   // Theme
   const allThemes = ['midnight', 'rose', 'ocean', 'forest', 'sunset', 'lavender', 'nord', 'monokai', 'dracula', 'ember', 'void', 'copper', 'sand', 'arctic', 'vsdark', 'vslight', 'bluepill', 'silver', 'graphite', 'newsprint'];
   const lightThemes = ['rose', 'lavender', 'sand', 'arctic', 'vslight', 'silver', 'newsprint'];
-  const savedTheme = localStorage.getItem('catalyst-theme') || 'midnight';
+  // Fresh install, nothing saved yet: start on a random theme rather than the
+  // same one for everybody. It puts the theme set in front of the user on day
+  // one, and Settings → Appearance changes it in a click. applyTheme persists
+  // the pick, so it only rolls once.
+  const savedTheme = localStorage.getItem('catalyst-theme')
+    || allThemes[Math.floor(Math.random() * allThemes.length)];
   applyTheme(savedTheme);
   window._catalystApplyTheme = applyTheme;
 
@@ -834,6 +844,113 @@
     renderSessions();
   }
 
+  // ─── Multi-repo tab labels ────────────────────────────────────────────
+  // A session started with extra repos is labelled "<primary> +N", and its
+  // tooltip lists every repo it was initialised with. Once the user clears the
+  // conversation with /clear the session reads as a fresh start, so the label
+  // drops back to the plain repo name. That is a labelling change only — the
+  // CLI process keeps the directories it was launched with.
+  const AGENT_CLIS = ['claude', 'codex', 'gemini'];
+  // The two that can actually take additional workspace directories. Codex has
+  // no equivalent flag, so it plays no part in whether a repo is addable.
+  const EXTRA_DIR_CLIS = ['claude', 'gemini'];
+  const CLI_LABELS = { claude: 'Claude', codex: 'Codex', gemini: 'Gemini' };
+
+  const CLEARED_EXTRAS_KEY = 'catalyst-cleared-extras';
+
+  function loadClearedExtras() {
+    try { return new Set(JSON.parse(localStorage.getItem(CLEARED_EXTRAS_KEY) || '[]')); }
+    catch { return new Set(); }
+  }
+
+  let clearedExtras = loadClearedExtras();
+
+  function markExtrasCleared(sessionId) {
+    const session = state.sessions.find(s => s.id === sessionId);
+    if (!session || !(session.extraDirs || []).length) return;
+    if (clearedExtras.has(sessionId)) return;
+    clearedExtras.add(sessionId);
+    // Only keep ids that still exist, so this cannot grow without bound.
+    const live = new Set(state.sessions.map(s => s.id));
+    clearedExtras = new Set([...clearedExtras].filter(id => live.has(id)));
+    try { localStorage.setItem(CLEARED_EXTRAS_KEY, JSON.stringify([...clearedExtras])); } catch {}
+    renderSessions();
+  }
+
+  // Keystrokes are all we get — the CLIs run in a PTY and there is no event for
+  // "the user ran a slash command". So mirror the line being typed and act when
+  // it is submitted as exactly /clear. Only enough of a line editor to keep the
+  // mirror honest: backspace rubs out, and the usual "forget that line" keys
+  // (Ctrl+C, Ctrl+U, Escape) reset it.
+  // This stream is not just typing: xterm also reports focus changes
+  // (ESC [ I / ESC [ O) and, with mouse tracking on, every click
+  // (ESC [ < 0;101;49M) down the same channel. Those have to be consumed whole —
+  // dropping the ESC alone leaves "[<0;101;49M" looking like typed text — so run
+  // a small escape-sequence state machine, kept per session because a chunk can
+  // split in the middle of one.
+  const typedLine = {};
+  const escState = {};
+
+  function watchForClear(sessionId, data) {
+    let line = typedLine[sessionId] || '';
+    let mode = escState[sessionId] || 'text';
+
+
+    for (const ch of String(data)) {
+      if (mode === 'csi') {
+        // Final byte ends it (@ through ~), as does BEL for OSC. Reports like
+        // these are the terminal talking, not the user, so the line stands.
+        if (ch === '\x07' || (ch >= '@' && ch <= '~')) mode = 'text';
+        continue;
+      }
+      if (mode === 'esc') {
+        if (ch === '[' || ch === ']') { mode = 'csi'; continue; }
+        // ESC on its own was the Escape key, which abandons the line. This
+        // character belongs to whatever comes next, so fall through to it.
+        mode = 'text';
+        line = '';
+      }
+      if (ch === '\x1b') {
+        mode = 'esc';
+      } else if (ch === '\r' || ch === '\n') {
+        if (/^\/clear$/i.test(line.trim())) markExtrasCleared(sessionId);
+        line = '';
+      } else if (ch === '\x7f' || ch === '\b') {
+        line = line.slice(0, -1);
+      } else if (ch === '\x03' || ch === '\x15') {
+        line = '';
+      } else if (ch >= ' ') {
+        // Cap it: a pasted wall of text is never the command we are looking for.
+        line = line.length > 64 ? '' : line + ch;
+      }
+    }
+
+    typedLine[sessionId] = line;
+    escState[sessionId] = mode;
+  }
+
+  // The extras still worth showing for a session — none once /clear has run.
+  function shownExtraDirs(s) {
+    if (clearedExtras.has(s.id)) return [];
+    return (s.extraDirs || []).filter(Boolean);
+  }
+
+  // Prefer the repo name we already know for a path; fall back to its last
+  // segment, which is what the repo list uses anyway.
+  function repoNameForPath(p) {
+    const known = (state.allRepos || []).find(r => r.path === p);
+    if (known) return known.name;
+    return String(p).replace(/[\\/]+$/, '').split(/[\\/]/).pop() || p;
+  }
+
+  function tabTooltip(s, extras) {
+    const cliName = s.cli === 'claude' ? 'Claude Code' : (CLI_LABELS[s.cli] || s.cli);
+    if (!extras.length) return `${s.repo} — ${cliName}`;
+    const lines = [`${cliName} · ${extras.length + 1} repos`, `${s.repo} (primary)`];
+    extras.forEach(p => lines.push(repoNameForPath(p)));
+    return lines.join('\n');
+  }
+
   function renderSessions() {
     const repoTabList = $('#repoTabList');
     if (!repoTabList) return;
@@ -850,9 +967,12 @@
       const tab = document.createElement('div');
       tab.className = 'repo-tab' + (isActive ? ' active' : '') + (s.ended ? ' ended' : '');
       const hasNotify = state.tabNotify.has(s.id);
+      const extras = shownExtraDirs(s);
+      tab.title = tabTooltip(s, extras);
       tab.innerHTML = `
         <span class="tab-cli-icon">${cliIcons[s.cli] || ''}</span>
         <span class="repo-tab-name">${escHtml(s.repo)}</span>
+        ${extras.length ? `<span class="repo-tab-extra">+${extras.length}</span>` : ''}
         ${hasNotify ? '<span class="tab-notify-dot"></span>' : ''}
         <span class="repo-tab-close" title="Close session">
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
@@ -1036,6 +1156,7 @@
     term.onData(data => {
       ws.send(JSON.stringify({ type: 'input', sessionId, data }));
       state.lastInputTime[sessionId] = Date.now();
+      watchForClear(sessionId, data);
     });
 
     term.onResize(({ cols, rows }) => {
@@ -1423,15 +1544,18 @@
         rp.classList.remove('hidden');
         $('#rpRestoreBtn').classList.add('hidden');
       }
+      syncRpWidthVar();
       const session = state.sessions.find(s => s.id === sessionId);
       if (session) ws.send(JSON.stringify({ type: 'get-repo-settings', repoPath: session.repoPath }));
       ws.send(JSON.stringify({ type: 'get-scripts', sessionId }));
       ws.send(JSON.stringify({ type: 'git-branch', sessionId }));
       ws.send(JSON.stringify({ type: 'git-changed-files', sessionId }));
-      if (changesViewMode === 'all') {
-        allFilesList = [];
-        ws.send(JSON.stringify({ type: 'git-all-files', sessionId }));
-      }
+      // Asked for in both modes now, because the All Files label carries its
+      // total whether or not that view is showing. It is one `git ls-files`, and
+      // renderAllFiles only draws when its view is the active one.
+      allFilesList = [];
+      allFilesFetched = false;
+      ws.send(JSON.stringify({ type: 'git-all-files', sessionId }));
       selectedSubdir = '';
       const fn = $('#cmdFolderName');
       if (fn) fn.textContent = '/ (root)';
@@ -1452,6 +1576,7 @@
     localStorage.setItem('catalyst-right-panel-minimized', 'true');
     $('#rightPanel').classList.add('hidden');
     $('#rpRestoreBtn').classList.remove('hidden');
+    syncRpWidthVar();
     refitTerminal();
   });
   $('#rpRestoreBtn').addEventListener('click', () => {
@@ -1460,6 +1585,7 @@
     $('#rpRestoreBtn').classList.add('hidden');
     if (state.activeSessionId) {
       $('#rightPanel').classList.remove('hidden');
+      syncRpWidthVar();
       refitTerminal();
     }
   });
@@ -1555,6 +1681,7 @@
 
   // Resize terminals when window or layout changes
   let _refitTimer = null;
+  let _refitSettleTimer = null;
   // Force xterm to recompute its cell size before fitting. Needed once the web
   // font loads: a fit done with the fallback font miscounts columns and makes
   // the PTY wider than the display, which garbles the CLI's TUI (misaligned/
@@ -1569,24 +1696,34 @@
     } catch {}
   }
 
+  // Fitting a terminal whose container is not on screen is worse than not
+  // fitting it: the fit addon measures a zero-sized box, proposes a minimum
+  // grid, and xterm's onResize then pushes those bogus dimensions to the PTY —
+  // which is what left a TUI garbled after a window nudge or a panel toggle.
+  // Anything hidden is skipped and re-fitted when it becomes visible
+  // (switchToSession / switchInnerTab already do that).
+  function isOnScreen(term) {
+    const el = term && term.element;
+    if (!el || !el.isConnected) return false;
+    if (!el.offsetParent) return false;
+    return el.clientWidth > 0 && el.clientHeight > 0;
+  }
+
+  function fitIfVisible(term, onFitted) {
+    if (!term || !term._fitAddon || !isOnScreen(term)) return;
+    try {
+      term._fitAddon.fit();
+      onFitted(term);
+    } catch {}
+  }
+
   function refitAllTerminals() {
     const sid = state.activeSessionId;
     if (!sid) return;
-    const term = state.terminals[sid];
-    if (term && term._fitAddon) {
-      try {
-        term._fitAddon.fit();
-        sendResize(sid, term.cols, term.rows);
-      } catch {}
-    }
+    fitIfVisible(state.terminals[sid], (t) => sendResize(sid, t.cols, t.rows));
     const innerList = state.innerSessions[sid] || [];
     innerList.forEach(inner => {
-      if (inner.term && inner.term._fitAddon) {
-        try {
-          inner.term._fitAddon.fit();
-          sendInnerResize(inner.innerSessionId, inner.term.cols, inner.term.rows);
-        } catch {}
-      }
+      fitIfVisible(inner.term, (t) => sendInnerResize(inner.innerSessionId, t.cols, t.rows));
     });
   }
   // Debounce so we only fit/resize once the layout has settled — fitting on
@@ -1594,7 +1731,12 @@
   // intermediate sizes to the PTY and desyncs the CLI's TUI.
   function refitTerminal() {
     clearTimeout(_refitTimer);
+    clearTimeout(_refitSettleTimer);
     _refitTimer = setTimeout(refitAllTerminals, 120);
+    // A confirming pass: the first fit can land while a panel is still taking its
+    // final width, which measures the grid one column out. sendResize drops this
+    // one when nothing actually changed, so the normal case costs nothing.
+    _refitSettleTimer = setTimeout(refitAllTerminals, 400);
   }
   window.addEventListener('resize', refitTerminal);
   new ResizeObserver(refitTerminal).observe(mainPanel);
@@ -2068,6 +2210,8 @@
   function enableCliButtons() {
     clearTimeout(state._cliLaunchTimeout);
     _cliBtns.forEach(b => { b.disabled = false; b.classList.remove('cli-launching'); });
+    // Codex stays out of service while extra repos are selected.
+    syncCodexButton();
   }
 
   window._catalystOpenSession = function(repoPath, repoName, cli) {
@@ -2083,6 +2227,22 @@
     wsSend({ type: 'create-session', cli, repo: repoName, repoPath, useWorktree: false });
   };
 
+  // ─── Reveal in Explorer ───────────────────────────────────────────────
+  // This button had markup and no handler at all, so it did nothing. Two routes:
+  // the desktop build can ask the OS directly through Tauri, and the browser
+  // build asks the server to do it (the page itself cannot).
+  const revealBtn = $('#revealBtn');
+  revealBtn?.addEventListener('click', () => {
+    const session = state.sessions.find(s => s.id === state.activeSessionId);
+    const target = state.selectedRepo?.path || session?.repoPath;
+    if (!target) { showToast('Select a repo first', 'info'); return; }
+    if (window.tauriDesktop?.revealInExplorer) {
+      window.tauriDesktop.revealInExplorer(target);
+      return;
+    }
+    wsSend({ type: 'reveal-in-explorer', repoPath: target });
+  });
+
   // ─── Additional repos ─────────────────────────────────────────────────
   // The selected card is the primary repo (the agent's cwd). Extras are passed
   // as additional working directories using each CLI's own flag, so which CLI
@@ -2094,6 +2254,33 @@
   function clearExtraRepos() {
     state.extraRepos = [];
     renderExtraRepos();
+  }
+
+  // Codex has no additional-workspace flag — its workspace is its cwd, full
+  // stop. Launching it with extras picked would silently give the user a
+  // single-repo session, so the button goes out of service while any extra is
+  // selected and says why on hover.
+  const CODEX_NO_MULTI_REPO =
+    'Codex does not support additional repos — it has no equivalent of Claude’s --add-dir, '
+    + 'so its workspace stays the primary repo. Clear the additional repos to use Codex.';
+
+  // Deliberately not the `disabled` attribute: Chrome does not show a title
+  // tooltip on a disabled control, and the whole point here is that hovering
+  // explains itself. So it is disabled in every way that matters — aria, cursor,
+  // styling, and a click that refuses — while staying hoverable.
+  function syncCodexButton() {
+    const btn = document.querySelector('.cli-btn[data-cli="codex"]');
+    if (!btn) return;
+    const blocked = state.extraRepos.length > 0;
+    btn.classList.toggle('cli-unsupported', blocked);
+    if (blocked) {
+      btn.setAttribute('aria-disabled', 'true');
+      btn.title = CODEX_NO_MULTI_REPO;
+      return;
+    }
+    btn.removeAttribute('aria-disabled');
+    const info = (state.cliAvailability || {}).codex;
+    btn.title = info && !info.installed ? 'Not installed — click to install' : '';
   }
 
   function renderExtraRepos() {
@@ -2113,19 +2300,58 @@
       });
     }
     updateExtraReposNote();
+    syncCodexButton();
   }
 
-  // Codex has no --add-dir equivalent, so say that plainly rather than let the
-  // chips imply the same behaviour across all three CLIs.
+  // Two things the chips would otherwise imply wrongly: that all three CLIs
+  // support this equally (codex does not), and that every selected repo will be
+  // accepted by whichever agent is launched (only ones that agent has already
+  // been opened in are).
   function updateExtraReposNote() {
     if (!extraReposNote) return;
     const show = state.extraRepos.length > 0;
     extraReposNote.classList.toggle('hidden', !show);
-    if (show) {
-      extraReposNote.textContent =
-        'Claude and Gemini receive these as extra workspace directories. '
-        + 'Codex has no equivalent — it only gets write access to them, and stays focused on the primary repo.';
+    if (!show) return;
+
+    const lines = [
+      'Claude and Gemini receive these as extra workspace directories. '
+      + 'Codex has no equivalent, so it is unavailable while extra repos are selected.'
+    ];
+
+    const gaps = EXTRA_DIR_CLIS
+      .map(cli => ({
+        cli,
+        missing: state.extraRepos.filter(r => !cliAcceptsDir(cli, r.path)).map(r => r.name)
+      }))
+      .filter(g => g.missing.length);
+
+    for (const g of gaps) {
+      lines.push(`${CLI_LABELS[g.cli]} can’t take ${g.missing.join(', ')} yet — `
+        + `open a session in ${g.missing.length === 1 ? 'it' : 'each'} with ${CLI_LABELS[g.cli]} once first.`);
     }
+
+    extraReposNote.textContent = lines.join(' ');
+  }
+
+  // A repo can only be handed to an agent it has already been opened in. The
+  // CLIs each keep their own trust record and each gate on it — an unknown
+  // folder means the flag is either ignored or the tab lands on a trust prompt
+  // nobody asked for. The server does the reading (lib/cli-trust.js) and the
+  // final refusing; here it decides what the picker offers.
+  function cliAcceptsDir(cli, repoPath) {
+    const level = (state.repoTrust[repoPath] || {})[cli];
+    if (!level || level === 'unknown') return false;
+    return level === 'trusted' || !state.trustEnforced[cli];
+  }
+
+  // The agents that would take this repo as an extra directory.
+  function agentsAccepting(repoPath) {
+    return EXTRA_DIR_CLIS.filter(c => cliAcceptsDir(c, repoPath));
+  }
+
+  function requestRepoTrust() {
+    const paths = (state.allRepos || []).map(r => r.path).filter(Boolean);
+    if (paths.length) wsSend({ type: 'repo-trust', paths });
   }
 
   function renderMultiRepoList(filter) {
@@ -2140,12 +2366,28 @@
       return;
     }
 
+    // Trust hasn't arrived yet on the very first open; say so rather than grey
+    // out every row as if nothing were addable.
+    const haveTrust = Object.keys(state.repoTrust).length > 0;
+
     list.innerHTML = rows.map(r => {
       const isPrimary = primary && r.path === primary.path;
+      const accepting = agentsAccepting(r.path);
+      const blocked = !isPrimary && haveTrust && accepting.length === 0;
       const checked = state.extraRepos.some(x => x.path === r.path);
-      const tech = isPrimary ? 'primary' : ((r.repoInfo && (r.repoInfo.technologies || []).join(' · ')) || '');
-      return `<label class="multi-repo-row${isPrimary ? ' is-primary' : ''}">
-        <input type="checkbox" data-path="${escHtml(r.path)}" ${checked ? 'checked' : ''} ${isPrimary ? 'disabled' : ''}>
+
+      let tech;
+      if (isPrimary) tech = 'primary';
+      else if (!haveTrust) tech = 'checking…';
+      else if (blocked) tech = 'not opened by any agent yet';
+      else tech = accepting.map(c => CLI_LABELS[c]).join(' · ');
+
+      const title = blocked
+        ? 'Open a session in this repo once (and accept the agent’s trust prompt) before it can be added as an extra repo'
+        : (accepting.length && haveTrust ? `Can be added for: ${accepting.map(c => CLI_LABELS[c]).join(', ')}` : '');
+
+      return `<label class="multi-repo-row${isPrimary ? ' is-primary' : ''}${blocked ? ' is-blocked' : ''}"${title ? ` title="${escHtml(title)}"` : ''}>
+        <input type="checkbox" data-path="${escHtml(r.path)}" ${checked ? 'checked' : ''} ${isPrimary || blocked ? 'disabled' : ''}>
         <span class="mr-name">${escHtml(r.name)}</span>
         <span class="mr-tech">${escHtml(tech)}</span>
       </label>`;
@@ -2178,6 +2420,9 @@
     if (!state.selectedRepo || !multiRepoModal) return;
     $('#multiRepoPrimary').innerHTML = `Primary: <b>${escHtml(state.selectedRepo.name)}</b> — the agent runs here`;
     $('#multiRepoFilter').value = '';
+    // Re-read every time: the user may have accepted a trust prompt in another
+    // tab since the last open.
+    requestRepoTrust();
     renderMultiRepoList('');
     multiRepoModal.classList.remove('hidden');
     multiRepoModal.classList.add('flex');
@@ -2210,6 +2455,28 @@
 
   // Paths only — this is what the server expects and validates.
   const extraDirPaths = () => state.extraRepos.map(r => r.path);
+
+  // Called just before launching. The extras were picked without knowing which
+  // agent would run, so this is where the choice is checked against that
+  // agent's trust record. Returns null to abort — a session that silently
+  // dropped one of the repos the user picked is worse than one that says why it
+  // did not start.
+  function extraDirsForLaunch(cli) {
+    if (!state.extraRepos.length) return [];
+    const rejected = state.extraRepos.filter(r => !cliAcceptsDir(cli, r.path));
+    if (rejected.length) {
+      showToast(
+        `${CLI_LABELS[cli] || cli} has not been opened in ${rejected.map(r => r.name).join(', ')} yet — `
+        + 'start a session there once, then add it as an extra repo.',
+        'error'
+      );
+      // Trust may have changed since the picker last read it; refresh so the
+      // next attempt reflects reality.
+      requestRepoTrust();
+      return null;
+    }
+    return extraDirPaths();
+  }
 
   // ─── Sessions modal ───────────────────────────────────────────────────
   // Offers what already exists for this repo+agent — sessions running now, and
@@ -2364,6 +2631,12 @@
   _cliBtns.forEach(btn => {
     btn.addEventListener('click', () => {
       if (!state.selectedRepo || btn.disabled) return;
+      // Codex with extra repos selected — the tooltip says why, and clicking
+      // says it again for anyone who did not hover.
+      if (btn.classList.contains('cli-unsupported')) {
+        showToast(CODEX_NO_MULTI_REPO, 'error');
+        return;
+      }
       const cliId = btn.dataset.cli;
       const info = state.cliAvailability[cliId];
       if (info && !info.installed) {
@@ -2385,12 +2658,14 @@
       // Ask what already exists first; the modal only appears if there is
       // something to offer, so the common path stays a single click.
       if (cliId !== 'terminal') {
+        const extraDirs = extraDirsForLaunch(cliId);
+        if (extraDirs === null) return;
         state._pendingLaunch = {
           cli: cliId,
           repo: state.selectedRepo.name,
           repoPath: state.selectedRepo.path,
           useWorktree: !!$('#useWorktree')?.checked,
-          extraDirs: extraDirPaths()
+          extraDirs
         };
         wsSend({ type: 'list-sessions-for', cli: cliId, repoPath: state.selectedRepo.path });
         return;
@@ -2401,13 +2676,14 @@
       }
       disableCliButtons();
       const useWorktree = !!$('#useWorktree')?.checked;
+      // Only the agent CLIs take extra directories — a plain terminal has no
+      // notion of them, so none are sent.
       wsSend({
         type: 'create-session',
         cli: cliId,
         repo: state.selectedRepo.name,
         repoPath: state.selectedRepo.path,
-        useWorktree,
-        extraDirs: extraDirPaths()
+        useWorktree
       });
     });
   });
@@ -2484,6 +2760,8 @@
             btn.title = '';
           }
         });
+        // Re-apply the codex-with-extras rule, which the loop above just cleared.
+        syncCodexButton();
         $$('.cli-install-card').forEach(card => {
           const cliId = card.dataset.cli;
           const info = state.cliAvailability[cliId];
@@ -2635,6 +2913,28 @@
         break;
       }
 
+      // Which agents have already been let into each repo. Arrives after the
+      // picker asks; re-render so rows stop saying "checking…", and drop any
+      // already-picked repo that turns out to be unusable everywhere (its trust
+      // could have been revoked between opens).
+      case 'reveal-result': {
+        if (!msg.ok) showToast(msg.message || 'Could not open the folder', 'error');
+        break;
+      }
+
+      case 'repo-trust': {
+        state.repoTrust = msg.trust || {};
+        if (msg.enforced) state.trustEnforced = msg.enforced;
+        const before = state.extraRepos.length;
+        state.extraRepos = state.extraRepos.filter(r => agentsAccepting(r.path).length > 0);
+        if (state.extraRepos.length !== before) renderExtraRepos();
+        if (multiRepoModal && !multiRepoModal.classList.contains('hidden')) {
+          renderMultiRepoList($('#multiRepoFilter')?.value || '');
+        }
+        updateExtraReposNote();
+        break;
+      }
+
       case 'repos': {
         const prevSelectedPath = state.selectedRepo ? state.selectedRepo.path : null;
         browseBtn.textContent = browseLabel;
@@ -2753,7 +3053,7 @@
 
       case 'session-created': {
         enableCliButtons();
-        const session = { id: msg.id, cli: msg.cli, repo: msg.repo, repoPath: msg.repoPath, ended: false, worktreePath: msg.worktreePath || null, worktreeBranch: msg.worktreeBranch || null };
+        const session = { id: msg.id, cli: msg.cli, repo: msg.repo, repoPath: msg.repoPath, ended: false, worktreePath: msg.worktreePath || null, worktreeBranch: msg.worktreeBranch || null, extraDirs: msg.extraDirs || [] };
         state.sessions.push(session);
         state.sessionStatus[msg.id] = 'idle';
         state.sessionStartTime[msg.id] = Date.now();
@@ -3143,6 +3443,9 @@
   function sendToActiveSession(data, toastMsg) {
     if (!state.activeSessionId) { showToast('No active session', 'info'); return false; }
     ws.send(JSON.stringify({ type: 'input', sessionId: state.activeSessionId, data }));
+    // Goes through the same watcher as typing, so a /clear sent from the UI
+    // relabels the tab exactly as a typed one does.
+    watchForClear(state.activeSessionId, data);
     if (toastMsg) showToast(toastMsg, 'info');
     return true;
   }
@@ -3487,6 +3790,16 @@
     rightPanel.style.maxWidth = '600px';
   }
 
+  // The hide button hangs off the panel's outer edge (inside the panel it sat on
+  // top of the section labels), and it is fixed-positioned, so it needs to be
+  // told where that edge is. Kept in sync here, on drag, and on toggle.
+  function syncRpWidthVar() {
+    if (!rightPanel) return;
+    const w = rightPanel.classList.contains('hidden') ? 0 : rightPanel.offsetWidth;
+    document.documentElement.style.setProperty('--rp-width', w + 'px');
+  }
+  syncRpWidthVar();
+
   (function initRpDrag() {
     let dragging = false;
     let startX = 0;
@@ -3508,6 +3821,7 @@
       const delta = startX - e.clientX;
       const newWidth = Math.min(600, Math.max(200, startWidth + delta));
       rightPanel.style.width = newWidth + 'px';
+      syncRpWidthVar();
       if (!rafPending) {
         rafPending = true;
         requestAnimationFrame(() => {
@@ -4011,7 +4325,8 @@
 
   // Git changes panel
   const changesInlineTree = $('#changesInlineTree');
-  const changesInlineCount = $('#changesInlineCount');
+  const changesCountNum = $('#changesCountNum');
+  const allFilesCountNum = $('#allFilesCountNum');
   const changesRefreshBtn = $('#changesRefreshBtn');
   const changesViewBtn = $('#changesViewBtn');
   const changesToggle = $('#changesToggle');
@@ -4019,6 +4334,9 @@
   const gitCtxMenu = $('#gitCtxMenu');
   let changedFilesList = [];
   let allFilesList = [];
+  // `git ls-files` has to have come back before the All Files count means
+  // anything; until then the label carries no number.
+  let allFilesFetched = false;
   let changesViewMode = 'changes';
 
   // Monaco editor state
@@ -4426,6 +4744,9 @@
 
   async function openMonacoModal(file, original, modified) {
     monacoModal.classList.remove('hidden');
+    // Reset the filter box: buildAndRenderTree below renders the unfiltered list,
+    // so a query left over from last time would sit there contradicting the tree.
+    monacoSearchInput.value = '';
     const fileList = changesViewMode === 'all' ? allFilesList : changedFilesList;
     const sidebarTitle = document.getElementById('monacoSidebarTitle');
     if (sidebarTitle) sidebarTitle.textContent = changesViewMode === 'all' ? 'All Files' : 'Changed Files';
@@ -4645,9 +4966,25 @@
     return mode + '|' + state.activeSessionId + '|' + files.map(f => f.statusCode + f.file).join('\n');
   }
 
+  // Each view's size sits in its own label, so both numbers are visible at once
+  // and neither needs a separate badge to explain which one it counts. A count
+  // stays blank until its list has actually been fetched — better than "(0)",
+  // which would read as "this repo has no files".
+  function updateChangesCounts() {
+    if (changesCountNum) {
+      changesCountNum.textContent = changedFilesList ? ` (${changedFilesList.length})` : '';
+    }
+    if (allFilesCountNum) {
+      allFilesCountNum.textContent = allFilesFetched ? ` (${allFilesList.length})` : '';
+    }
+  }
+
   function renderAllFiles(files) {
     allFilesList = files || [];
-    changesInlineCount.textContent = files ? files.length : 0;
+    allFilesFetched = true;
+    updateChangesCounts();
+    // The two views share one container, so only the active one may draw in it.
+    if (changesViewMode !== 'all') return;
     const sig = inlineTreeSig('all', allFilesList);
     if (sig === lastInlineTreeSig && changesInlineTree.childElementCount > 0) return;
     lastInlineTreeSig = sig;
@@ -4727,10 +5064,10 @@
   function renderChangedFiles(files) {
     changesRefreshBtn.classList.remove('spinning');
     changedFilesList = files || [];
+    updateChangesCounts();
 
     if (changesViewMode !== 'changes') return;
 
-    changesInlineCount.textContent = files ? files.length : 0;
     const sig = inlineTreeSig('changes', changedFilesList);
     if (sig === lastInlineTreeSig && changesInlineTree.childElementCount > 0) return;
     lastInlineTreeSig = sig;
@@ -4951,9 +5288,10 @@
 
     if (msg.type === 'git-all-files') {
       changesRefreshBtn.classList.remove('spinning');
-      if (changesViewMode === 'all') {
-        renderAllFiles(msg.files);
-      }
+      // Always handled: the count in the All Files label needs this even when the
+      // Changes view is the one showing. renderAllFiles itself only draws the
+      // tree when its view is active.
+      renderAllFiles(msg.files);
       return;
     }
 
@@ -5218,7 +5556,9 @@
   }
 
   function renderPaletteList(query) {
-    const q = query.toLowerCase();
+    // Trimmed: a trailing space (or a pasted query with one) matched nothing and
+    // reported "No commands found".
+    const q = query.trim().toLowerCase();
     const filtered = q ? paletteCommands.filter(c => c.label.toLowerCase().includes(q) || (c.category || '').toLowerCase().includes(q)) : paletteCommands;
     cmdPaletteList.innerHTML = '';
     if (filtered.length === 0) {
@@ -5245,11 +5585,14 @@
     });
   }
 
-  let _paletteDebounce = null;
+  // Rendered synchronously. This used to be debounced by 60ms, which meant Enter
+  // (read from the DOM immediately) fired whatever was selected in the *previous*
+  // query's list — type "zen", press Enter fast, and you got "Open repo…" and a
+  // trip back to the welcome screen. Filtering a couple of dozen static commands
+  // costs nothing, so there is nothing to defer.
   cmdPaletteInput.addEventListener('input', () => {
     cmdPaletteSelected = 0;
-    clearTimeout(_paletteDebounce);
-    _paletteDebounce = setTimeout(() => renderPaletteList(cmdPaletteInput.value), 60);
+    renderPaletteList(cmdPaletteInput.value);
   });
 
   cmdPaletteInput.addEventListener('keydown', (e) => {
@@ -5280,8 +5623,13 @@
       else closePalette();
       return;
     }
-    // While the palette is open it owns the keyboard.
-    if (!cmdPalette.classList.contains('hidden')) return;
+    // While the palette is open it owns the keyboard — except Escape, which has
+    // to close it even before the input has focus (openPalette focuses on a
+    // 50ms timer, and the input's own handler is all there was).
+    if (!cmdPalette.classList.contains('hidden')) {
+      if (e.key === 'Escape') { e.preventDefault(); closePalette(); }
+      return;
+    }
     if (!appMod(e)) return;
 
     // Cmd/Ctrl+Shift chords — no terminal conflict, so allowed everywhere.

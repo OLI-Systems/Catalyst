@@ -204,6 +204,17 @@
     });
     const countEl = document.getElementById('portFilterCount');
     if (countEl) countEl.textContent = `${visible}/${cards.length}`;
+    // Say so when nothing matched. Without this the grid just collapsed to a few
+    // blank pixels and only the counter hinted at what had happened.
+    let emptyEl = document.getElementById('portFilterEmpty');
+    if (!emptyEl) {
+      emptyEl = document.createElement('div');
+      emptyEl.id = 'portFilterEmpty';
+      emptyEl.className = 'no-repos';
+      grid.parentNode.insertBefore(emptyEl, grid.nextSibling);
+    }
+    emptyEl.textContent = q ? `No repositories match "${q}".` : '';
+    emptyEl.style.display = (q && visible === 0) ? '' : 'none';
     const statusEl = document.getElementById('portStatus');
     if (statusEl) statusEl.textContent = `${cards.length} repos · click to launch`;
   }

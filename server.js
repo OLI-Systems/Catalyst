@@ -13,6 +13,7 @@ const worktreeManager = require('./lib/worktree-manager');
 const repoStore = require('./lib/repo-store');
 const paths = require('./lib/paths');
 const conversationStore = require('./lib/conversation-store');
+const cliTrust = require('./lib/cli-trust');
 
 // Loose path comparison for grouping sessions by repo: case-insensitive and
 // trailing-separator agnostic, which matters on Windows.
@@ -1024,12 +1025,56 @@ wss.on('connection', (ws) => {
         break;
       }
 
+      // Open the repo in the OS file manager. Only reachable for paths that pass
+      // isAllowedRepoPath, and the path is passed as an argv entry (never through
+      // a shell) so a directory name cannot become a command.
+      case 'reveal-in-explorer': {
+        const dir = msg.repoPath;
+        if (!isAllowedRepoPath(dir) || !fs.existsSync(dir)) {
+          ws.send(JSON.stringify({ type: 'reveal-result', ok: false, message: 'That folder is not available' }));
+          break;
+        }
+        const cmd = IS_WIN ? 'explorer.exe' : (IS_MAC ? 'open' : 'xdg-open');
+        // explorer.exe exits non-zero even when it succeeded, so its code is not
+        // a signal worth reporting; the other two are honest about failure.
+        execFile(cmd, [path.resolve(dir)], { windowsHide: true }, (err) => {
+          if (ws.readyState !== 1) return;
+          const ok = IS_WIN ? true : !err;
+          ws.send(JSON.stringify({
+            type: 'reveal-result',
+            ok,
+            message: ok ? null : `Could not open the folder: ${err.message}`
+          }));
+        });
+        break;
+      }
+
       case 'validate-dir': {
         fs.promises.stat(msg.dir).then(stat => {
           ws.send(JSON.stringify({ type: 'dir-validated', valid: stat.isDirectory(), dir: msg.dir }));
         }).catch(() => {
           ws.send(JSON.stringify({ type: 'dir-validated', valid: false, dir: msg.dir }));
         });
+        break;
+      }
+
+      // Which agents have already been let into each repo. Drives the extra-repo
+      // picker, which only offers folders the chosen CLI already knows — see
+      // lib/cli-trust.js for why. Read-only, and paths are still filtered
+      // through isAllowedRepoPath so this cannot be used to probe the disk.
+      case 'repo-trust': {
+        const paths = (Array.isArray(msg.paths) ? msg.paths : []).filter(
+          (p) => typeof p === 'string' && isAllowedRepoPath(p)
+        );
+        const trust = {};
+        for (const p of paths) {
+          try { trust[p] = cliTrust.repoTrust(p); } catch { /* leave it out — client treats missing as unknown */ }
+        }
+        const enforced = {};
+        for (const cli of ['claude', 'codex', 'gemini']) {
+          try { enforced[cli] = cliTrust.enforcesTrust(cli); } catch { enforced[cli] = true; }
+        }
+        ws.send(JSON.stringify({ type: 'repo-trust', trust, enforced }));
         break;
       }
 
@@ -1139,6 +1184,22 @@ wss.on('connection', (ws) => {
             }
             if (extraDirs.includes(msg.repoPath)) {
               throw new Error('The primary repository cannot also be listed as an additional repository');
+            }
+
+            // An extra repo is only handed over if the chosen CLI has already
+            // been let into it. Otherwise the flag either does nothing useful or
+            // lands the tab on a trust prompt the user did not ask for. The
+            // picker greys these out, so reaching here means a stale trust
+            // reading — refuse rather than start a session that misleads.
+            // Only the agent CLIs take extra directories at all.
+            if (['claude', 'codex', 'gemini'].includes(msg.cli)) {
+              for (const dir of extraDirs) {
+                if (!cliTrust.canAddDir(msg.cli, dir)) {
+                  throw new Error(cliTrust.refusalReason(msg.cli, dir));
+                }
+              }
+            } else {
+              extraDirs.length = 0;
             }
 
             let spawnPath = msg.repoPath;

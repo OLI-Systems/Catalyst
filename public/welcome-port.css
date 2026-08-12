@@ -691,8 +691,7 @@
 /* ─── CLI + actions zone ────────────────────────────────────── */
 .welcome[data-port="v1"] #cliSection .section-label,
 .welcome[data-port="v1"] .cli-picker,
-.welcome[data-port="v1"] .worktree-option,
-.welcome[data-port="v1"] .btn-reveal {
+.welcome[data-port="v1"] .worktree-option {
   margin-left: 24px !important;
   margin-right: 24px !important;
 }
@@ -726,23 +725,23 @@
   font: 400 9px var(--port-font); color: var(--port-text-dim);
 }
 
-/* ─── Reveal in Explorer button ─────────────────────────────── */
+/* ─── Reveal in Explorer ────────────────────────────────────── */
+/* Icon in the corner of the repo panel now, not the labelled strip that used to
+   run along the bottom of the card. */
 .welcome[data-port="v1"] .btn-reveal {
-  display: flex; align-items: center; justify-content: center; gap: 6px;
-  width: auto;
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 26px; height: 26px;
   background: transparent;
-  border: none;
-  border-top: 1px solid var(--port-border);
-  border-radius: 0 0 12px 12px;
-  font: 400 10px var(--port-font);
-  letter-spacing: 0.06em;
+  border: 1px solid var(--port-border);
+  border-radius: 6px;
   color: var(--port-text-dim);
   cursor: pointer;
   transition: all 0.15s;
   margin: 0 !important;
-  padding: 10px 24px !important;
+  padding: 0 !important;
 }
 .welcome[data-port="v1"] .btn-reveal:hover {
   color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 3%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
 }

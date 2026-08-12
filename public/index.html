@@ -441,6 +441,11 @@
             </div>
             <div id="cliSection" class="hidden">
               <div class="repo-info-panel" id="repoInfoPanel">
+                <!-- Icon only: it belongs next to the repo's identity and path,
+                     and needed none of the width a labelled button took. -->
+                <button class="btn-reveal" id="revealBtn" type="button" title="Reveal in Explorer" aria-label="Reveal in Explorer">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+                </button>
                 <div class="repo-info-name" id="repoInfoName"></div>
                 <div class="repo-info-desc" id="repoInfoDesc"></div>
                 <div class="repo-info-tags" id="repoInfoTags"></div>
@@ -1202,11 +1207,10 @@
         <div class="right-section right-section-changes">
           <div class="right-section-title changes-title-row">
             <div class="changes-toggle" id="changesToggle">
-              <button class="changes-toggle-btn active" data-mode="changes">Changes</button>
-              <button class="changes-toggle-btn" data-mode="all">All Files</button>
+              <button class="changes-toggle-btn active" data-mode="changes">Changes<span class="changes-toggle-num" id="changesCountNum"></span></button>
+              <button class="changes-toggle-btn" data-mode="all">All Files<span class="changes-toggle-num" id="allFilesCountNum"></span></button>
             </div>
             <div class="changes-title-actions">
-              <span class="changes-inline-count" id="changesInlineCount">0</span>
               <button class="changes-stage-all-btn" id="stageAllBtn" title="Stage all changes">
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
               </button>
