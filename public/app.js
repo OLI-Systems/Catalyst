@@ -3651,17 +3651,21 @@
       if (match) sel.value = match.value;
       // A disabled select already carries the reason it cannot be used; don't
       // replace that with a state the user cannot act on.
-      if (!sel.disabled) sel.title = msg.model ? `Session is running ${msg.model}` : '';
+      // The transcript names the model of the most recent recorded turn, which is
+      // all we can honestly claim: on a resumed conversation the newest turn may
+      // predate this session, and the CLI can be switched mid-session.
+      if (!sel.disabled) sel.title = msg.model ? `Last turn ran on ${msg.model}` : '';
     }
     if (msg.effort && shown('#manageEffortField')) {
       const btns = $$('.manage-btn[data-effort]');
       if (btns.length) {
         const known = [...btns].some(b => b.dataset.effort === msg.effort);
         btns.forEach(b => b.classList.toggle('active', b.dataset.effort === msg.effort));
-        // An effort the buttons don't offer (xhigh, max) would otherwise leave
-        // every button unlit with no explanation.
+        // Same caveat as the model above — and an effort the buttons don't offer
+        // (xhigh, max) would otherwise leave every button unlit with no
+        // explanation at all.
         const row = btns[0].parentElement;
-        if (row) row.title = known ? '' : `Session is running at ${msg.effort} effort`;
+        if (row) row.title = `Last turn ran at ${msg.effort} effort` + (known ? '' : ' — no button for that level');
       }
     }
   }
