@@ -1085,30 +1085,6 @@ wss.on('connection', (ws) => {
         break;
       }
 
-      // Open the repo in the OS file manager. Only reachable for paths that pass
-      // isAllowedRepoPath, and the path is passed as an argv entry (never through
-      // a shell) so a directory name cannot become a command.
-      case 'reveal-in-explorer': {
-        const dir = msg.repoPath;
-        if (!isAllowedRepoPath(dir) || !fs.existsSync(dir)) {
-          ws.send(JSON.stringify({ type: 'reveal-result', ok: false, message: 'That folder is not available' }));
-          break;
-        }
-        const cmd = IS_WIN ? 'explorer.exe' : (IS_MAC ? 'open' : 'xdg-open');
-        // explorer.exe exits non-zero even when it succeeded, so its code is not
-        // a signal worth reporting; the other two are honest about failure.
-        execFile(cmd, [path.resolve(dir)], { windowsHide: true }, (err) => {
-          if (ws.readyState !== 1) return;
-          const ok = IS_WIN ? true : !err;
-          ws.send(JSON.stringify({
-            type: 'reveal-result',
-            ok,
-            message: ok ? null : `Could not open the folder: ${err.message}`
-          }));
-        });
-        break;
-      }
-
       case 'validate-dir': {
         fs.promises.stat(msg.dir).then(stat => {
           ws.send(JSON.stringify({ type: 'dir-validated', valid: stat.isDirectory(), dir: msg.dir }));

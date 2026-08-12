@@ -2263,22 +2263,6 @@
     beginLaunch({ cli, repo: repoName, repoPath, useWorktree: false });
   };
 
-  // ─── Reveal in Explorer ───────────────────────────────────────────────
-  // This button had markup and no handler at all, so it did nothing. Two routes:
-  // the desktop build can ask the OS directly through Tauri, and the browser
-  // build asks the server to do it (the page itself cannot).
-  const revealBtn = $('#revealBtn');
-  revealBtn?.addEventListener('click', () => {
-    const session = state.sessions.find(s => s.id === state.activeSessionId);
-    const target = state.selectedRepo?.path || session?.repoPath;
-    if (!target) { showToast('Select a repo first', 'info'); return; }
-    if (window.tauriDesktop?.revealInExplorer) {
-      window.tauriDesktop.revealInExplorer(target);
-      return;
-    }
-    wsSend({ type: 'reveal-in-explorer', repoPath: target });
-  });
-
   // ─── Additional repos ─────────────────────────────────────────────────
   // The selected card is the primary repo (the agent's cwd). Extras are passed
   // as additional working directories using each CLI's own flag, so which CLI
@@ -2995,11 +2979,6 @@
 
       case 'app-update-install-result': {
         window._catalystOnUpdateInstall?.(msg);
-        break;
-      }
-
-      case 'reveal-result': {
-        if (!msg.ok) showToast(msg.message || 'Could not open the folder', 'error');
         break;
       }
 

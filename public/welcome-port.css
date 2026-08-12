@@ -725,23 +725,3 @@
   font: 400 9px var(--port-font); color: var(--port-text-dim);
 }
 
-/* ─── Reveal in Explorer ────────────────────────────────────── */
-/* Icon in the corner of the repo panel now, not the labelled strip that used to
-   run along the bottom of the card. */
-.welcome[data-port="v1"] .btn-reveal {
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 26px; height: 26px;
-  background: transparent;
-  border: 1px solid var(--port-border);
-  border-radius: 6px;
-  color: var(--port-text-dim);
-  cursor: pointer;
-  transition: all 0.15s;
-  margin: 0 !important;
-  padding: 0 !important;
-}
-.welcome[data-port="v1"] .btn-reveal:hover {
-  color: var(--accent);
-  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
-  background: color-mix(in srgb, var(--accent) 8%, transparent);
-}

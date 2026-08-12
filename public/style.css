@@ -1722,34 +1722,6 @@ body.is-desktop .welcome-settings-btn {
   to   { opacity: 1; transform: translateX(0) scale(1); }
 }
 
-/* Reveal in Explorer. Icon only, tucked into the corner of the repo's identity
-   panel — it is about where the repo lives, and it never needed a full-width
-   labelled button. The title attribute carries the name. */
-.btn-reveal {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  z-index: 2;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 26px;
-  height: 26px;
-  padding: 0;
-  background: none;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  color: var(--text-muted);
-  cursor: pointer;
-  transition: color 0.15s, border-color 0.15s, background 0.15s;
-}
-.btn-reveal:hover {
-  color: var(--accent);
-  border-color: var(--accent);
-  background: var(--accent-subtle);
-}
-.btn-reveal:active { transform: translateY(1px); }
-
 .repo-info-panel {
   width: 100%;
   text-align: center;

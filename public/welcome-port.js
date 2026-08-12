@@ -430,21 +430,6 @@
       }).observe(tagsEl, { childList: true });
     }
 
-    // Reveal in Explorer button
-    const revealBtn = document.getElementById('revealBtn');
-    if (revealBtn) {
-      revealBtn.addEventListener('click', () => {
-        const grid = document.getElementById('repoGrid');
-        const selected = grid ? grid.querySelector('.repo-card.selected') : null;
-        if (selected && selected._repoPath) {
-          if (window.tauriDesktop?.isDesktop) {
-            window.tauriDesktop.revealInExplorer(selected._repoPath);
-          } else {
-            fetch('/api/reveal?path=' + encodeURIComponent(selected._repoPath)).catch(() => {});
-          }
-        }
-      });
-    }
   }
 
   // Expose renderSnapshot globally so app.js or other scripts can call it directly
