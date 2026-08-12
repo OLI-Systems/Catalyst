@@ -11,17 +11,23 @@
   var overlay = document.getElementById('obOverlay');
   if (!overlay) return;
 
-  var TOTAL_STEPS = 7;
+  var TOTAL_STEPS = 9;
   var currentStep = 0;
   var transitioning = false;
 
+  // Steps that need work done on arrival. Named because screens get inserted
+  // in the middle of the wizard, and bare indices break silently when they do.
+  var STEP_TOOLS = 3;
+  var STEP_DONE = TOTAL_STEPS - 1;
+
   var dots = overlay.querySelectorAll('.ob-dot');
   var screens = overlay.querySelectorAll('.ob-screen');
+  var scroller = overlay.querySelector('.ob-screens');
   var btnBack = document.getElementById('obBack');
   var btnNext = document.getElementById('obNext');
   var stepLabel = document.getElementById('obStepLabel');
 
-  var NEXT_LABELS = ["Let's Go", 'Next', 'Next', 'Next', 'Next', 'Next', 'Launch Catalyst'];
+  var NEXT_LABELS = ["Let's Go", 'Next', 'Next', 'Next', 'Next', 'Next', 'Next', 'Next', 'Launch Catalyst'];
 
   function updateNav() {
     btnBack.classList.toggle('hidden', currentStep === 0);
@@ -50,8 +56,12 @@
       currentStep = step;
       updateNav();
 
-      if (currentStep === 6) buildSummary();
-      if (currentStep === 3) checkCliAvailability();
+      // The scroller is shared by every screen, so a tall screen leaves it
+      // parked halfway down and the next one opens mid-content.
+      if (scroller) scroller.scrollTop = 0;
+
+      if (currentStep === STEP_DONE) buildSummary();
+      if (currentStep === STEP_TOOLS) checkCliAvailability();
 
       setTimeout(function () {
         to.classList.remove('slide-in-right', 'slide-in-left');
@@ -579,8 +589,8 @@
       { key: 'Theme', val: theme.charAt(0).toUpperCase() + theme.slice(1) },
       { key: 'Font', val: fontName + ', ' + fontSize + 'px' },
       { key: 'Workspace', val: folder ? folder + (obRepoCount ? ' (' + obRepoCount + ' repos)' : '') : 'Not set' },
-      { key: 'AI Tools', val: installedCliCount + ' of 5 installed' },
-      { key: 'Pilot', val: pilotCount + ' of 5 active' },
+      { key: 'AI Tools', val: installedCliCount + ' of ' + OB_CLIS.length + ' installed' },
+      { key: 'Pilot', val: pilotCount + ' of ' + pilotToggles.length + ' active' },
       { key: 'Repo Host', val: providerLabel }
     ];
 
