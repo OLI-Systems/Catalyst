@@ -1315,10 +1315,10 @@
               <div class="context-bar"><div class="context-bar-fill" id="manageContextBar" style="width:0%"></div></div>
               <div class="context-row muted"><span id="manageContextPct">—</span><span id="manageSessionCost">—</span></div>
             </div>
-            <div class="session-card-stats">
-              <div class="session-stat"><span class="num" id="manageReads">0</span><span class="lbl">Reads</span></div>
-              <div class="session-stat"><span class="num" id="manageWrites">0</span><span class="lbl">Writes</span></div>
-              <div class="session-stat"><span class="num" id="manageCommands">0</span><span class="lbl">Commands</span></div>
+            <div class="session-card-stats" id="manageToolStats">
+              <div class="session-stat"><span class="num" id="manageReads">—</span><span class="lbl">Reads</span></div>
+              <div class="session-stat"><span class="num" id="manageWrites">—</span><span class="lbl">Writes</span></div>
+              <div class="session-stat"><span class="num" id="manageCommands">—</span><span class="lbl">Commands</span></div>
             </div>
           </div>
           <div class="session-actions">
@@ -1327,35 +1327,37 @@
             <button class="session-action-btn" id="manageExportBtn" title="Export session">↗ Export</button>
             <button class="session-action-btn danger" id="closeSessionBtn" title="End session">✕ End</button>
           </div>
-          <div class="manage-session-info" id="manageSessionInfo" style="display:none"></div>
         </div>
 
-        <div class="right-section">
+        <div class="right-section" id="manageBehaviorSection">
           <div class="right-section-title">Model & Behavior</div>
-          <div class="manage-field">
+          <div class="manage-field" id="manageModelField">
             <label class="manage-label">Model</label>
             <select class="settings-select manage-input" id="manageModel">
-              <option value="opus">Opus 4.6 · most capable</option>
-              <option value="sonnet">Sonnet 4.6 · balanced</option>
-              <option value="haiku">Haiku 4.5 · fastest</option>
+              <option value="">Current model — unknown</option>
+              <option value="opus">Opus · most capable</option>
+              <option value="sonnet">Sonnet · balanced</option>
+              <option value="haiku">Haiku · fastest</option>
             </select>
           </div>
-          <div class="manage-field">
+          <div class="manage-field" id="manageEffortField">
             <label class="manage-label">Effort</label>
             <div class="manage-btn-group">
               <button class="manage-btn" data-effort="low">Low</button>
               <button class="manage-btn" data-effort="medium">Medium</button>
-              <button class="manage-btn active" data-effort="high">High</button>
+              <button class="manage-btn" data-effort="high">High</button>
             </div>
           </div>
-          <div class="manage-field">
+          <!-- One launcher, not a switch: /permissions takes no argument, it opens
+               the CLI's own rule editor, so there is no mode for Catalyst to set
+               or to light up here. -->
+          <div class="manage-field" id="managePermField">
             <label class="manage-label">Permissions</label>
             <div class="manage-btn-group">
-              <button class="manage-btn active" data-perm="bypass">Bypass</button>
-              <button class="manage-btn" data-perm="ask">Ask Each</button>
-              <button class="manage-btn" data-perm="deny">Deny Risky</button>
+              <button class="manage-btn" id="managePermBtn">Permissions…</button>
             </div>
           </div>
+          <div class="manage-hint" id="manageDefaultsHint"></div>
         </div>
       </div>
 
