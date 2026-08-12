@@ -347,6 +347,27 @@ async function verifyCommand(cmd) {
   return sessionManager.commandExists(checkCmd, verifyPath);
 }
 
+// Azure DevOps' connectionData resource never went GA — it is preview-only, so
+// `api-version=7.1` is rejected with HTTP 400 and only `7.1-preview.1` is
+// accepted. Both PAT-verification paths asked for 7.1, so every PAT came back
+// "rejected" no matter how valid it was. One helper now, so the two paths cannot
+// drift apart again.
+function azureConnectionDataUrl(org) {
+  return `https://dev.azure.com/${encodeURIComponent(org)}/_apis/connectionData?api-version=7.1-preview.1`;
+}
+
+// Distinguish "your token is bad" from "our request was bad". Reporting a 400 as
+// a rejected PAT is what sent users off rotating perfectly good tokens.
+function azureAuthFailure(status) {
+  if (status === 401 || status === 203) {
+    return 'Azure DevOps rejected the PAT (HTTP ' + status + '). Check that it has not expired and includes Code (read/write) + Work Items scopes.';
+  }
+  if (status === 404) {
+    return 'No such organisation (HTTP 404) — check the DevOps URL.';
+  }
+  return `Azure DevOps refused the request (HTTP ${status}) — this is Catalyst's request, not your token. Please report it.`;
+}
+
 async function verifyProviderAuth(provider, ws) {
   if (!provider || provider === 'none') return;
   if (provider === 'azure') {
@@ -356,12 +377,12 @@ async function verifyProviderAuth(provider, ws) {
       ws.send(JSON.stringify({ type: 'pat-verified', provider, success: false, message: 'PAT or org missing' }));
       return;
     }
-    const url = `https://dev.azure.com/${encodeURIComponent(settings.azureOrg)}/_apis/connectionData?api-version=7.1`;
+    const url = azureConnectionDataUrl(settings.azureOrg);
     const auth = 'Basic ' + Buffer.from(':' + pat).toString('base64');
     try {
       const res = await fetch(url, { headers: { 'Authorization': auth } });
       if (!res.ok) {
-        ws.send(JSON.stringify({ type: 'pat-verified', provider, success: false, message: `Azure DevOps rejected the PAT (HTTP ${res.status}). Check that the token has not expired and includes Code (read/write) + Work Items scopes.` }));
+        ws.send(JSON.stringify({ type: 'pat-verified', provider, success: false, message: azureAuthFailure(res.status) }));
         return;
       }
       const text = await res.text();
@@ -1660,11 +1681,11 @@ wss.on('connection', (ws) => {
                 ws.send(JSON.stringify({ type: 'pat-verified-inline', provider, success: false, message: 'Enter a DevOps URL first' }));
                 return;
               }
-              const url = `https://dev.azure.com/${encodeURIComponent(org)}/_apis/connectionData?api-version=7.1`;
+              const url = azureConnectionDataUrl(org);
               const auth = 'Basic ' + Buffer.from(':' + pat).toString('base64');
               const res = await fetch(url, { headers: { 'Authorization': auth } });
               if (!res.ok) {
-                ws.send(JSON.stringify({ type: 'pat-verified-inline', provider, success: false, message: `Rejected (HTTP ${res.status}) — check token expiry and scopes` }));
+                ws.send(JSON.stringify({ type: 'pat-verified-inline', provider, success: false, message: azureAuthFailure(res.status) }));
                 return;
               }
               const text = await res.text();
