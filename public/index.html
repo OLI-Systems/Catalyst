@@ -120,6 +120,8 @@
             <button class="ob-dot"></button>
             <button class="ob-dot"></button>
             <button class="ob-dot"></button>
+            <button class="ob-dot"></button>
+            <button class="ob-dot"></button>
           </div>
 
           <div class="ob-screens">
@@ -293,8 +295,81 @@
               <div class="ob-tools-hint" id="obToolsHint">Detecting installed tools...</div>
             </div>
 
-            <!-- Step 4: Intelligence -->
+            <!-- Step 4: Multiple repos -->
+            <!-- Static illustration on purpose. The controls it describes live
+                 inside #cliSection, which stays hidden until a repo is picked,
+                 so during onboarding there is nothing on screen to anchor to. -->
             <div class="ob-screen" data-step="4">
+              <div class="ob-section-title">Multiple repos</div>
+              <div class="ob-section-sub">One agent, more than one checkout</div>
+              <div class="ob-feature-desc">Select a repo on the welcome screen, then open <b>Additional repos</b> &rarr; <b>Add repos</b>. The repo you selected stays the agent's working directory; the extras are handed to it as additional workspace folders.</div>
+
+              <div class="ob-mock">
+                <div class="ob-mock-cap">Additional repos</div>
+                <div class="ob-mock-chips">
+                  <span class="ob-mock-chip is-primary">catalyst<em>primary</em></span>
+                  <span class="ob-mock-chip">shared-lib<b>&times;</b></span>
+                  <span class="ob-mock-chip">docs<b>&times;</b></span>
+                </div>
+                <div class="ob-mock-count">2 additional repos selected</div>
+              </div>
+
+              <div class="ob-flags">
+                <div class="ob-flag"><span class="ob-flag-cli">Claude</span><code>--add-dir</code></div>
+                <div class="ob-flag"><span class="ob-flag-cli">Gemini</span><code>--include-directories</code></div>
+              </div>
+
+              <div class="ob-feature-desc">The picker lists every repo Catalyst discovered, with a filter box for long lists. The primary repo's own row is fixed and marked <b>primary</b>, so it can't be handed to the agent twice.</div>
+
+              <div class="ob-warn">
+                <span class="ob-warn-tag">Codex</span>
+                <span>Codex has no equivalent flag &mdash; its workspace is its working directory. The extra repos are added to its writable roots instead, so it can edit them, but it stays focused on the primary repo. Catalyst repeats this under the chips whenever an extra repo is selected.</span>
+              </div>
+
+              <div class="ob-tools-hint">Nothing to set up here &mdash; the picker is on the welcome screen whenever you want it.</div>
+            </div>
+
+            <!-- Step 5: Sessions -->
+            <div class="ob-screen" data-step="5">
+              <div class="ob-section-title">Sessions</div>
+              <div class="ob-section-sub">Pick up where you left off</div>
+              <div class="ob-feature-desc">Choosing a repo and an agent does not always start something new. Catalyst first checks what already exists for that pair and shows you before anything launches.</div>
+
+              <div class="ob-mock">
+                <div class="ob-mock-cap">Claude &middot; catalyst</div>
+                <div class="ob-mock-group">Running now (1)</div>
+                <div class="ob-mock-row">
+                  <span class="ob-live-dot"></span>
+                  <span class="ob-mock-main">
+                    <span class="ob-mock-label">Open session</span>
+                    <span class="ob-mock-meta">up 12m &middot; +2 repos</span>
+                  </span>
+                  <span class="ob-mock-pill">Switch to</span>
+                </div>
+                <div class="ob-mock-group">Past conversations (2)</div>
+                <div class="ob-mock-row">
+                  <span class="ob-mock-main">
+                    <span class="ob-mock-label">fix the sessions dialog footer</span>
+                    <span class="ob-mock-meta">3h ago &middot; 41 messages</span>
+                  </span>
+                  <span class="ob-mock-pill">Resume</span>
+                  <span class="ob-mock-bin">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>
+                  </span>
+                </div>
+              </div>
+
+              <div class="ob-note-list">
+                <div class="ob-note"><b>Running now</b> &mdash; Switch to jumps to that tab instead of starting a second session on the same repo.</div>
+                <div class="ob-note"><b>Past conversations</b> &mdash; what that CLI can resume, newest first. Resume continues one; the bin icon deletes just that conversation.</div>
+                <div class="ob-note"><b>Start fresh</b> ignores all of it and launches clean. <b>Clear history</b> deletes that agent's saved conversations for this repo &mdash; running sessions are untouched. Neither delete can be undone.</div>
+              </div>
+
+              <div class="ob-tools-hint">The dialog only appears when there is something to offer. With nothing running and no history, the agent starts straight away.</div>
+            </div>
+
+            <!-- Step 6: Intelligence -->
+            <div class="ob-screen" data-step="6">
               <div class="ob-section-title">Intelligence</div>
               <div class="ob-section-sub">Your IDE sidekick</div>
               <div class="ob-pilot-desc">Catalyst Pilot watches git state, build output, and your edits, then surfaces what's actionable. Choose what it monitors.</div>
@@ -326,8 +401,8 @@
               </div>
             </div>
 
-            <!-- Step 5: Integrations -->
-            <div class="ob-screen" data-step="5">
+            <!-- Step 7: Integrations -->
+            <div class="ob-screen" data-step="7">
               <div class="ob-section-title">Integrations</div>
               <div class="ob-section-sub">Where are your repos hosted?</div>
 
@@ -397,8 +472,8 @@
               </div>
             </div>
 
-            <!-- Step 5: All Set -->
-            <div class="ob-screen ob-done" data-step="6">
+            <!-- Step 8: All Set -->
+            <div class="ob-screen ob-done" data-step="8">
               <svg class="ob-done-logo" viewBox="0 0 32 32"><g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M16 6 L24.66 11 L24.66 21 L16 26 L7.34 21 L7.34 11 Z"/><line x1="16" y1="6" x2="16" y2="3.4"/></g><circle cx="16" cy="16" r="1.5" fill="currentColor" opacity="0.4"/><circle cx="16" cy="2.4" r="2" fill="currentColor"/></svg>
               <div class="ob-done-title">YOU'RE ALL SET</div>
               <div class="ob-done-sub">Catalyst is ready</div>
@@ -411,7 +486,7 @@
 
           <div class="ob-footer">
             <div class="ob-footer-left"><button class="ob-btn-back hidden" id="obBack">Back</button></div>
-            <div class="ob-footer-center" id="obStepLabel">1 of 6</div>
+            <div class="ob-footer-center" id="obStepLabel">1 of 9</div>
             <div class="ob-footer-right"><button class="ob-btn-next" id="obNext">Let's Go</button></div>
           </div>
         </div>
