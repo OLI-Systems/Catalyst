@@ -784,14 +784,37 @@
     for (let i = start; i < end; i++) {
       const bufLine = buf.getLine(i);
       if (!bufLine) continue;
-      const line = bufLine.translateToString(false).replace(/\s+$/, '');
+      let line = bufLine.translateToString(false).replace(/\s+$/, '');
+
+      // A URL inside a sentence — "PR for 1232 https://dev.azure.com/..." — is
+      // wrapped by the agent's own paragraph wrapping as often as not, so the
+      // continuation rows are pulled in when this row filled the width and the
+      // next is flagged as its continuation.
+      //
+      // This is what produced ".../pullrequest/2769cycle" on the first attempt: a
+      // row keeps isWrapped after the CLI overwrites it, and the word glued on
+      // came from Claude Code's footer. The footer is below the cursor and the
+      // scan now stops there, so the rows joined here are settled output. Bounded
+      // at two continuations, since a URL spanning three full rows is not a URL.
+      if (line.length >= term.cols) {
+        for (let j = 1; j <= 2 && i + j < end; j++) {
+          const next = buf.getLine(i + j);
+          if (!next || !next.isWrapped) break;
+          const nextText = next.translateToString(false).replace(/\s+$/, '');
+          line += nextText;
+          // The continuation row is also scanned on its own pass, which is
+          // harmless: a fragment without a scheme cannot match.
+          if (nextText.length < term.cols) break;
+        }
+      }
+
       URL_RE.lastIndex = 0;
       let m;
       while ((m = URL_RE.exec(line)) !== null) {
-        // Runs to the last column: the rest is on some other row, and which row
-        // cannot be told apart from unrelated output once the TUI has repainted.
-        // A missing link is recoverable; a subtly wrong one wastes the click.
-        if (m.index + m[0].length >= term.cols) continue;
+        // Still at the very end after joining: the rest is somewhere we cannot
+        // identify. A missing link is recoverable from the output above it; a
+        // subtly wrong one wastes the click.
+        if (m.index + m[0].length >= line.length && line.length >= term.cols * 3) continue;
         if (addLink(store, m[0])) added = true;
       }
     }
