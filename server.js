@@ -1237,14 +1237,23 @@ wss.on('connection', (ws) => {
               }));
           } catch (e) { note = 'Could not read running sessions: ' + e.message; }
 
+          // Wrapped: this reads and parses transcript files, and a throw here used
+          // to reject the enclosing async function, so no `sessions-for` was ever
+          // sent — the client sat with a pending launch, showing neither the
+          // dialog nor a session nor an error. Failing to read history should cost
+          // you the history, not the launch.
           if (isAllowedRepoPath(repoPath)) {
-            const res = conversationStore.list(cli, repoPath);
-            conversations = res.conversations.map(c => ({
-              id: c.id, label: c.label, updatedAt: c.updatedAt,
-              messages: c.messages, bytes: c.bytes,
-              resumeByIndexOnly: !!c.resumeByIndexOnly
-            }));
-            if (res.note) note = res.note;
+            try {
+              const res = conversationStore.list(cli, repoPath);
+              conversations = res.conversations.map(c => ({
+                id: c.id, label: c.label, updatedAt: c.updatedAt,
+                messages: c.messages, bytes: c.bytes,
+                resumeByIndexOnly: !!c.resumeByIndexOnly
+              }));
+              if (res.note) note = res.note;
+            } catch (e) {
+              note = 'Could not read past conversations: ' + e.message;
+            }
           }
 
           if (ws.readyState === 1) {
