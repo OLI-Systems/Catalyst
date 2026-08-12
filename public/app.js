@@ -2248,17 +2248,19 @@
     syncCodexButton();
   }
 
+  // Used by the Recent chips on the welcome screen (public/welcome-port.js).
   window._catalystOpenSession = function(repoPath, repoName, cli) {
     cli = cli || 'claude';
-    if (cli !== 'terminal') {
-      const existing = state.sessions.find(s => !s.ended && s.repoPath === repoPath && s.cli === cli);
-      if (existing) { switchToSession(existing.id); return; }
-    }
-    if (state.sessions.filter(s => !s.ended).length >= MAX_TABS) {
-      alert(`Maximum ${MAX_TABS} sessions allowed. Close a tab first.`);
+    // A plain terminal has no history to offer, so it launches directly.
+    if (cli === 'terminal') {
+      if (state.sessions.filter(s => !s.ended).length >= MAX_TABS) {
+        alert(`Maximum ${MAX_TABS} sessions allowed. Close a tab first.`);
+        return;
+      }
+      wsSend({ type: 'create-session', cli, repo: repoName, repoPath, useWorktree: false });
       return;
     }
-    wsSend({ type: 'create-session', cli, repo: repoName, repoPath, useWorktree: false });
+    beginLaunch({ cli, repo: repoName, repoPath, useWorktree: false });
   };
 
   // ─── Reveal in Explorer ───────────────────────────────────────────────
@@ -2535,6 +2537,40 @@
     state._pendingLaunch = null;
   }
 
+  // Path comparison for "is this the same repo?" — case-insensitive and
+  // trailing-separator agnostic, because Windows treats those as the same folder
+  // and the paths reach us from different places (scan, recents, session store).
+  function samePathish(a, b) {
+    if (!a || !b) return false;
+    const norm = (p) => String(p).replace(/[\\/]+$/, '').replace(/\\/g, '/').toLowerCase();
+    return norm(a) === norm(b);
+  }
+
+  // The one way to start an agent session. Every entry point goes through here so
+  // they all behave alike: reuse a live session for the same repo and CLI, respect
+  // the tab cap, honour the extra-repo gate, and — the part that was missing —
+  // ask what already exists before launching anything. The welcome-screen buttons
+  // asked; the Recent chips and the palette's Launch commands did not, so they
+  // always started a new session however much history the repo had, which is what
+  // made the dialog look like it had stopped working.
+  function beginLaunch({ cli, repo, repoPath, useWorktree }) {
+    if (!cli || !repoPath) return;
+
+    const existing = state.sessions.find(s => !s.ended && s.cli === cli && samePathish(s.repoPath, repoPath));
+    if (existing) { switchToSession(existing.id); return; }
+
+    if (state.sessions.filter(s => !s.ended).length >= MAX_TABS) {
+      alert(`Maximum ${MAX_TABS} sessions allowed. Close a tab first.`);
+      return;
+    }
+
+    const extraDirs = extraDirsForLaunch(cli);
+    if (extraDirs === null) return; // refused, and already explained in a toast
+
+    state._pendingLaunch = { cli, repo, repoPath, useWorktree: !!useWorktree, extraDirs };
+    wsSend({ type: 'list-sessions-for', cli, repoPath });
+  }
+
   function launchPending(extra) {
     const p = state._pendingLaunch;
     if (!p) return;
@@ -2692,16 +2728,12 @@
       // Ask what already exists first; the modal only appears if there is
       // something to offer, so the common path stays a single click.
       if (cliId !== 'terminal') {
-        const extraDirs = extraDirsForLaunch(cliId);
-        if (extraDirs === null) return;
-        state._pendingLaunch = {
+        beginLaunch({
           cli: cliId,
           repo: state.selectedRepo.name,
           repoPath: state.selectedRepo.path,
-          useWorktree: !!$('#useWorktree')?.checked,
-          extraDirs
-        };
-        wsSend({ type: 'list-sessions-for', cli: cliId, repoPath: state.selectedRepo.path });
+          useWorktree: !!$('#useWorktree')?.checked
+        });
         return;
       }
       if (state.sessions.filter(s => !s.ended).length >= MAX_TABS) {
@@ -3071,6 +3103,11 @@
       }
 
       case 'sessions-for': {
+        // Only act on the answer to the launch we are actually waiting on. The
+        // kill and clear handlers re-ask for their own repo, so an unmatched
+        // reply could otherwise launch a pending session with no dialog at all.
+        const pending = state._pendingLaunch;
+        if (!pending || msg.cli !== pending.cli || !samePathish(msg.repoPath, pending.repoPath)) break;
         // Nothing worth interrupting for — launch straight away.
         if (!msg.running.length && !msg.conversations.length) {
           launchPending();
@@ -5768,9 +5805,9 @@
     { label: 'Split terminal', category: 'TERMINAL', shortcut: '', icon: '›', action: () => { if (state.selectedRepo) ws.send(JSON.stringify({ type: 'create-session', cli: 'terminal', repo: state.selectedRepo.name, repoPath: state.selectedRepo.path, useWorktree: false })); }},
     { label: 'Next session', category: 'SESSION', shortcut: 'Ctrl+Shift+]', icon: '›', action: () => cycleSession(1) },
     { label: 'Previous session', category: 'SESSION', shortcut: 'Ctrl+Shift+[', icon: '›', action: () => cycleSession(-1) },
-    { label: 'Launch Claude', category: 'AI', shortcut: '', icon: '›', action: () => { if (!state.selectedRepo) return; const ex = state.sessions.find(s => !s.ended && s.repoPath === state.selectedRepo.path && s.cli === 'claude'); if (ex) { switchToSession(ex.id); return; } ws.send(JSON.stringify({ type: 'create-session', cli: 'claude', repo: state.selectedRepo.name, repoPath: state.selectedRepo.path, useWorktree: false })); }},
-    { label: 'Launch Codex', category: 'AI', shortcut: '', icon: '›', action: () => { if (!state.selectedRepo) return; const ex = state.sessions.find(s => !s.ended && s.repoPath === state.selectedRepo.path && s.cli === 'codex'); if (ex) { switchToSession(ex.id); return; } ws.send(JSON.stringify({ type: 'create-session', cli: 'codex', repo: state.selectedRepo.name, repoPath: state.selectedRepo.path, useWorktree: false })); }},
-    { label: 'Launch Gemini', category: 'AI', shortcut: '', icon: '›', action: () => { if (!state.selectedRepo) return; const ex = state.sessions.find(s => !s.ended && s.repoPath === state.selectedRepo.path && s.cli === 'gemini'); if (ex) { switchToSession(ex.id); return; } ws.send(JSON.stringify({ type: 'create-session', cli: 'gemini', repo: state.selectedRepo.name, repoPath: state.selectedRepo.path, useWorktree: false })); }},
+    { label: 'Launch Claude', category: 'AI', shortcut: '', icon: '›', action: () => { if (!state.selectedRepo) return; beginLaunch({ cli: 'claude', repo: state.selectedRepo.name, repoPath: state.selectedRepo.path, useWorktree: false }); }},
+    { label: 'Launch Codex', category: 'AI', shortcut: '', icon: '›', action: () => { if (!state.selectedRepo) return; beginLaunch({ cli: 'codex', repo: state.selectedRepo.name, repoPath: state.selectedRepo.path, useWorktree: false }); }},
+    { label: 'Launch Gemini', category: 'AI', shortcut: '', icon: '›', action: () => { if (!state.selectedRepo) return; beginLaunch({ cli: 'gemini', repo: state.selectedRepo.name, repoPath: state.selectedRepo.path, useWorktree: false }); }},
     { label: 'Change theme…', category: 'APPEARANCE', shortcut: '', icon: '›', action: () => { showSettings(); setTimeout(() => $('#themeSelect')?.focus(), 100); }},
     { label: 'Change font…', category: 'APPEARANCE', shortcut: '', icon: '›', action: () => { showSettings(); setTimeout(() => $('#fontSelect')?.focus(), 100); }},
     { label: 'Toggle zen mode', category: 'VIEW', shortcut: 'Ctrl+Shift+Z', icon: '›', action: () => toggleZenMode() },
