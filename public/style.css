@@ -2348,6 +2348,112 @@ body.is-desktop .welcome-settings-btn {
 
 .inner-view.active { display: flex; flex-direction: column; }
 
+/* Anchor for the links panel below. */
+.inner-view[data-view="terminal"] { position: relative; }
+
+/* Links the agent printed, parked in the top-right corner of the terminal.
+   Deliberately quiet: the terminal is the thing being read, so this sits at
+   partial opacity until pointed at. Narrow, because a PR link is identified by
+   its tail, not its full spelling. */
+.term-links {
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  z-index: 5;
+  width: 232px;
+  max-width: 42%;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--bg-card) 92%, transparent);
+  backdrop-filter: blur(4px);
+  box-shadow: 0 8px 24px -12px rgba(0, 0, 0, 0.5);
+  opacity: 0.55;
+  transition: opacity 0.15s;
+}
+
+.term-links:hover { opacity: 1; }
+
+.term-links-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 8.5px;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  padding: 0 2px 2px;
+}
+
+.term-links-clear {
+  background: none;
+  border: none;
+  padding: 0 2px;
+  font-size: 13px;
+  line-height: 1;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.term-links-clear:hover { color: var(--danger); }
+
+.term-link-row {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+/* Only offered on the row you are pointing at, so six links do not read as
+   twelve controls. */
+.term-link-x {
+  flex: none;
+  background: none;
+  border: none;
+  padding: 0 4px;
+  font-size: 12px;
+  line-height: 1;
+  color: var(--text-muted);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.12s, color 0.12s;
+}
+.term-link-row:hover .term-link-x { opacity: 0.6; }
+.term-link-x:hover { opacity: 1 !important; color: var(--danger); }
+
+.term-link {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+  padding: 4px 6px;
+  background: none;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: var(--font-mono, monospace);
+  font-size: 9.5px;
+  color: var(--text-muted);
+  text-align: left;
+  transition: background 0.12s, color 0.12s;
+}
+
+.term-link svg { flex: none; opacity: 0.7; }
+
+.term-link span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.term-link:hover {
+  background: var(--accent-subtle);
+  color: var(--accent);
+}
+
 .inner-editor-container {
   flex: 1;
   min-height: 0;

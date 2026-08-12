@@ -698,6 +698,216 @@
     });
   }
 
+  // ─── Links the agent printed ──────────────────────────────────────────
+  // A PR link scrolls out of reach within seconds of being printed. These are
+  // collected as they appear and kept in a corner of the terminal, so the answer
+  // to "where did that URL go" is not "scroll back and hope".
+  //
+  // Read from xterm's buffer rather than the PTY stream. The stream is the wrong
+  // source twice over: it carries ANSI escapes mid-URL, and the TUI hard-wraps
+  // long lines, so a stream regex captures
+  // ".../pullrequest/27" and "69" as two fragments. The buffer is already parsed,
+  // and its lines carry isWrapped, so the original logical line can be rebuilt.
+  const URL_RE = /\bhttps?:\/\/[^\s<>"'`|]+/g;
+  const LINK_KEEP = 6;
+
+  // Links are a passing convenience, not a record: they go two minutes after they
+  // were printed, so the corner does not accumulate every link of a long session.
+  const LINK_TTL_MS = 120000;
+  const LINK_SWEEP_MS = 5000;
+
+  function linkStore(sessionId) {
+    state.termLinks = state.termLinks || {};
+    if (!state.termLinks[sessionId]) state.termLinks[sessionId] = { everSeen: new Set(), list: [], typed: new Set() };
+    return state.termLinks[sessionId];
+  }
+
+  // The PTY stream carries both directions: the TUI echoes what you type, so a URL
+  // you pasted into a prompt comes back looking exactly like one the agent
+  // printed. Only the agent's are wanted here, so every URL sent *to* the CLI is
+  // recorded first and skipped when it reappears.
+  //
+  // Keystrokes arrive one character at a time, hence the rolling buffer — a URL
+  // typed by hand is never in a single chunk. Pastes arrive whole and are covered
+  // by the same path.
+  function noteTypedUrls(sessionId, data) {
+    const store = linkStore(sessionId);
+    store.typed = store.typed || new Set();
+    store.typedTail = ((store.typedTail || '') + String(data).replace(ANSI_RE, '')).slice(-2048);
+    URL_RE.lastIndex = 0;
+    let m;
+    while ((m = URL_RE.exec(store.typedTail)) !== null) store.typed.add(m[0].replace(/[.,;:!?]+$/, ''));
+  }
+
+  // One sweep for every session rather than a timer per link.
+  setInterval(() => {
+    const all = state.termLinks || {};
+    const cutoff = Date.now() - LINK_TTL_MS;
+    for (const sessionId of Object.keys(all)) {
+      const store = all[sessionId];
+      const before = store.list.length;
+      store.list = store.list.filter((e) => e.at > cutoff);
+      if (store.list.length !== before) renderTermLinks(sessionId);
+    }
+  }, LINK_SWEEP_MS);
+
+  // Escape sequences, so a URL is not interrupted by the colour codes around it.
+  const ANSI_RE = /\x1b\[[0-9;?]*[ -/]*[@-~]|\x1b[]P^_][\s\S]*?(?:\x07|\x1b\\)|\x1b[@-Z\\-_]/g;
+
+  // Read from xterm's buffer, which is the rendered truth: every escape sequence,
+  // backspace and cursor move has already been applied to it.
+  //
+  // Harvesting the raw stream instead looked attractive — append-only, so nothing
+  // can be repainted away — and it does not survive contact with a real TUI. The
+  // stream interleaves the agent's spinner and its backspaces with the text, so
+  // stripping only ANSI leaves a URL spliced together out of fragments and glyphs
+  // ("/travel/flight✻Baked"). Reimplementing a terminal to undo that is xterm's
+  // job, and xterm has already done it.
+  //
+  // What the buffer costs is that the live region gets redrawn, so the scan runs
+  // on a short debounce to catch a link before the CLI paints over it, and again
+  // on later bursts once it has scrolled into the stable scrollback.
+  function harvestFromBuffer(sessionId) {
+    const term = state.terminals[sessionId];
+    if (!term || !term.buffer) return;
+    const store = linkStore(sessionId);
+    const buf = term.buffer.active;
+    // Stop at the cursor's row. Everything from there down is the CLI's live
+    // input area — its prompt box and footer — so a URL you typed and have not
+    // sent yet lives there, and reading it would put your own link in a panel
+    // meant for the agent's. Output pushes the cursor down as it arrives, so a
+    // line the agent prints is above the cursor by the time it matters.
+    const end = Math.max(0, buf.baseY + buf.cursorY);
+    const start = Math.max(0, end - 400);
+    let added = false;
+
+    for (let i = start; i < end; i++) {
+      const bufLine = buf.getLine(i);
+      if (!bufLine) continue;
+      const line = bufLine.translateToString(false).replace(/\s+$/, '');
+      URL_RE.lastIndex = 0;
+      let m;
+      while ((m = URL_RE.exec(line)) !== null) {
+        // Runs to the last column: the rest is on some other row, and which row
+        // cannot be told apart from unrelated output once the TUI has repainted.
+        // A missing link is recoverable; a subtly wrong one wastes the click.
+        if (m.index + m[0].length >= term.cols) continue;
+        if (addLink(store, m[0])) added = true;
+      }
+    }
+    if (added) renderTermLinks(sessionId);
+  }
+
+  // Two passes, for the same reason the terminal is fitted twice: the first is
+  // prompt enough to catch a link before it scrolls, and the second looks again
+  // once the CLI has finished repainting the row it was printed on.
+  const _linkTimers = {};
+  function scheduleLinkHarvest(sessionId) {
+    clearTimeout(_linkTimers[sessionId]);
+    harvestFromBuffer(sessionId);
+    _linkTimers[sessionId] = setTimeout(() => harvestFromBuffer(sessionId), 1200);
+  }
+
+  function addLink(store, raw) {
+    // Trailing punctuation belongs to the prose, not the URL. Brackets only count
+    // as trailing when unbalanced, since some URLs legitimately end in one.
+    let url = raw.replace(/[.,;:!?]+$/, '');
+    while (/[)\]}]$/.test(url)) {
+      const close = url.slice(-1);
+      const open = { ')': '(', ']': '[', '}': '{' }[close];
+      if (url.split(open).length > url.split(close).length) break;
+      url = url.slice(0, -1);
+    }
+    // An ellipsis means the CLI truncated it for display — not recoverable, and a
+    // broken link is worse than none.
+    if (/[…]|\.\.\./.test(url) || url.length < 12) return false;
+    // Sent by the user, echoed back by the TUI. Not the agent's answer.
+    if (store.typed && store.typed.has(url)) return false;
+    // everSeen outlives the list on purpose. The rows a link was read from stay in
+    // the scrollback, so re-scanning finds it again on the next burst of output —
+    // without this, dismissing a link or letting it expire only lasted until the
+    // agent printed its next line, and it reappeared.
+    if (store.everSeen.has(url)) return false;
+    store.everSeen.add(url);
+    store.list.unshift({ url, at: Date.now() });
+    if (store.list.length > LINK_KEEP) store.list.length = LINK_KEEP;
+    return true;
+  }
+
+  // Host plus the last meaningful segment — enough to tell two PR links apart
+  // without spending the width to spell either out.
+  function shortLink(url) {
+    try {
+      const u = new URL(url);
+      const parts = u.pathname.split('/').filter(Boolean);
+      const tail = parts.length ? parts.slice(-2).join('/') : '';
+      return u.host.replace(/^www\./, '') + (tail ? '/' + tail : '');
+    } catch {
+      return url;
+    }
+  }
+
+  function openLink(url) {
+    if (window.tauriDesktop?.openExternal) window.tauriDesktop.openExternal(url);
+    else window.open(url, '_blank', 'noopener');
+  }
+
+  function renderTermLinks(sessionId) {
+    const el = document.getElementById('links-' + sessionId);
+    if (!el) return;
+    const store = linkStore(sessionId);
+    if (!store.list.length) {
+      el.classList.add('hidden');
+      el.innerHTML = '';
+      return;
+    }
+
+    el.classList.remove('hidden');
+    el.innerHTML = `
+      <div class="term-links-head">
+        <span>Links</span>
+        <button class="term-links-clear" type="button" title="Clear all">&times;</button>
+      </div>
+      ${store.list.map((e, i) => `
+        <div class="term-link-row">
+          <button class="term-link" type="button" data-open="${i}" title="${escHtml(e.url)}">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            <span>${escHtml(shortLink(e.url))}</span>
+          </button>
+          <button class="term-link-x" type="button" data-drop="${i}" title="Remove">&times;</button>
+        </div>`).join('')}
+    `;
+
+    // Delegated, and bound once per element: re-binding on every render leaked a
+    // listener per repaint, and links repaint often.
+    if (!el._linksBound) {
+      el._linksBound = true;
+      // Keep focus in the terminal — using this should not stop you typing.
+      el.addEventListener('mousedown', (e) => e.preventDefault());
+      el.addEventListener('click', (e) => {
+        const s = linkStore(sessionId);
+        const openIdx = e.target.closest('[data-open]')?.dataset.open;
+        const dropIdx = e.target.closest('[data-drop]')?.dataset.drop;
+        if (openIdx !== undefined) {
+          const entry = s.list[Number(openIdx)];
+          if (entry) openLink(entry.url);
+          return;
+        }
+        if (dropIdx !== undefined) {
+          s.list.splice(Number(dropIdx), 1);
+          renderTermLinks(sessionId);
+          state.terminals[sessionId]?.focus();
+          return;
+        }
+        if (e.target.closest('.term-links-clear')) {
+          s.list = [];
+          renderTermLinks(sessionId);
+          state.terminals[sessionId]?.focus();
+        }
+      });
+    }
+  }
+
   function populateRepoInfoPanel(info) {
     const descEl = $('#repoInfoDesc');
     const tagsEl = $('#repoInfoTags');
@@ -828,6 +1038,7 @@
   const escState = {};
 
   function watchForClear(sessionId, data) {
+    noteTypedUrls(sessionId, data);
     let line = typedLine[sessionId] || '';
     let mode = escState[sessionId] || 'text';
 
@@ -1135,6 +1346,9 @@
       <div class="inner-views">
         <div class="inner-view active" data-view="terminal">
           <div class="terminal-container" id="term-${sessionId}"></div>
+          <!-- Links the agent printed, kept where they can still be clicked
+               after the output has scrolled past. -->
+          <div class="term-links hidden" id="links-${sessionId}"></div>
         </div>
         <div class="inner-view" data-view="editor">
           <div class="inner-editor-container" id="inner-editor-${sessionId}"></div>
@@ -3212,6 +3426,7 @@
         if (term) term.write(msg.data);
         detectStatus(msg.sessionId, msg.data);
         detectPrUrl(msg.sessionId, msg.data);
+        scheduleLinkHarvest(msg.sessionId);
         if (msg.sessionId === state.activeSessionId) {
           clearTimeout(state._changesRefreshTimer);
           state._changesRefreshTimer = setTimeout(() => {
