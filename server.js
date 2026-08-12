@@ -14,6 +14,7 @@ const repoStore = require('./lib/repo-store');
 const paths = require('./lib/paths');
 const conversationStore = require('./lib/conversation-store');
 const cliTrust = require('./lib/cli-trust');
+const sessionUsage = require('./lib/session-usage');
 
 // Loose path comparison for grouping sessions by repo: case-insensitive and
 // trailing-separator agnostic, which matters on Windows.
@@ -1055,6 +1056,35 @@ wss.on('connection', (ws) => {
         }).catch(() => {
           ws.send(JSON.stringify({ type: 'dir-validated', valid: false, dir: msg.dir }));
         });
+        break;
+      }
+
+      // Context use and cost for one session, read from the CLI's own transcript
+      // (lib/session-usage.js). The Manage panel polls this; it is read-only and
+      // costs a tail read of one file.
+      case 'session-usage': {
+        const s = sessionManager.getSession(msg.sessionId);
+        if (!s) {
+          ws.send(JSON.stringify({ type: 'session-usage', sessionId: msg.sessionId, available: false, reason: 'Session has ended' }));
+          break;
+        }
+        let usage;
+        try {
+          usage = sessionUsage.sessionUsage({
+            cli: s.cli,
+            // Worktree sessions run in the worktree, so that is the cwd claude
+            // keyed its transcript directory on.
+            repoPath: s.worktreePath || s.repoPath,
+            startedAt: s.startedAt,
+            // A resumed session's transcript is the conversation it resumed —
+            // its id is the filename, so no inference is needed.
+            resumedFrom: s.resumedFrom,
+            sessionId: s.id
+          });
+        } catch (e) {
+          usage = { available: false, reason: e.message };
+        }
+        ws.send(JSON.stringify({ type: 'session-usage', sessionId: msg.sessionId, ...usage }));
         break;
       }
 

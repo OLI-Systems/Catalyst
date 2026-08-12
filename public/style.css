@@ -1422,6 +1422,49 @@ body.is-desktop #win-controls {
   box-shadow: 0 0 20px var(--accent-glow), 0 0 40px rgba(56, 189, 248, 0.08);
 }
 
+/* Integration save row. It had no styling at all, so the button sat flush
+   against the fields card above it. */
+.integ-save-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 18px;
+}
+
+/* The button saves *this* integration, so it carries that integration's colour
+   rather than the app accent — Azure DevOps blue, GitHub's near-black. "Skip"
+   configures nothing, so it stays neutral. */
+.integ-save-row[data-provider="azure"] .btn-primary {
+  background: #0078d4;
+  color: #ffffff;
+}
+.integ-save-row[data-provider="azure"] .btn-primary:hover {
+  background: #106ebe;
+  box-shadow: 0 0 20px rgba(0, 120, 212, 0.35);
+}
+
+.integ-save-row[data-provider="github"] .btn-primary {
+  background: #24292f;
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.14);
+}
+.integ-save-row[data-provider="github"] .btn-primary:hover {
+  background: #32383f;
+  box-shadow: 0 0 20px rgba(36, 41, 47, 0.4);
+}
+
+.integ-save-row[data-provider="none"] .btn-primary {
+  background: var(--surface);
+  color: var(--text-muted);
+  border-color: var(--border);
+}
+.integ-save-row[data-provider="none"] .btn-primary:hover {
+  color: var(--text);
+  border-color: var(--border-bright);
+  box-shadow: none;
+}
+
 .btn-secondary {
   background: var(--surface);
   color: var(--text-muted);
@@ -2722,6 +2765,19 @@ body.is-desktop .welcome-settings-btn {
   animation: glow-pulse 4s ease-in-out infinite;
 }
 
+/* The hero mark had no styling of its own. Tailwind's preflight makes every svg
+   display:block, so the parent's text-align never applied and it sat against the
+   left edge in its inherited text colour — black on light themes. Explicitly
+   centred, larger, and in the brand blue, which is theme-independent. */
+.about-hero-logo {
+  display: block;
+  width: 104px;
+  height: 104px;
+  margin: 0 auto 22px;
+  position: relative;
+  color: var(--catalyst-logo);
+}
+
 .about-logo {
   font-size: 36px;
   font-weight: 300;
@@ -3156,6 +3212,18 @@ body.is-desktop .welcome-settings-btn {
   color: var(--text-muted);
   letter-spacing: 1px;
   margin-top: 6px;
+}
+
+/* Trademark attribution for the agent CLIs. Deliberately quiet — it is legal
+   small print, not something to read on the way past. */
+.credit-attrib {
+  max-width: 460px;
+  margin: 18px auto 0;
+  font-size: 9px;
+  line-height: 1.7;
+  color: var(--text-muted);
+  opacity: 0.75;
+  text-align: center;
 }
 
 .font-size-control {

@@ -585,12 +585,6 @@
               </div>
               <div class="settings-hint" id="settingsRootHint"></div>
             </div>
-            <div class="settings-section danger-section">
-              <div class="settings-section-title" style="color:var(--danger)">Reset Catalyst</div>
-              <div class="settings-hint" style="margin-bottom:10px">Wipes cached repo info, sessions, saved settings, and both PATs from the OS credential store (Windows Credential Manager / macOS Keychain). Then the onboarding wizard runs again on next launch.</div>
-              <button class="btn btn-danger" id="resetCatalystBtn">Reset Catalyst</button>
-              <div class="settings-hint" id="resetHint"></div>
-            </div>
           </div>
 
           <div class="settings-section-page" id="settings-appearance">
@@ -920,7 +914,9 @@
               <div class="ob-azure-note">No integration is selected — Catalyst won't try to fetch tasks, PRs, or status checks. You can switch this on any time.</div>
             </div>
 
-            <div class="integ-save-row">
+            <!-- data-provider mirrors the selected integration and drives the save
+                 button's brand colour; app.js keeps it in sync. -->
+            <div class="integ-save-row" data-provider="azure">
               <button class="btn btn-primary" id="saveAzureSettings">Save &amp; install CLI</button>
               <span class="settings-hint" id="azureSaveHint"></span>
             </div>
@@ -1117,6 +1113,16 @@
                 nothing for the updater to replace. Updates apply to the desktop app.
               </div>
             </div>
+
+            <!-- Sits with Updates rather than General: it belongs with the other
+                 install-level operations, and it is the last thing on the page
+                 instead of something you scroll past while setting a repo folder. -->
+            <div class="settings-section danger-section">
+              <div class="settings-section-title" style="color:var(--danger)">Reset Catalyst</div>
+              <div class="settings-hint" style="margin-bottom:10px">Wipes cached repo info, sessions, saved settings, and both PATs from the OS credential store (Windows Credential Manager / macOS Keychain). Then the onboarding wizard runs again on next launch.</div>
+              <button class="btn btn-danger" id="resetCatalystBtn">Reset Catalyst</button>
+              <div class="settings-hint" id="resetHint"></div>
+            </div>
           </div>
 
           <div class="settings-section-page" id="settings-about">
@@ -1141,6 +1147,9 @@
               <div class="credit-line">Designed & Built by</div>
               <a href="https://olisystems.com/" target="_blank" class="credit-company">OLI Inc.</a>
               <div class="credit-year" id="creditYear"></div>
+              <!-- Same attribution the website footer carries: the agent CLIs are
+                   other companies' products and Catalyst only launches them. -->
+              <div class="credit-attrib">Claude Code, Codex and Gemini CLI are trademarks of Anthropic, OpenAI and Google, and each remains the copyright of its respective owner. Catalyst is an independent workspace and is not affiliated with, endorsed by, or sponsored by any of them.</div>
             </div>
           </div>
 

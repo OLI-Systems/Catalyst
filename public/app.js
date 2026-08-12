@@ -1604,6 +1604,9 @@
     // Populate the Manage → Model dropdown with this CLI's models (dynamic).
     const _activeSess = state.sessions.find(s => s.id === sessionId);
     if (_activeSess) requestModelList(_activeSess.cli);
+    // Without this the Manage panel kept showing the session you switched away
+    // from — it only refreshed when its own tab was clicked.
+    updateManageInfo();
     // Fit after layout has settled (right panel visible, sidebar updated).
     // Terminal may have been opened in a hidden (display:none) container,
     // so force xterm to re-measure character dimensions now that it's visible.
@@ -2091,9 +2094,14 @@
   const integFieldsNone = $('#integFieldsNone');
   const integProviderBtns = $$('.integ-provider-btn');
 
+  const integSaveRow = document.querySelector('.integ-save-row');
+
   function setIntegProvider(provider) {
     state.integProvider = provider;
     integProviderBtns.forEach(b => b.classList.toggle('active', b.dataset.provider === provider));
+    // The save button wears the selected integration's brand colour; CSS keys off
+    // this attribute so the mapping lives with the rest of the styling.
+    if (integSaveRow) integSaveRow.dataset.provider = provider;
     if (integFieldsAzure) integFieldsAzure.style.display = provider === 'azure' ? '' : 'none';
     if (integFieldsGithub) integFieldsGithub.style.display = provider === 'github' ? '' : 'none';
     if (integFieldsNone) integFieldsNone.style.display = provider === 'none' ? '' : 'none';
@@ -2917,6 +2925,11 @@
       // picker asks; re-render so rows stop saying "checking…", and drop any
       // already-picked repo that turns out to be unusable everywhere (its trust
       // could have been revoked between opens).
+      case 'session-usage': {
+        renderSessionUsage(msg);
+        break;
+      }
+
       case 'reveal-result': {
         if (!msg.ok) showToast(msg.message || 'Could not open the folder', 'error');
         break;
@@ -3082,6 +3095,9 @@
           if (!state.sessions.find(x => x.id === s.id)) {
             state.sessions.push({ ...s, ended: false });
             state.sessionStatus[s.id] = 'idle';
+            // The server knows when it started; without this a session restored
+            // on reconnect reported "started 0m ago" for the rest of its life.
+            if (s.startedAt) state.sessionStartTime[s.id] = s.startedAt;
             ensureChatPanel(s.id);
             ws.send(JSON.stringify({ type: 'get-history', sessionId: s.id }));
           }
@@ -3435,6 +3451,87 @@
     if (iconEl) iconEl.innerHTML = cliIcons[session.cli] || '';
     if (dotEl) dotEl.style.background = session.ended ? 'var(--error, #f87171)' : 'var(--success, #34d399)';
     updateManageStats();
+    requestSessionUsage();
+  }
+
+  // ─── Context & cost ───────────────────────────────────────────────────
+  // These four elements existed in the markup with nothing behind them, so the
+  // panel read "CONTEXT — / —" forever. The server reads the CLI's own
+  // transcript (lib/session-usage.js) — its own token accounting, not a guess
+  // scraped off the screen — and this renders it.
+  const manageContextText = $('#manageContextText');
+  const manageContextBar = $('#manageContextBar');
+  const manageContextPct = $('#manageContextPct');
+  const manageSessionCost = $('#manageSessionCost');
+
+  function fmtTokens(n) {
+    if (n >= 1000000) return (n / 1000000).toFixed(n >= 10000000 ? 0 : 2) + 'M';
+    if (n >= 1000) return (n / 1000).toFixed(n >= 100000 ? 0 : 1) + 'K';
+    return String(n);
+  }
+
+  function requestSessionUsage() {
+    if (!state.activeSessionId) return;
+    wsSend({ type: 'session-usage', sessionId: state.activeSessionId });
+  }
+
+  function renderSessionUsage(msg) {
+    // A late reply for a session the user has already switched away from.
+    if (!msg || msg.sessionId !== state.activeSessionId) return;
+    if (!manageContextText) return;
+
+    if (!msg.available) {
+      manageContextText.textContent = '—';
+      manageContextText.title = msg.reason || '';
+      if (manageContextBar) manageContextBar.style.width = '0%';
+      if (manageContextPct) { manageContextPct.textContent = msg.reason || '—'; manageContextPct.title = ''; }
+      if (manageSessionCost) { manageSessionCost.textContent = '—'; manageSessionCost.title = ''; }
+      return;
+    }
+
+    manageContextText.textContent = `${fmtTokens(msg.contextTokens)} / ${fmtTokens(msg.contextWindow)}`;
+    manageContextText.title = `${msg.contextTokens.toLocaleString()} tokens in the prompt of the most recent turn`
+      + (msg.model ? ` · ${msg.model}` : '');
+    if (manageContextBar) manageContextBar.style.width = Math.max(1, Math.round(msg.percent)) + '%';
+    if (manageContextPct) manageContextPct.textContent = Math.round(msg.percent) + '% used';
+    if (manageSessionCost) {
+      const cost = msg.costUSD;
+      manageSessionCost.textContent = '~$' + (cost < 1 ? cost.toFixed(3) : cost.toFixed(2));
+      // Say why it is approximate rather than presenting it as a bill.
+      const notes = [`${msg.turns} model turns, priced from published rates`];
+      if (msg.costPartial) notes.push('transcript truncated — earlier turns not counted');
+      if (msg.pricingGuessed) notes.push(`rates for ${msg.model || 'this model'} are not known, Opus rates assumed`);
+      manageSessionCost.title = notes.join(' · ');
+    }
+
+    syncManageControls(msg);
+  }
+
+  // The Model and Effort controls used to show whatever the markup defaulted to —
+  // "Opus · most capable" and High — even when the CLI was running Sonnet at low
+  // effort, because nothing ever read the session's real state back. The
+  // transcript records both per turn, so reflect that (and keep reflecting it
+  // when the user changes either inside the terminal).
+  function syncManageControls(msg) {
+    const sel = $('#manageModel');
+    if (sel && msg.modelFamily) {
+      const match = [...sel.options].find(o => o.value === msg.modelFamily);
+      // Assigning .value does not fire 'change', so this cannot loop back into
+      // sending a /model command.
+      if (match) sel.value = match.value;
+      sel.title = msg.model ? `Session is running ${msg.model}` : '';
+    }
+    if (msg.effort) {
+      const btns = $$('.manage-btn[data-effort]');
+      if (btns.length) {
+        const known = [...btns].some(b => b.dataset.effort === msg.effort);
+        btns.forEach(b => b.classList.toggle('active', b.dataset.effort === msg.effort));
+        // An effort the buttons don't offer (xhigh, max) would otherwise leave
+        // every button unlit with no explanation.
+        const row = btns[0].parentElement;
+        if (row) row.title = known ? '' : `Session is running at ${msg.effort} effort`;
+      }
+    }
   }
 
   // Send a live slash command (or any input) to the active CLI. The terminal is
@@ -5773,6 +5870,12 @@
     if (!state.activeSessionId || ws.readyState !== 1) return;
     ws.send(JSON.stringify({ type: 'git-branch', sessionId: state.activeSessionId }));
     ws.send(JSON.stringify({ type: 'git-changed-files', sessionId: state.activeSessionId }));
+    // Context and cost move with every model turn, so refresh them while the
+    // Manage page is the one on screen — and only then, since it means a file read.
+    if (document.querySelector('#rpPageManage.active')) {
+      updateManageInfo();
+      requestSessionUsage();
+    }
   }, 15000);
 
   // ─── ZEN MODE ─────────────────────
