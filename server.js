@@ -171,6 +171,34 @@ const APP_VERSION = (() => {
   }
 })();
 
+// Passed by the desktop host when it spawns this server as its sidecar (see
+// src-tauri/src/lib.rs), meaning our stdout is being watched and an update
+// request can be relayed over it.
+//
+// Deliberately an argument, not CATALYST_DESKTOP: environment variables are
+// inherited by every terminal opened inside Catalyst, so a server started by
+// hand from one of those terminals would claim a bridge it does not have, and
+// the relayed line would land in that terminal instead of the host.
+const HAS_UPDATE_BRIDGE = process.argv.includes('--update-bridge');
+
+// The same manifest the desktop updater is configured with
+// (src-tauri/tauri.conf.json → updater.endpoints), so a check from a browser tab
+// and a check from the desktop window cannot disagree about what is latest.
+const UPDATE_MANIFEST_URL = 'https://github.com/OLI-Systems/Catalyst/releases/latest/download/latest.json';
+
+// Compare dotted versions numerically: "1.1.10" is newer than "1.1.9", which a
+// string comparison gets wrong. Any non-numeric suffix is ignored.
+function compareVersions(a, b) {
+  const parts = (v) => String(v).split(/[.\-+]/).map((n) => parseInt(n, 10) || 0);
+  const pa = parts(a);
+  const pb = parts(b);
+  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+    const d = (pa[i] || 0) - (pb[i] || 0);
+    if (d !== 0) return d < 0 ? -1 : 1;
+  }
+  return 0;
+}
+
 // Serve index.html with the per-launch WS token injected (must come before
 // express.static so '/' doesn't fall through to the raw file).
 app.get(['/', '/index.html'], (req, res) => {
@@ -1056,6 +1084,55 @@ wss.on('connection', (ws) => {
         }).catch(() => {
           ws.send(JSON.stringify({ type: 'dir-validated', valid: false, dir: msg.dir }));
         });
+        break;
+      }
+
+      // Updating from a browser tab. The updater itself stays in the desktop host
+      // — it is the half that verifies the release signature against the bundled
+      // public key, and that check is the whole point — so the browser drives it
+      // in two steps: ask what is available (this case), then ask the host to
+      // install it (below). The manifest read here is the same latest.json the
+      // desktop updater points at, so both views agree on what "latest" means.
+      case 'app-update-check': {
+        (async () => {
+          const reply = (extra) => {
+            if (ws.readyState === 1) ws.send(JSON.stringify({ type: 'app-update', current: APP_VERSION, ...extra }));
+          };
+          try {
+            const res = await fetch(UPDATE_MANIFEST_URL, {
+              headers: { 'User-Agent': 'Catalyst' },
+              redirect: 'follow'
+            });
+            if (!res.ok) return reply({ error: `GitHub returned HTTP ${res.status}` });
+            const manifest = await res.json();
+            const latest = String(manifest.version || '').replace(/^v/, '');
+            if (!latest) return reply({ error: 'The release manifest has no version' });
+            reply({
+              latest,
+              notes: manifest.notes || '',
+              newer: compareVersions(latest, APP_VERSION) > 0,
+              // Only the desktop host can actually install; say so up front rather
+              // than offering a button that cannot work.
+              installable: HAS_UPDATE_BRIDGE
+            });
+          } catch (e) {
+            reply({ error: 'Could not reach GitHub: ' + e.message });
+          }
+        })();
+        break;
+      }
+
+      // Relayed to the desktop host over stdout — the channel it already watches
+      // for the readiness line. The host re-checks, verifies the signature,
+      // installs and restarts; this process is replaced along with it, so there
+      // is no completion message to wait for.
+      case 'app-update-install': {
+        if (!HAS_UPDATE_BRIDGE) {
+          ws.send(JSON.stringify({ type: 'app-update-install-result', ok: false, message: 'Updates apply to the desktop app; this server was started on its own.' }));
+          break;
+        }
+        console.log('CATALYST_REQUEST_UPDATE');
+        ws.send(JSON.stringify({ type: 'app-update-install-result', ok: true, message: 'Verifying and installing — Catalyst will restart.' }));
         break;
       }
 

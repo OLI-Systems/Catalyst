@@ -1973,9 +1973,42 @@
   }
 
   // ─── Updates (Settings → Updates) ─────────────────────────────────────
-  // Only the desktop build can replace itself, so the browser sees an
-  // explanatory panel instead of controls that could not work.
+  // Only the desktop build can replace itself, so the browser gets a panel that
+  // asks the desktop host to do it instead (see "Updates from a browser tab").
   const isDesktopBuild = !!window.tauriDesktop?.checkForUpdates;
+
+  // ─── Open in a browser (Settings → General) ───────────────────────────
+  // The desktop window is one view onto a local server, so the same workspace is
+  // reachable from any browser on this machine. Only shown in the desktop build —
+  // in a browser you are already looking at this URL.
+  const openInBrowserSection = $('#openInBrowserSection');
+  if (openInBrowserSection && isDesktopBuild) {
+    const localUrl = window.location.origin + '/';
+    openInBrowserSection.hidden = false;
+    const urlInput = $('#localUrlInput');
+    const urlHint = $('#localUrlHint');
+    if (urlInput) urlInput.value = localUrl;
+
+    $('#copyLocalUrl')?.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(localUrl);
+        if (urlHint) urlHint.textContent = 'Copied.';
+      } catch {
+        // Clipboard access can be refused; selecting the text is the fallback.
+        urlInput?.select();
+        if (urlHint) urlHint.textContent = 'Press Ctrl+C to copy the selected URL.';
+      }
+    });
+
+    $('#openLocalUrl')?.addEventListener('click', () => {
+      window.tauriDesktop.openExternal(localUrl);
+      if (urlHint) urlHint.textContent = 'Opened in your default browser.';
+    });
+
+    if (urlHint) {
+      urlHint.textContent = 'The port changes between launches — Catalyst takes the first free one.';
+    }
+  }
   $('#updatesDesktop')?.toggleAttribute('hidden', !isDesktopBuild);
   $('#updatesBrowser')?.toggleAttribute('hidden', isDesktopBuild);
 
@@ -2043,6 +2076,65 @@
     // Surface a pending update on the nav item without the user asking, so the
     // dot is already there when they open Settings.
     window.tauriDesktop.checkForUpdates().then(showUpdate).catch(() => {});
+  }
+
+  // ─── Updates from a browser tab ───────────────────────────────────────
+  // The desktop host owns the updater because it owns the signature check. A
+  // browser tab can still drive it: the server reads the same release manifest,
+  // and relays the install request to the host.
+  if (!isDesktopBuild) {
+    const bCheck = $('#browserCheckUpdatesBtn');
+    const bInstall = $('#browserInstallUpdateBtn');
+    const bStatus = $('#browserUpdateStatus');
+    const bNotes = $('#browserUpdateNotes');
+    const bVersion = $('#browserCurrentVersion');
+    if (bVersion) bVersion.textContent = document.querySelector('meta[name="app-version"]')?.content || '—';
+
+    bCheck?.addEventListener('click', () => {
+      bCheck.disabled = true;
+      if (bStatus) bStatus.textContent = 'Checking…';
+      wsSend({ type: 'app-update-check' });
+    });
+
+    bInstall?.addEventListener('click', () => {
+      bInstall.disabled = true;
+      if (bStatus) bStatus.textContent = 'Asking the desktop app to install…';
+      wsSend({ type: 'app-update-install' });
+    });
+
+    // Both replies land in the message switch, which forwards to these.
+    window._catalystOnUpdateInfo = (msg) => {
+      if (bCheck) bCheck.disabled = false;
+      if (!bStatus) return;
+      if (msg.error) { bStatus.textContent = msg.error; return; }
+      if (!msg.newer) {
+        bStatus.textContent = `Catalyst ${msg.current} is up to date.`;
+        bInstall?.classList.add('hidden');
+        bNotes?.classList.add('hidden');
+        return;
+      }
+      bStatus.textContent = `Version ${msg.latest} is available.`;
+      if (bNotes) {
+        bNotes.textContent = (msg.notes || '').trim();
+        bNotes.classList.toggle('hidden', !bNotes.textContent);
+      }
+      if (bInstall) {
+        // Without the desktop host there is nothing to install with — a plain
+        // `node server.js` has nobody listening.
+        bInstall.classList.toggle('hidden', !msg.installable);
+        bInstall.disabled = false;
+        if (!msg.installable) {
+          bStatus.textContent += ' Start the desktop app to install it.';
+        }
+      }
+      updateNavDot?.classList.remove('hidden');
+    };
+
+    window._catalystOnUpdateInstall = (msg) => {
+      if (!bStatus) return;
+      bStatus.textContent = msg.message || (msg.ok ? 'Installing…' : 'Could not start the update.');
+      if (!msg.ok && bInstall) bInstall.disabled = false;
+    };
   }
 
   togglePatVisibility.addEventListener('click', () => {
@@ -2927,6 +3019,16 @@
       // could have been revoked between opens).
       case 'session-usage': {
         renderSessionUsage(msg);
+        break;
+      }
+
+      case 'app-update': {
+        window._catalystOnUpdateInfo?.(msg);
+        break;
+      }
+
+      case 'app-update-install-result': {
+        window._catalystOnUpdateInstall?.(msg);
         break;
       }
 

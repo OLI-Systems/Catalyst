@@ -36,8 +36,10 @@ async fn check_for_updates(app: tauri::AppHandle) -> Result<Option<UpdateInfo>, 
 ///
 /// Re-checks rather than holding the Update handle between commands: it costs
 /// one request and avoids keeping download state alive across the IPC boundary.
-#[tauri::command]
-async fn install_update(app: tauri::AppHandle) -> Result<(), String> {
+///
+/// Shared by the desktop command and the backend's stdout request, so an update
+/// started from a browser tab goes through exactly the same signature check.
+async fn download_and_install(app: tauri::AppHandle) -> Result<(), String> {
     let update = app
         .updater()
         .map_err(|e| e.to_string())?
@@ -54,6 +56,11 @@ async fn install_update(app: tauri::AppHandle) -> Result<(), String> {
     // The NSIS installer runs in passive mode and relaunches Catalyst itself,
     // but the old process has to go for the upgrade to complete cleanly.
     app.restart();
+}
+
+#[tauri::command]
+async fn install_update(app: tauri::AppHandle) -> Result<(), String> {
+    download_and_install(app).await
 }
 
 /// Reads the "install updates automatically" preference out of the settings file
@@ -189,11 +196,19 @@ pub fn run() {
             }
 
             // Spawn the bundled Node runtime running the existing server unchanged.
+            //
+            // --update-bridge tells the backend that this process's stdout is being
+            // watched, so it may relay an update request from a browser tab. It is
+            // an argument rather than an environment variable on purpose:
+            // CATALYST_DESKTOP is inherited by every terminal the user opens inside
+            // Catalyst, so a hand-started server would wrongly claim the bridge —
+            // and its output would go to that terminal, where nobody is listening.
             let sidecar = app
                 .shell()
                 .sidecar("catalyst-server")
                 .expect("failed to create sidecar command")
                 .arg(server_arg)
+                .arg("--update-bridge")
                 .env("CATALYST_DESKTOP", "1");
 
             let (mut rx, child) = sidecar.spawn().expect("failed to spawn backend");
@@ -211,6 +226,18 @@ pub fn run() {
                     match event {
                         CommandEvent::Stdout(bytes) => {
                             let line = String::from_utf8_lossy(&bytes);
+                            // A browser tab asked to update. The browser cannot
+                            // verify a release signature, so it asks the backend,
+                            // which asks us over this same channel — the install
+                            // still runs through the signed updater below.
+                            if line.contains("CATALYST_REQUEST_UPDATE") {
+                                let update_handle = handle.clone();
+                                tauri::async_runtime::spawn(async move {
+                                    if let Err(e) = download_and_install(update_handle).await {
+                                        eprintln!("[updater] requested install failed: {}", e);
+                                    }
+                                });
+                            }
                             if let Some(rest) = line.split("CATALYST_LISTENING ").nth(1) {
                                 let port: String =
                                     rest.chars().take_while(|c| c.is_ascii_digit()).collect();
