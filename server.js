@@ -526,8 +526,18 @@ const FALLBACK_MODELS = {
     { value: 'sonnet', label: 'Sonnet · balanced' },
     { value: 'haiku', label: 'Haiku · fastest' },
   ],
-  codex: [{ value: '', label: 'Default (CLI default)' }],
-  gemini: [{ value: '', label: 'Default (CLI default)' }],
+  // Codex and Gemini used to get one option each — "Default (CLI default)" — which
+  // made the dropdown a decoration: a select with a single entry can never fire
+  // 'change', and the empty value was skipped anyway. These are the models each
+  // CLI actually ships with, so picking one does something.
+  codex: [
+    { value: 'gpt-5-codex', label: 'GPT-5 Codex · agentic coding' },
+    { value: 'gpt-5', label: 'GPT-5 · general' },
+  ],
+  gemini: [
+    { value: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro · most capable' },
+    { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash · fastest' },
+  ],
 };
 
 function fetchWithTimeout(url, opts, ms) {
@@ -1404,12 +1414,19 @@ wss.on('connection', (ws) => {
         const now = new Date();
         const pad = (n) => String(n).padStart(2, '0');
         const stamp = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
-        const exportPath = path.join(session.repoPath, `catalyst-session-${stamp}.txt`);
-        fs.promises.writeFile(exportPath, cleaned, 'utf-8').then(() => {
-          if (ws.readyState === 1) ws.send(JSON.stringify({ type: 'session-exported', sessionId: msg.sessionId, success: true, path: exportPath }));
-        }).catch(err => {
-          if (ws.readyState === 1) ws.send(JSON.stringify({ type: 'session-exported', sessionId: msg.sessionId, success: false, error: err.message }));
-        });
+        // Under Catalyst's own data dir, not the repo: writing into the working
+        // tree left an untracked catalyst-session-*.txt in the user's `git status`
+        // every time they exported. The client reveals the file afterwards, so it
+        // is still one click to find.
+        const exportDir = path.join(paths.DATA_DIR, 'exports');
+        const exportPath = path.join(exportDir, `catalyst-session-${stamp}.txt`);
+        fs.promises.mkdir(exportDir, { recursive: true })
+          .then(() => fs.promises.writeFile(exportPath, cleaned, 'utf-8'))
+          .then(() => {
+            if (ws.readyState === 1) ws.send(JSON.stringify({ type: 'session-exported', sessionId: msg.sessionId, success: true, path: exportPath }));
+          }).catch(err => {
+            if (ws.readyState === 1) ws.send(JSON.stringify({ type: 'session-exported', sessionId: msg.sessionId, success: false, error: err.message }));
+          });
         break;
       }
 

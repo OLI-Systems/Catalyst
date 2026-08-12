@@ -3742,13 +3742,6 @@ body.is-desktop .welcome-settings-btn {
   border-top-color: var(--accent);
 }
 
-.manage-session-info {
-  font-size: 10px;
-  color: var(--text-muted);
-  line-height: 1.8;
-  padding: 4px 0;
-}
-
 .manage-field {
   margin-bottom: 10px;
 }
@@ -3769,6 +3762,8 @@ body.is-desktop .welcome-settings-btn {
 
 .manage-hint {
   font-size: 9px;
+  color: var(--text-muted);
+  line-height: 1.5;
   margin-top: 6px;
   min-height: 14px;
 }
@@ -5189,11 +5184,13 @@ body.is-desktop .welcome-settings-btn {
 .manage-btn:hover { background: var(--surface); color: var(--text); }
 .manage-btn.active { background: var(--accent); color: #fff; }
 
-.touched-files-list { display: flex; flex-direction: column; gap: 2px; }
-.touched-file { display: flex; align-items: center; gap: 8px; padding: 4px 0; font-size: 10px; }
-.touched-file .file-status { width: 10px; font-weight: 600; flex-shrink: 0; }
-.touched-file .file-path { color: var(--text); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.touched-file .file-time { color: var(--text-muted); flex-shrink: 0; }
+/* A control the active CLI has no command for: still visible, so its title can
+   say why, but plainly not operable. */
+.manage-btn:disabled,
+.manage-input:disabled,
+.session-action-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.manage-btn:disabled:hover,
+.session-action-btn:disabled:hover { background: transparent; color: var(--text-muted); border-color: var(--border); }
 
 .exp-item.dir .exp-item-name { font-weight: 500; color: var(--text-muted); }
 

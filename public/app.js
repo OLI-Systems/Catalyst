@@ -729,69 +729,6 @@
   // Status colors
   const statusColors = { working: '#f59e0b', idle: '#38bdf8', done: '#34d399', error: '#f87171' };
 
-  state.sessionStats = {};
-  state.touchedFiles = {};
-
-  function getSessionStats(id) {
-    if (!state.sessionStats[id]) state.sessionStats[id] = { reads: 0, writes: 0, commands: 0 };
-    return state.sessionStats[id];
-  }
-
-  function trackActivity(sessionId, data) {
-    const stats = getSessionStats(sessionId);
-    const text = typeof data === 'string' ? data : '';
-    const readMatches = text.match(/⎿?\s*Read\b/g);
-    const writeMatches = text.match(/⎿?\s*(Write|Edit)\b/g);
-    const cmdMatches = text.match(/⎿?\s*(Bash|PowerShell)\b/g);
-    if (readMatches) stats.reads += readMatches.length;
-    if (writeMatches) stats.writes += writeMatches.length;
-    if (cmdMatches) stats.commands += cmdMatches.length;
-
-    if (!state.touchedFiles[sessionId]) state.touchedFiles[sessionId] = new Set();
-    const fileRefs = text.match(/(?:Read|Write|Edit)\s+([^\s\x1b]+\.\w{1,10})/g);
-    if (fileRefs) {
-      fileRefs.forEach(m => {
-        const file = m.replace(/^(Read|Write|Edit)\s+/, '').trim();
-        if (file && file.length > 2) state.touchedFiles[sessionId].add(file);
-      });
-    }
-
-    if (sessionId === state.activeSessionId) updateManageStats();
-  }
-
-  let _updateManageStatsRaf = null;
-  function updateManageStats() {
-    if (_updateManageStatsRaf) return;
-    _updateManageStatsRaf = requestAnimationFrame(() => {
-      _updateManageStatsRaf = null;
-      const id = state.activeSessionId;
-      if (!id) return;
-      const stats = getSessionStats(id);
-      const readsEl = $('#manageReads');
-      const writesEl = $('#manageWrites');
-      const cmdsEl = $('#manageCommands');
-      if (readsEl) readsEl.textContent = stats.reads;
-      if (writesEl) writesEl.textContent = stats.writes;
-      if (cmdsEl) cmdsEl.textContent = stats.commands;
-
-      const files = state.touchedFiles[id];
-      const listEl = $('#touchedFilesList');
-      if (listEl && files && files.size > 0) {
-        const frag = document.createDocumentFragment();
-        [...files].slice(-15).forEach(f => {
-          const name = f.split(/[/\\]/).pop();
-          const div = document.createElement('div');
-          div.style.cssText = 'font-size:10px;color:var(--text-muted);padding:2px 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
-          div.title = f;
-          div.textContent = name;
-          frag.appendChild(div);
-        });
-        listEl.innerHTML = '';
-        listEl.appendChild(frag);
-      }
-    });
-  }
-
   let _detectStatusRenderTimer = null;
   function detectStatus(sessionId, data) {
     const prev = state.sessionStatus[sessionId];
@@ -816,7 +753,6 @@
         }, 300);
       }
     }
-    trackActivity(sessionId, data);
   }
 
   // Sessions
@@ -1670,8 +1606,6 @@
     if (state.innerEditors[sessionId]) disposeEditorWithModels(state.innerEditors[sessionId]);
     delete state.innerEditors[sessionId];
     delete state.innerTabs[sessionId];
-    delete state.sessionStats[sessionId];
-    delete state.touchedFiles[sessionId];
     delete state.sessionStartTime[sessionId];
     delete state.prScanBuffers[sessionId];
     if (state.activeSessionId === sessionId) {
@@ -3498,7 +3432,6 @@
   const customCmdRun = $('#customCmdRun');
   const cmdOutputContainer = $('#cmdOutputContainer');
   const projectTypeLabel = $('#projectTypeLabel');
-  const manageSessionInfo = $('#manageSessionInfo');
 
   const cmdTerminals = {};
   let recentRunCount = 0;
@@ -3530,7 +3463,6 @@
       if (page) page.classList.add('active');
       if (tab.dataset.rpTab === 'rpPageManage') {
         updateManageInfo();
-        loadRepoSettingsForSession();
       }
       if (tab.dataset.rpTab === 'rpPageExplorer') {
         loadExplorerFiles();
@@ -3538,21 +3470,84 @@
     });
   });
 
+  // ─── Per-CLI capabilities ─────────────────────────────────────────────
+  // Every Manage control used to be applied to all three CLIs, so two thirds of
+  // this panel typed commands that do not exist: Codex has no /effort and no
+  // /compact, Gemini has no /model and no /permissions, and a command a CLI does
+  // not know is not rejected — it lands in the prompt as literal text. One table
+  // drives both the gating below and the guard in sendToActiveSession, so a
+  // control cannot drift out of step with what its CLI understands.
+  const CLI_CAPS = {
+    claude: { model: '/model', effort: '/effort', compact: '/compact', perm: '/permissions', permLabel: 'Permissions…' },
+    codex: { model: '/model', effort: null, compact: null, perm: '/approvals', permLabel: 'Approvals…' },
+    gemini: { model: null, effort: null, compact: '/compress', perm: null, permLabel: null }
+  };
+
+  function capsFor(cli) {
+    return CLI_CAPS[cli] || CLI_CAPS.claude;
+  }
+
+  function cliDisplayName(cli) {
+    const name = (cli || '').charAt(0).toUpperCase() + (cli || '').slice(1);
+    return cli === 'claude' ? name + ' Code' : name;
+  }
+
+  // Controls a CLI has no command for are hidden rather than left inert. Compact
+  // is the exception: it sits in a four-button grid whose layout would break if
+  // one went missing, so it stays put, disabled, and says why.
+  function gateManageControls(cli) {
+    const caps = capsFor(cli);
+    const name = cliDisplayName(cli);
+    const modelField = $('#manageModelField');
+    const effortField = $('#manageEffortField');
+    const permField = $('#managePermField');
+    if (modelField) modelField.style.display = caps.model ? '' : 'none';
+    if (effortField) effortField.style.display = caps.effort ? '' : 'none';
+    if (permField) permField.style.display = caps.perm ? '' : 'none';
+    // Gemini supports none of the three, which would leave a section heading over
+    // nothing at all.
+    const section = $('#manageBehaviorSection');
+    if (section) section.style.display = (caps.model || caps.effort || caps.perm) ? '' : 'none';
+
+    const permBtn = $('#managePermBtn');
+    if (permBtn && caps.perm) {
+      permBtn.textContent = caps.permLabel;
+      permBtn.title = `Opens ${name}'s own ${caps.perm} editor in the terminal — Catalyst cannot read back which mode you choose, so nothing here is highlighted`;
+    }
+
+    const compactBtn = $('#manageCompactBtn');
+    if (compactBtn) {
+      compactBtn.disabled = !caps.compact;
+      compactBtn.title = caps.compact
+        ? `Compact context (${caps.compact})`
+        : `${name} has no compact command`;
+    }
+
+    // Only Claude Code says "saved as your default for new sessions" when you
+    // change these, so only Claude Code gets warned about it.
+    const hint = $('#manageDefaultsHint');
+    if (hint) {
+      hint.textContent = cli === 'claude'
+        ? 'Model and Effort are saved as your defaults for new sessions, not just this one.'
+        : '';
+    }
+    return caps;
+  }
+
   function updateManageInfo() {
     const session = state.sessions.find(s => s.id === state.activeSessionId);
     if (!session) return;
     const startTime = state.sessionStartTime[session.id];
     const elapsed = startTime ? Math.floor((Date.now() - startTime) / 60000) : 0;
-    const cliName = (session.cli || '').charAt(0).toUpperCase() + (session.cli || '').slice(1);
     const nameEl = $('#manageCliName');
     const metaEl = $('#manageCliMeta');
     const iconEl = $('#manageCliIcon');
     const dotEl = $('#manageStatusDot');
-    if (nameEl) nameEl.textContent = cliName + (session.cli === 'claude' ? ' Code' : '');
+    if (nameEl) nameEl.textContent = cliDisplayName(session.cli);
     if (metaEl) metaEl.textContent = `· started ${elapsed}m ago`;
     if (iconEl) iconEl.innerHTML = cliIcons[session.cli] || '';
     if (dotEl) dotEl.style.background = session.ended ? 'var(--error, #f87171)' : 'var(--success, #34d399)';
-    updateManageStats();
+    gateManageControls(session.cli);
     requestSessionUsage();
   }
 
@@ -3565,6 +3560,10 @@
   const manageContextBar = $('#manageContextBar');
   const manageContextPct = $('#manageContextPct');
   const manageSessionCost = $('#manageSessionCost');
+  const manageToolStats = $('#manageToolStats');
+  const manageReads = $('#manageReads');
+  const manageWrites = $('#manageWrites');
+  const manageCommands = $('#manageCommands');
 
   function fmtTokens(n) {
     if (n >= 1000000) return (n / 1000000).toFixed(n >= 10000000 ? 0 : 2) + 'M';
@@ -3577,10 +3576,32 @@
     wsSend({ type: 'session-usage', sessionId: state.activeSessionId });
   }
 
+  // Reads / Writes / Commands. These used to be counted by matching tool names in
+  // the PTY stream, which meant counting the same tool call again on every TUI
+  // repaint — a fresh session showed COMMANDS 1 before anything had run, and
+  // opening a modal took it to 17 — and counted nothing at all for codex and
+  // gemini, whose output says none of those words. They now come from the same
+  // transcript as context and cost, where each call is recorded once.
+  function renderToolStats(msg) {
+    if (!manageReads) return;
+    const tools = msg.available && msg.tools;
+    manageReads.textContent = tools ? tools.reads : '—';
+    manageWrites.textContent = tools ? tools.writes : '—';
+    manageCommands.textContent = tools ? tools.commands : '—';
+    if (manageToolStats) {
+      manageToolStats.title = tools
+        ? 'Tool calls recorded in this conversation'
+          + (msg.costPartial ? ' — transcript truncated, earlier calls not counted' : '')
+        : (msg.reason || '');
+    }
+  }
+
   function renderSessionUsage(msg) {
     // A late reply for a session the user has already switched away from.
     if (!msg || msg.sessionId !== state.activeSessionId) return;
     if (!manageContextText) return;
+
+    renderToolStats(msg);
 
     if (!msg.available) {
       manageContextText.textContent = '—';
@@ -3615,15 +3636,24 @@
   // transcript records both per turn, so reflect that (and keep reflecting it
   // when the user changes either inside the terminal).
   function syncManageControls(msg) {
-    const sel = $('#manageModel');
+    // A field the active CLI does not support is hidden, and populating it would
+    // only re-light controls the gating just took away. Usage is claude-only
+    // today, so this is belt and braces — but it is what keeps the two honest.
+    const shown = (field) => {
+      const el = $(field);
+      return el && el.style.display !== 'none';
+    };
+    const sel = shown('#manageModelField') ? $('#manageModel') : null;
     if (sel && msg.modelFamily) {
       const match = [...sel.options].find(o => o.value === msg.modelFamily);
       // Assigning .value does not fire 'change', so this cannot loop back into
       // sending a /model command.
       if (match) sel.value = match.value;
-      sel.title = msg.model ? `Session is running ${msg.model}` : '';
+      // A disabled select already carries the reason it cannot be used; don't
+      // replace that with a state the user cannot act on.
+      if (!sel.disabled) sel.title = msg.model ? `Session is running ${msg.model}` : '';
     }
-    if (msg.effort) {
+    if (msg.effort && shown('#manageEffortField')) {
       const btns = $$('.manage-btn[data-effort]');
       if (btns.length) {
         const known = [...btns].some(b => b.dataset.effort === msg.effort);
@@ -3636,37 +3666,69 @@
     }
   }
 
-  // Send a live slash command (or any input) to the active CLI. The terminal is
-  // always visible in the center, so the effect shows there; toast confirms it
-  // fired even while the Manage panel has focus.
-  function sendToActiveSession(data, toastMsg) {
-    if (!state.activeSessionId) { showToast('No active session', 'info'); return false; }
-    ws.send(JSON.stringify({ type: 'input', sessionId: state.activeSessionId, data }));
+  // Which CLIs know each slash command the panel can send. Checked here rather
+  // than at each call site, because a call site is exactly the place that forgets.
+  const SLASH_SUPPORT = {
+    '/model': ['claude', 'codex'],
+    '/effort': ['claude'],
+    '/compact': ['claude'],
+    '/compress': ['gemini'],
+    '/permissions': ['claude'],
+    '/approvals': ['codex']
+  };
+
+  // Send a live slash command to the active CLI. The terminal is always visible in
+  // the center, so the effect shows there; toast confirms it fired even while the
+  // Manage panel has focus. Pass the command without a trailing carriage return —
+  // the Enter is a separate keystroke, see below.
+  function sendToActiveSession(command, toastMsg) {
+    const sessionId = state.activeSessionId;
+    if (!sessionId) { showToast('No active session', 'info'); return false; }
+    const session = state.sessions.find(s => s.id === sessionId);
+    const slash = (command.match(/^\/[a-z-]+/i) || [])[0];
+    const supported = slash && SLASH_SUPPORT[slash];
+    if (session && supported && !supported.includes(session.cli)) {
+      // An unknown slash command is not refused by the CLI, it is accepted as
+      // prompt text — so refusing here is the only thing standing between the
+      // user and a stray "/effort high" in their next message.
+      showToast(`${cliDisplayName(session.cli)} has no ${slash} command`, 'info');
+      return false;
+    }
+    // The CLI's slash-command autocomplete swallows the Enter that arrives in the
+    // same PTY write as the command text, which is how one click on Compact
+    // produced two /compact lines. Send the body, then Enter as a fresh key —
+    // the same split sendPromptToClaude already uses for prompts.
+    ws.send(JSON.stringify({ type: 'input', sessionId, data: command }));
+    setTimeout(() => {
+      ws.send(JSON.stringify({ type: 'input', sessionId, data: '\r' }));
+    }, 350);
     // Goes through the same watcher as typing, so a /clear sent from the UI
     // relabels the tab exactly as a typed one does.
-    watchForClear(state.activeSessionId, data);
+    watchForClear(sessionId, command);
     if (toastMsg) showToast(toastMsg, 'info');
     return true;
   }
 
-  // Wire up Model & Behavior buttons — these type the equivalent slash command
-  // into the running CLI. (Only commands the CLI supports take effect, e.g.
-  // Claude Code's /model and /compact.)
+  // Wire up Model & Behavior controls — these type the equivalent slash command
+  // into the running CLI, for the CLIs that have one.
   $$('.manage-btn[data-effort]').forEach(btn => {
     btn.addEventListener('click', () => {
+      const eff = btn.dataset.effort;
+      if (!sendToActiveSession('/effort ' + eff, 'Sent /effort ' + eff)) return;
       $$('.manage-btn[data-effort]').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
-      const eff = btn.dataset.effort;
-      sendToActiveSession('/effort ' + eff + '\r', 'Sent /effort ' + eff);
     });
   });
-  $$('.manage-btn[data-perm]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      $$('.manage-btn[data-perm]').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      const perm = btn.dataset.perm === 'bypass' ? 'bypass' : btn.dataset.perm === 'ask' ? 'ask' : 'deny-risky';
-      sendToActiveSession('/permissions ' + perm + '\r', 'Sent /permissions ' + perm);
-    });
+  // /permissions and /approvals take no argument — they open the CLI's own rule
+  // editor. So this is a launcher, and nothing here is marked active: the mode the
+  // user picks inside that editor is never reported back, and lighting a button
+  // would be asserting a state Catalyst cannot know.
+  $('#managePermBtn')?.addEventListener('click', () => {
+    const session = state.sessions.find(s => s.id === state.activeSessionId);
+    if (!session) { showToast('No active session', 'info'); return; }
+    const cmd = capsFor(session.cli).perm;
+    if (!cmd) { showToast(`${cliDisplayName(session.cli)} has no permission editor`, 'info'); return; }
+    sendToActiveSession(cmd, 'Opened ' + cmd + ' in the terminal');
   });
   // Dynamic model list for the Manage → Model dropdown, fetched per active CLI.
   let _modelListForCli = null;
@@ -3681,6 +3743,14 @@
     if (_modelListForCli && cli !== _modelListForCli) return;
     const prev = sel.value;
     sel.innerHTML = '';
+    // The first real option would otherwise sit there asserting a model: a fresh
+    // session shows "Opus" while the CLI banner says Sonnet, because nothing knows
+    // better yet. Claude Code's transcript fills this in on the first response
+    // (syncManageControls); codex and gemini never report back, so it stays.
+    const unknown = document.createElement('option');
+    unknown.value = '';
+    unknown.textContent = 'Current model — unknown';
+    sel.appendChild(unknown);
     (models || []).forEach(m => {
       const opt = document.createElement('option');
       opt.value = m.value;
@@ -3688,6 +3758,14 @@
       sel.appendChild(opt);
     });
     if (prev && [...sel.options].some(o => o.value === prev)) sel.value = prev;
+    // A select with one option can never fire 'change', and an empty value is
+    // never sent, so a list that thin is a control the user cannot operate. Say so
+    // instead of leaving it looking live.
+    const usable = [...sel.options].filter(o => o.value).length;
+    sel.disabled = usable < 2;
+    if (sel.disabled) {
+      sel.title = `Only one model is known for ${cliDisplayName(cli)}, so there is nothing to switch to`;
+    }
   }
 
   // Model selection — send the equivalent /model command for any non-empty value.
@@ -3695,13 +3773,17 @@
     const model = e.target.value;
     if (model) {
       const label = e.target.selectedOptions[0]?.textContent || model;
-      sendToActiveSession('/model ' + model + '\r', 'Switched model → ' + label);
+      sendToActiveSession('/model ' + model, 'Switched model → ' + label);
     }
   });
 
   // Compact (live slash command) / Restart + Export (real server actions)
   $('#manageCompactBtn')?.addEventListener('click', () => {
-    sendToActiveSession('/compact\r', 'Compacting context…');
+    const session = state.sessions.find(s => s.id === state.activeSessionId);
+    if (!session) { showToast('No active session', 'info'); return; }
+    const cmd = capsFor(session.cli).compact;
+    if (!cmd) { showToast(`${cliDisplayName(session.cli)} has no compact command`, 'info'); return; }
+    sendToActiveSession(cmd, 'Compacting context…');
   });
   $('#manageRestartBtn')?.addEventListener('click', () => {
     if (!state.activeSessionId) { showToast('No active session', 'info'); return; }
@@ -3713,13 +3795,11 @@
     ws.send(JSON.stringify({ type: 'export-session', sessionId: state.activeSessionId }));
   });
 
-  // Repo settings
-  const manageProjectType = $('#manageProjectType');
-  const manageBuildFolder = $('#manageBuildFolder');
-  const manageBuildCmd = $('#manageBuildCmd');
-  const manageRunCmd = $('#manageRunCmd');
-  const manageSaveRepoBtn = $('#manageSaveRepoBtn');
-  const manageRepoHint = $('#manageRepoHint');
+  // Repo settings. The Manage panel used to carry a copy of this form; it was
+  // removed from the markup, and everything that fed it — the element lookups, the
+  // form population, and the two requests fired on every MANAGE tab click — went
+  // on running against elements that were not there. The repo setup modal and the
+  // run-config dialog are the live consumers now.
   state.repoSettings = {};
 
   const projectTypeDefaults = {
@@ -3747,17 +3827,6 @@
     applyProjectTypeDefaults(e.target.value, $('#setupBuildCmd'), $('#setupRunCmd'));
   });
 
-  if (manageProjectType) manageProjectType.addEventListener('change', (e) => {
-    applyProjectTypeDefaults(e.target.value, manageBuildCmd, manageRunCmd);
-  });
-
-  function loadRepoSettingsForSession() {
-    const session = state.sessions.find(s => s.id === state.activeSessionId);
-    if (!session) return;
-    ws.send(JSON.stringify({ type: 'get-repo-settings', repoPath: session.repoPath }));
-    ws.send(JSON.stringify({ type: 'list-repo-folders', repoPath: session.repoPath }));
-  }
-
   function populateFolderSelect(selectEl, folders, selected) {
     selectEl.innerHTML = '';
     (folders || ['/ (root)']).forEach(f => {
@@ -3768,32 +3837,6 @@
     });
     selectEl.value = selected || '';
   }
-
-  function populateManageForm(settings) {
-    if (!manageProjectType) return; // Repo Settings section removed from Manage
-    if (!settings) settings = {};
-    manageProjectType.value = settings.projectType || '';
-    manageBuildFolder.value = settings.buildFolder || '';
-    manageBuildCmd.value = settings.buildCmd || '';
-    manageRunCmd.value = settings.runCmd || '';
-    manageRepoHint.textContent = '';
-    manageRepoHint.className = 'manage-hint';
-  }
-
-  if (manageSaveRepoBtn) manageSaveRepoBtn.addEventListener('click', () => {
-    const session = state.sessions.find(s => s.id === state.activeSessionId);
-    if (!session) return;
-    const settings = {
-      projectType: manageProjectType.value,
-      buildFolder: manageBuildFolder.value.trim(),
-      buildCmd: manageBuildCmd.value.trim(),
-      runCmd: manageRunCmd.value.trim()
-    };
-    ws.send(JSON.stringify({ type: 'save-repo-settings', repoPath: session.repoPath, settings }));
-    state.repoSettings[session.repoPath] = settings;
-    manageRepoHint.textContent = 'Saved';
-    manageRepoHint.className = 'manage-hint success';
-  });
 
   // First-time repo setup modal
   const repoSetupModal = $('#repoSetupModal');
@@ -5647,16 +5690,12 @@
     if (msg.type === 'repo-folders') {
       state.repoFolders = state.repoFolders || {};
       state.repoFolders[msg.repoPath] = msg.folders;
-      const rs = state.repoSettings[msg.repoPath];
-      const saved = rs ? rs.buildFolder || '' : '';
       if (state._folderTargetMode === 'runconfig') {
         populateFolderSelect($('#rcBuildFolder'), msg.folders, state._rcPendingSelected || '');
         state._folderTargetMode = null;
       } else if (state._setupFolderTarget === 'setup') {
         populateFolderSelect($('#setupBuildFolder'), msg.folders, '');
         state._setupFolderTarget = null;
-      } else if (manageBuildFolder) {
-        populateFolderSelect(manageBuildFolder, msg.folders, saved);
       }
       return;
     }
@@ -5692,17 +5731,13 @@
 
     if (msg.type === 'repo-settings') {
       state.repoSettings[msg.repoPath] = msg.settings;
-      if (!msg.settings) {
-        showRepoSetup(msg.repoPath);
-      } else {
-        populateManageForm(msg.settings);
-      }
+      // A repo nobody has configured yet gets the first-run setup modal.
+      if (!msg.settings) showRepoSetup(msg.repoPath);
       return;
     }
 
     if (msg.type === 'repo-settings-saved') {
       state.repoSettings[msg.repoPath] = msg.settings;
-      populateManageForm(msg.settings);
       return;
     }
 
