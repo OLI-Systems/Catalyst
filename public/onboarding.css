@@ -1078,3 +1078,70 @@ body:has(.ob-overlay:not(.hidden)) .welcome-footer {
   color: var(--text);
   font-weight: 600;
 }
+
+/* ── Focus Guard step ─────────────────────────────────────────
+   Four presets rather than a free number: the question is "how do you want to
+   work", and a spinner invites fiddling with a value the user has no basis to
+   fine-tune yet. Settings has the exact control for later. */
+.ob-focus-picker {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.ob-focus-opt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 18px 8px 14px;
+  background: transparent;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  cursor: pointer;
+  color: var(--text);
+  font-family: inherit;
+  transition: border-color 0.18s cubic-bezier(0.16, 1, 0.3, 1), background 0.18s cubic-bezier(0.16, 1, 0.3, 1), transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.ob-focus-opt:hover {
+  border-color: var(--border-bright);
+  background: color-mix(in srgb, var(--accent) 3%, transparent);
+  transform: translateY(-2px);
+}
+
+.ob-focus-opt.active {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
+}
+
+.ob-focus-num {
+  font-size: 26px;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  transition: color 0.18s;
+}
+
+.ob-focus-opt.active .ob-focus-num { color: var(--accent); }
+
+.ob-focus-label {
+  font-size: 10px;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.ob-focus-note {
+  margin-top: 16px;
+  min-height: 34px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--text-muted);
+  padding: 10px 14px;
+  background: color-mix(in srgb, var(--accent) 4%, transparent);
+  border-left: 2px solid var(--accent);
+  border-radius: 0 8px 8px 0;
+}
