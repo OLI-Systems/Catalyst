@@ -1175,13 +1175,24 @@
     // Add "+" button
     const addBtn = document.createElement('div');
     addBtn.className = 'topbar-newtab';
-    addBtn.title = 'Open repo';
+    const atLimit = activeSessionCount() >= tabLimit();
+    if (atLimit) addBtn.classList.add('at-limit');
+    addBtn.title = atLimit
+      ? `${getFocusGuard().enabled ? 'Focus Guard' : 'Session limit'}: ${activeSessionCount()} of ${tabLimit()} open`
+      : 'Open repo';
     addBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>';
-    addBtn.addEventListener('click', showWelcome);
+    // Refused here rather than on the welcome screen: sending the user to pick a
+    // repo and only then telling them they cannot open it wastes the trip.
+    addBtn.addEventListener('click', () => {
+      if (focusGuardBlocks()) return;
+      showWelcome();
+    });
     repoTabList.appendChild(addBtn);
 
     sessionList.innerHTML = '';
     updateStatusBar();
+    // A closed tab hands its slot back, so the Settings reading follows along.
+    updateFocusGuardUI();
   }
 
   // Prompt cache timer (5 min TTL) — only update when there are active inputs
@@ -1924,11 +1935,23 @@
     settingsRootInput.value = state.rootDir || '';
     settingsRootHint.textContent = '';
     settingsRootHint.className = 'settings-hint';
+    // Onboarding writes the Focus Guard choice after this script has already
+    // initialised, and a second window can change it at any time — so the panel
+    // reads the setting on open rather than trusting what it last drew.
+    updateFocusGuardUI();
     ws.send(JSON.stringify({ type: 'get-settings' }));
   }
 
   function hideSettings() {
     settingsPanel.classList.add('hidden');
+  }
+
+  // Opens Settings already on a given page, so a dialog that says "change this
+  // in Settings" can put the user in front of the control instead of the door.
+  function showSettingsSection(section) {
+    showSettings();
+    const nav = document.querySelector(`.settings-nav-item[data-section="${section}"]`);
+    if (nav) nav.click();
   }
 
   settingsBtn.addEventListener('click', showSettings);
@@ -2471,7 +2494,151 @@
   });
 
 
+  // ─── Focus Guard ──────────────────────────────────────────────────────
+  // A ceiling on how many sessions run at once, set by the user themselves in
+  // onboarding. Starting another agent costs one click; holding another agent's
+  // work in your head costs considerably more, and nothing in the UI used to
+  // push back. The number is the user's own answer to how many threads they
+  // want to be responsible for, so the app enforces it rather than the user
+  // having to keep re-deciding it at the moment they are least able to.
+  //
+  // The rule is about what is open *now*, not a daily quota: closing a session
+  // hands its slot straight back.
+  const FOCUS_GUARD_KEY = 'catalyst-focus-guard';
+  const FOCUS_GUARD_DEFAULT = 3;
+  const FOCUS_GUARD_MIN = 1;
+  // Predates the feature and still applies when Focus Guard is off: sessions are
+  // real CLI processes, so "no limit" was never one of the choices.
   const MAX_TABS = 8;
+
+  function getFocusGuard() {
+    let raw = null;
+    try { raw = JSON.parse(localStorage.getItem(FOCUS_GUARD_KEY)); } catch {}
+    if (!raw || typeof raw !== 'object') {
+      // Nothing stored. A fresh install gets asked during onboarding and always
+      // writes an answer, so reaching here means an install that predates the
+      // feature: it starts off rather than silently cutting someone from eight
+      // tabs to three on an ordinary Tuesday. Settings is where they opt in.
+      const onboarded = !!localStorage.getItem('catalyst-onboarded');
+      return { enabled: !onboarded, limit: FOCUS_GUARD_DEFAULT };
+    }
+    const n = Math.round(Number(raw.limit));
+    return {
+      enabled: raw.enabled !== false,
+      limit: Number.isFinite(n) ? Math.min(MAX_TABS, Math.max(FOCUS_GUARD_MIN, n)) : FOCUS_GUARD_DEFAULT,
+    };
+  }
+
+  function saveFocusGuard(patch) {
+    const next = Object.assign(getFocusGuard(), patch || {});
+    localStorage.setItem(FOCUS_GUARD_KEY, JSON.stringify(next));
+    updateFocusGuardUI();
+    return next;
+  }
+
+  function activeSessionCount() {
+    return state.sessions.filter(s => !s.ended).length;
+  }
+
+  // What actually applies right now — the user's number when the guard is on,
+  // the hard ceiling when they have switched it off.
+  function tabLimit() {
+    const g = getFocusGuard();
+    return g.enabled ? g.limit : MAX_TABS;
+  }
+
+  // The single gate every "start a session" path asks before it sends anything.
+  // Returns true when the session must not start, having already explained why.
+  function focusGuardBlocks() {
+    if (activeSessionCount() < tabLimit()) return false;
+    showFocusGuardNotice();
+    return true;
+  }
+
+  // A modal rather than alert(): a native dialog blocks the whole webview, and it
+  // cannot say which rule was hit, whose rule it was, or offer a way to change it.
+  function showFocusGuardNotice() {
+    const modal = $('#focusGuardModal');
+    if (!modal) return;
+    const g = getFocusGuard();
+    const open = activeSessionCount();
+    const plural = (n) => n === 1 ? 'session' : 'sessions';
+    $('#focusGuardNoticeTitle').textContent = g.enabled ? 'Focus Guard' : 'Session limit';
+    $('#focusGuardNoticeCount').textContent = `${open} of ${tabLimit()} ${plural(tabLimit())} open`;
+    $('#focusGuardNoticeBody').textContent = g.enabled
+      ? `You asked Catalyst to hold you to ${g.limit} parallel ${plural(g.limit)}. Finish one and close it — the slot comes straight back.`
+      : `Catalyst runs at most ${MAX_TABS} sessions at once. Close one to start another.`;
+    $('#focusGuardAdjust').classList.toggle('hidden', !g.enabled);
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+  }
+
+  function hideFocusGuardNotice() {
+    const modal = $('#focusGuardModal');
+    if (!modal) return;
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+  }
+
+  // Keeps the Settings controls and the "in use" line honest — called whenever
+  // the setting changes and whenever a session opens or closes.
+  function updateFocusGuardUI() {
+    const toggle = $('#focusGuardToggle');
+    const value = $('#focusGuardValue');
+    const hint = $('#focusGuardUsage');
+    if (!toggle || !value) return;
+    const g = getFocusGuard();
+    toggle.checked = g.enabled;
+    value.textContent = String(g.limit);
+    $('#focusGuardStepper')?.classList.toggle('disabled', !g.enabled);
+    $('#focusGuardMinus')?.toggleAttribute('disabled', !g.enabled || g.limit <= FOCUS_GUARD_MIN);
+    $('#focusGuardPlus')?.toggleAttribute('disabled', !g.enabled || g.limit >= MAX_TABS);
+    if (!hint) return;
+    const open = activeSessionCount();
+    if (!g.enabled) {
+      hint.textContent = `Focus Guard is off — ${open} open, up to ${MAX_TABS} allowed.`;
+      hint.className = 'settings-hint';
+    } else if (open > g.limit) {
+      // Lowering the limit never closes anything: the sessions already running
+      // are work in progress, and ending them is the user's call, not a
+      // side effect of moving a number.
+      hint.textContent = `${open} open, which is over your limit — close ${open - g.limit} to get back under it. Nothing new can start until you do.`;
+      hint.className = 'settings-hint error';
+    } else {
+      hint.textContent = `${open} of ${g.limit} in use.`;
+      hint.className = open === g.limit ? 'settings-hint success' : 'settings-hint';
+    }
+  }
+
+  $('#focusGuardClose')?.addEventListener('click', hideFocusGuardNotice);
+  $('#focusGuardDismiss')?.addEventListener('click', hideFocusGuardNotice);
+  $('#focusGuardOverlay')?.addEventListener('click', hideFocusGuardNotice);
+  $('#focusGuardAdjust')?.addEventListener('click', () => {
+    hideFocusGuardNotice();
+    showSettingsSection('focus');
+  });
+
+  $('#focusGuardToggle')?.addEventListener('change', (e) => {
+    saveFocusGuard({ enabled: e.target.checked });
+    showToast(e.target.checked ? 'Focus Guard on' : 'Focus Guard off — the limit is not enforced', 'info');
+  });
+  $('#focusGuardMinus')?.addEventListener('click', () => {
+    saveFocusGuard({ limit: getFocusGuard().limit - 1 });
+  });
+  $('#focusGuardPlus')?.addEventListener('click', () => {
+    saveFocusGuard({ limit: getFocusGuard().limit + 1 });
+  });
+
+  // Catalyst is also usable from a plain browser tab, and two of them share one
+  // localStorage — a limit changed in one applies in the other without a reload.
+  window.addEventListener('storage', (e) => {
+    if (e.key === FOCUS_GUARD_KEY) {
+      updateFocusGuardUI();
+      renderSessions();
+    }
+  });
+
+  updateFocusGuardUI();
 
   state.cliAvailability = {};
   const _cliBtns = $$('.cli-btn');
@@ -2493,10 +2660,7 @@
     cli = cli || 'claude';
     // A plain terminal has no history to offer, so it launches directly.
     if (cli === 'terminal') {
-      if (state.sessions.filter(s => !s.ended).length >= MAX_TABS) {
-        alert(`Maximum ${MAX_TABS} sessions allowed. Close a tab first.`);
-        return;
-      }
+      if (focusGuardBlocks()) return;
       wsSend({ type: 'create-session', cli, repo: repoName, repoPath, useWorktree: false });
       return;
     }
@@ -2783,10 +2947,7 @@
     const existing = state.sessions.find(s => !s.ended && s.cli === cli && samePathish(s.repoPath, repoPath));
     if (existing) { switchToSession(existing.id); return; }
 
-    if (state.sessions.filter(s => !s.ended).length >= MAX_TABS) {
-      alert(`Maximum ${MAX_TABS} sessions allowed. Close a tab first.`);
-      return;
-    }
+    if (focusGuardBlocks()) return;
 
     const extraDirs = extraDirsForLaunch(cli);
     if (extraDirs === null) return; // refused, and already explained in a toast
@@ -2799,10 +2960,7 @@
     const p = state._pendingLaunch;
     if (!p) return;
     closeSessionsModal();
-    if (state.sessions.filter(s => !s.ended).length >= MAX_TABS) {
-      alert(`Maximum ${MAX_TABS} sessions allowed. Close a tab first.`);
-      return;
-    }
+    if (focusGuardBlocks()) return;
     disableCliButtons();
     wsSend(Object.assign({
       type: 'create-session',
@@ -2934,10 +3092,7 @@
       const cliId = btn.dataset.cli;
       const info = state.cliAvailability[cliId];
       if (info && !info.installed) {
-        if (state.sessions.filter(s => !s.ended).length >= MAX_TABS) {
-          alert(`Maximum ${MAX_TABS} sessions allowed. Close a tab first.`);
-          return;
-        }
+        if (focusGuardBlocks()) return;
         disableCliButtons();
         wsSend({
           type: 'create-session',
@@ -2960,10 +3115,7 @@
         });
         return;
       }
-      if (state.sessions.filter(s => !s.ended).length >= MAX_TABS) {
-        alert(`Maximum ${MAX_TABS} sessions allowed. Close a tab first.`);
-        return;
-      }
+      if (focusGuardBlocks()) return;
       disableCliButtons();
       const useWorktree = !!$('#useWorktree')?.checked;
       // Only the agent CLIs take extra directories — a plain terminal has no
@@ -3401,7 +3553,9 @@
           const pins = getPinnedTabs();
           let running = state.sessions.filter(s => !s.ended).length;
           pins.forEach(p => {
-            if (running >= MAX_TABS) return;
+            // Pinned tabs relaunch on startup, so the limit has to hold here too
+            // — otherwise the guard is honoured all day and broken every morning.
+            if (running >= tabLimit()) return;
             const alreadyRunning = state.sessions.some(s => s.repoPath === p.repoPath && s.cli === p.cli && !s.ended);
             if (!alreadyRunning) {
               ws.send(JSON.stringify({
@@ -6002,8 +6156,8 @@
     { label: 'Git pull', category: 'GIT', shortcut: '', icon: '›', action: () => { if (state.activeSessionId) ws.send(JSON.stringify({ type: 'git-pull', sessionId: state.activeSessionId })); }},
     { label: 'Git push', category: 'GIT', shortcut: '', icon: '›', action: () => { if (state.activeSessionId) ws.send(JSON.stringify({ type: 'git-push', sessionId: state.activeSessionId })); }},
     { label: 'Start with Azure DevOps task…', category: 'DEVOPS', shortcut: 'Ctrl+T', icon: '›', action: () => { $('#startTaskBtn')?.click(); }},
-    { label: 'New terminal', category: 'TERMINAL', shortcut: 'Ctrl+N', icon: '›', action: () => { if (state.selectedRepo) ws.send(JSON.stringify({ type: 'create-session', cli: 'terminal', repo: state.selectedRepo.name, repoPath: state.selectedRepo.path, useWorktree: false })); }},
-    { label: 'Split terminal', category: 'TERMINAL', shortcut: '', icon: '›', action: () => { if (state.selectedRepo) ws.send(JSON.stringify({ type: 'create-session', cli: 'terminal', repo: state.selectedRepo.name, repoPath: state.selectedRepo.path, useWorktree: false })); }},
+    { label: 'New terminal', category: 'TERMINAL', shortcut: 'Ctrl+N', icon: '›', action: () => { if (state.selectedRepo && !focusGuardBlocks()) ws.send(JSON.stringify({ type: 'create-session', cli: 'terminal', repo: state.selectedRepo.name, repoPath: state.selectedRepo.path, useWorktree: false })); }},
+    { label: 'Split terminal', category: 'TERMINAL', shortcut: '', icon: '›', action: () => { if (state.selectedRepo && !focusGuardBlocks()) ws.send(JSON.stringify({ type: 'create-session', cli: 'terminal', repo: state.selectedRepo.name, repoPath: state.selectedRepo.path, useWorktree: false })); }},
     { label: 'Next session', category: 'SESSION', shortcut: 'Ctrl+Shift+]', icon: '›', action: () => cycleSession(1) },
     { label: 'Previous session', category: 'SESSION', shortcut: 'Ctrl+Shift+[', icon: '›', action: () => cycleSession(-1) },
     { label: 'Launch Claude', category: 'AI', shortcut: '', icon: '›', action: () => { if (!state.selectedRepo) return; beginLaunch({ cli: 'claude', repo: state.selectedRepo.name, repoPath: state.selectedRepo.path, useWorktree: false }); }},

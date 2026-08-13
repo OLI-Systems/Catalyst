@@ -122,6 +122,7 @@
             <button class="ob-dot"></button>
             <button class="ob-dot"></button>
             <button class="ob-dot"></button>
+            <button class="ob-dot"></button>
           </div>
 
           <div class="ob-screens">
@@ -403,8 +404,25 @@
               </div>
             </div>
 
-            <!-- Step 7: Integrations -->
+            <!-- Step 7: Focus Guard -->
             <div class="ob-screen" data-step="7">
+              <div class="ob-section-title">Focus Guard</div>
+              <div class="ob-section-sub">How many at once?</div>
+              <div class="ob-pilot-desc">Catalyst will run as many agents in parallel as you ask it to. That is the problem — every extra one is another thread of work you are on the hook for. Pick the number you actually want to hold, and Catalyst will hold you to it.</div>
+
+              <div class="ob-focus-picker" id="obFocusPicker">
+                <button type="button" class="ob-focus-opt" data-limit="1"><span class="ob-focus-num">1</span><span class="ob-focus-label">One at a time</span></button>
+                <button type="button" class="ob-focus-opt active" data-limit="3"><span class="ob-focus-num">3</span><span class="ob-focus-label">Balanced</span></button>
+                <button type="button" class="ob-focus-opt" data-limit="5"><span class="ob-focus-num">5</span><span class="ob-focus-label">Busy</span></button>
+                <button type="button" class="ob-focus-opt" data-limit="8"><span class="ob-focus-num">8</span><span class="ob-focus-label">No ceiling</span></button>
+              </div>
+
+              <div class="ob-focus-note" id="obFocusNote"></div>
+              <div class="ob-azure-note" style="margin-top:14px">Change it whenever you like in Settings &rarr; Focus Guard, or switch it off for a day that needs the extra room.</div>
+            </div>
+
+            <!-- Step 8: Integrations -->
+            <div class="ob-screen" data-step="8">
               <div class="ob-section-title">Integrations</div>
               <div class="ob-section-sub">Where are your repos hosted?</div>
 
@@ -474,8 +492,8 @@
               </div>
             </div>
 
-            <!-- Step 8: All Set -->
-            <div class="ob-screen ob-done" data-step="8">
+            <!-- Step 9: All Set -->
+            <div class="ob-screen ob-done" data-step="9">
               <svg class="ob-done-logo" viewBox="0 0 32 32"><g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M16 6 L24.66 11 L24.66 21 L16 26 L7.34 21 L7.34 11 Z"/><line x1="16" y1="6" x2="16" y2="3.4"/></g><circle cx="16" cy="16" r="1.5" fill="currentColor" opacity="0.4"/><circle cx="16" cy="2.4" r="2" fill="currentColor"/></svg>
               <div class="ob-done-title">YOU'RE ALL SET</div>
               <div class="ob-done-sub">Catalyst is ready</div>
@@ -488,7 +506,7 @@
 
           <div class="ob-footer">
             <div class="ob-footer-left"><button class="ob-btn-back hidden" id="obBack">Back</button></div>
-            <div class="ob-footer-center" id="obStepLabel">1 of 9</div>
+            <div class="ob-footer-center" id="obStepLabel">1 of 10</div>
             <div class="ob-footer-right"><button class="ob-btn-next" id="obNext">Let's Go</button></div>
           </div>
         </div>
@@ -615,6 +633,10 @@
             <button class="settings-nav-item" data-section="pilot">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
               Catalyst Pilot
+            </button>
+            <button class="settings-nav-item" data-section="focus">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3.2"/></svg>
+              Focus Guard
             </button>
             <button class="settings-nav-item" data-section="azure">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 22v-4a4.8 4.8 0 00-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 004 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65S8.93 17.38 9 18v4"/><path d="M9 18c-4.51 2-5-2-7-2"/></svg>
@@ -927,6 +949,42 @@
             <div class="pilot-howto">
               <div class="pilot-howto-title">HOW IT WORKS</div>
               <p>Catalyst Pilot runs a quiet background loop — it watches git state, build output, and your edits, then surfaces what's actionable. It can also execute IDE commands when you ask, like <em>"build it"</em> or <em>"switch to main"</em>.</p>
+            </div>
+          </div>
+
+          <div class="settings-section-page" id="settings-focus">
+            <div class="settings-page-title">Focus Guard</div>
+            <p style="color:var(--text-muted);font-size:12px;margin:0 0 20px">A ceiling on how many sessions run at once. Agents are cheap to start and expensive to hold in your head — this is the number you decided on, enforced at the moment you would rather not be deciding it again.</p>
+
+            <div class="settings-section">
+              <div class="settings-section-title">Parallel sessions</div>
+              <label class="pilot-toggle-row" style="margin-bottom:18px">
+                <input type="checkbox" class="pilot-toggle" id="focusGuardToggle" checked>
+                <span class="pilot-toggle-switch"></span>
+                <div class="pilot-toggle-info">
+                  <div class="pilot-toggle-title">Hold me to my limit</div>
+                  <div class="pilot-toggle-desc">Turn off for a day you need the extra room — your number is remembered either way</div>
+                </div>
+              </label>
+
+              <div class="focus-limit-row">
+                <div class="focus-limit-info">
+                  <div class="pilot-toggle-title">Maximum open at once</div>
+                  <div class="pilot-toggle-desc">Repos, tabs and sessions are the same thing here — one tab is one agent</div>
+                </div>
+                <div class="focus-stepper" id="focusGuardStepper">
+                  <button type="button" class="focus-stepper-btn" id="focusGuardMinus" title="Fewer">&minus;</button>
+                  <span class="focus-stepper-value" id="focusGuardValue">3</span>
+                  <button type="button" class="focus-stepper-btn" id="focusGuardPlus" title="More">+</button>
+                </div>
+              </div>
+              <div class="settings-hint" id="focusGuardUsage"></div>
+            </div>
+
+            <div class="pilot-howto">
+              <div class="pilot-howto-title">HOW IT WORKS</div>
+              <p>Opening a session past your limit is refused with a note rather than a silent no-op — from the <strong>+</strong> tab, the welcome screen, the command palette, and pinned tabs restored at startup. Closing a session hands its slot straight back, so the rule follows what is actually open rather than counting how many you have started today.</p>
+              <p style="margin-top:10px">Lowering the number never closes anything. Sessions already running are work in progress; ending them stays your call.</p>
             </div>
           </div>
 
@@ -1543,6 +1601,37 @@
           </button>
           <button id="confirmOk" class="px-4 py-2 text-xs font-mono uppercase tracking-wider hover-bg-danger-dark transition-all" style="color:var(--text);background:var(--danger);border:1px solid var(--danger);">
             Close Session
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Focus Guard notice: shown when a launch is refused by the user's own limit -->
+  <div id="focusGuardModal" class="fixed inset-0 z-[200] hidden items-center justify-center">
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" id="focusGuardOverlay"></div>
+    <div class="relative z-10 w-full max-w-sm mx-4 shadow-2xl" style="background:var(--bg-card);border:1px solid color-mix(in srgb, var(--accent) 25%, transparent);">
+      <div class="p-6">
+        <div class="flex items-center gap-3 mb-4">
+          <div class="flex-shrink-0 w-10 h-10 flex items-center justify-center" style="background:var(--accent-subtle);border:1px solid color-mix(in srgb, var(--accent) 25%, transparent);">
+            <svg class="w-5 h-5" style="color:var(--accent)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3.2"/>
+            </svg>
+          </div>
+          <div>
+            <h3 class="text-sm font-semibold tracking-wide" style="color:var(--text)" id="focusGuardNoticeTitle">Focus Guard</h3>
+            <p class="text-xs mt-0.5" style="color:var(--text-muted)" id="focusGuardNoticeCount"></p>
+          </div>
+        </div>
+        <div class="px-3 py-2 mb-5" style="background:color-mix(in srgb, var(--bg) 50%, transparent);border:1px solid var(--border);">
+          <p class="text-xs" style="color:var(--text);line-height:1.6" id="focusGuardNoticeBody"></p>
+        </div>
+        <div class="flex justify-end gap-2">
+          <button id="focusGuardAdjust" class="px-4 py-2 text-xs font-mono uppercase tracking-wider hover-border-bright hover-text-theme transition-all" style="color:var(--text-muted);border:1px solid var(--border);">
+            Settings
+          </button>
+          <button id="focusGuardDismiss" class="px-4 py-2 text-xs font-mono uppercase tracking-wider transition-all" style="color:var(--bg);background:var(--accent);border:1px solid var(--accent);">
+            Got it
           </button>
         </div>
       </div>

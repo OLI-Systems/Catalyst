@@ -11,7 +11,7 @@
   var overlay = document.getElementById('obOverlay');
   if (!overlay) return;
 
-  var TOTAL_STEPS = 9;
+  var TOTAL_STEPS = 10;
   var currentStep = 0;
   var transitioning = false;
 
@@ -27,7 +27,7 @@
   var btnNext = document.getElementById('obNext');
   var stepLabel = document.getElementById('obStepLabel');
 
-  var NEXT_LABELS = ["Let's Go", 'Next', 'Next', 'Next', 'Next', 'Next', 'Next', 'Next', 'Launch Catalyst'];
+  var NEXT_LABELS = ["Let's Go", 'Next', 'Next', 'Next', 'Next', 'Next', 'Next', 'Next', 'Next', 'Launch Catalyst'];
 
   function updateNav() {
     btnBack.classList.toggle('hidden', currentStep === 0);
@@ -76,6 +76,7 @@
     obFinished = true;
     localStorage.setItem(ONBOARDED_KEY, Date.now().toString());
     savePilotSettings();
+    saveFocusGuard();
     saveAzureIfNeeded();
 
     // Detach listeners so the onboarding closure/DOM can be garbage collected
@@ -439,6 +440,44 @@
     localStorage.setItem('catalyst-pilot-settings', JSON.stringify(settings));
   }
 
+  // ─── Screen 7: Focus Guard ───────────────────────────────
+  // The number of agents the user is willing to have running at once. Asked here
+  // rather than left to a default because the answer is a personal one, and the
+  // moment to decide it is before the tabs are open, not after.
+  var FOCUS_GUARD_KEY = 'catalyst-focus-guard';
+  var FOCUS_DEFAULT = 3;
+  var focusLimit = FOCUS_DEFAULT;
+  var focusOpts = overlay.querySelectorAll('.ob-focus-opt');
+  var focusNote = document.getElementById('obFocusNote');
+
+  var FOCUS_NOTES = {
+    1: 'Strictest setting: finish what is open before starting anything else.',
+    3: 'Room to let one agent work while you review another, without losing the thread.',
+    5: 'A wide desk. Worth revisiting if you notice you are only skimming the output.',
+    8: 'Catalyst’s hard ceiling — effectively no guard. You can still switch it on later.'
+  };
+
+  function renderFocusChoice() {
+    focusOpts.forEach(function (b) {
+      b.classList.toggle('active', Number(b.dataset.limit) === focusLimit);
+    });
+    if (focusNote) focusNote.textContent = FOCUS_NOTES[focusLimit] || '';
+  }
+
+  focusOpts.forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      focusLimit = Number(btn.dataset.limit) || FOCUS_DEFAULT;
+      renderFocusChoice();
+    });
+  });
+  renderFocusChoice();
+
+  function saveFocusGuard() {
+    // Picking the ceiling is not the same as asking to be unguarded, so the
+    // feature stays on either way — 8 simply never bites in practice.
+    localStorage.setItem(FOCUS_GUARD_KEY, JSON.stringify({ enabled: true, limit: focusLimit }));
+  }
+
   // ─── Screen 4: Provider picker ─────────────────────────────
   var selectedProvider = 'azure';
   var providerBtns = overlay.querySelectorAll('.ob-provider-btn');
@@ -591,6 +630,7 @@
       { key: 'Workspace', val: folder ? folder + (obRepoCount ? ' (' + obRepoCount + ' repos)' : '') : 'Not set' },
       { key: 'AI Tools', val: installedCliCount + ' of ' + OB_CLIS.length + ' installed' },
       { key: 'Pilot', val: pilotCount + ' of ' + pilotToggles.length + ' active' },
+      { key: 'Focus Guard', val: focusLimit === 1 ? '1 session at a time' : focusLimit + ' sessions at once' },
       { key: 'Repo Host', val: providerLabel }
     ];
 

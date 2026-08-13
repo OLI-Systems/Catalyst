@@ -5433,3 +5433,78 @@ body.zen-mode .main-content {
   .settings-body { padding-top: 24px; padding-bottom: 24px; }
   .settings-section { margin-bottom: 16px; }
 }
+
+/* ═══════════════════════════════════════════
+   FOCUS GUARD
+   ═══════════════════════════════════════════ */
+
+/* Still clickable at the limit — clicking is how you find out why, and a
+   button that ignores the pointer reads as broken rather than deliberate. */
+.topbar-newtab.at-limit {
+  opacity: 0.4;
+}
+
+.topbar-newtab.at-limit:hover {
+  opacity: 1;
+  color: var(--text-muted);
+  background: var(--hover-bg);
+}
+
+.focus-limit-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.focus-limit-info { min-width: 0; }
+
+.focus-stepper {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 3px;
+  transition: opacity 0.15s;
+}
+
+.focus-stepper.disabled { opacity: 0.45; }
+
+.focus-stepper-btn {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  border-radius: 6px;
+  color: var(--text-muted);
+  font-family: inherit;
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.focus-stepper-btn:hover:not(:disabled) {
+  background: var(--hover-bg);
+  color: var(--accent);
+}
+
+.focus-stepper-btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.focus-stepper-value {
+  min-width: 34px;
+  text-align: center;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
