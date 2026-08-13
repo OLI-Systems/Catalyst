@@ -31,11 +31,17 @@
       }
     },
 
+    // Resolves true when the system browser was handed the URL. Callers get the
+    // answer rather than a silent nothing: a refusal here used to be invisible,
+    // which is exactly how an empty opener scope went unnoticed.
     openExternal: async (url) => {
-      if (/^https?:\/\//i.test(url || '')) {
-        try {
-          await window.__TAURI__.core.invoke('plugin:opener|open_url', { url });
-        } catch (e) { console.error(e); }
+      if (!/^https?:\/\//i.test(url || '')) return false;
+      try {
+        await window.__TAURI__.core.invoke('plugin:opener|open_url', { url });
+        return true;
+      } catch (e) {
+        console.error('openExternal failed for', url, e);
+        return false;
       }
     },
 
@@ -57,6 +63,27 @@
       if (symbolColor) r.setProperty('--win-ctrl-symbol', symbolColor);
     }
   };
+
+  // A plain <a> is inert inside the webview: target="_blank" asks for a new
+  // window and nothing answers, so the click lands on nothing — which is why the
+  // links in the PR and task dialogs worked in a browser tab and did nothing in
+  // the installed app. Without a target it is worse than inert: the webview
+  // navigates the workspace itself off to the site.
+  //
+  // Handled once here, in the capture phase, so it covers markup, the anchors
+  // built on the fly inside modals, and anything added later — no call site has
+  // to remember. Other listeners still run; only the navigation is taken over.
+  document.addEventListener('click', (e) => {
+    if (e.defaultPrevented || e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;
+    const a = e.target && e.target.closest && e.target.closest('a[href]');
+    if (!a) return;
+    // The property, not the attribute: it resolves a relative href the same way
+    // the webview would before deciding this is an external link.
+    const href = a.href || '';
+    if (!/^https?:\/\//i.test(href) || href.startsWith(location.origin)) return;
+    e.preventDefault();
+    window.tauriDesktop.openExternal(href);
+  }, true);
 
   // Wire up custom window-control buttons once the DOM is ready.
   function wireWindowControls() {

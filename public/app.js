@@ -648,8 +648,7 @@
       btnEl.textContent = tip.btn || 'OK';
       btnEl.onclick = () => {
         if (tip.url) {
-          if (window.tauriDesktop && window.tauriDesktop.openExternal) window.tauriDesktop.openExternal(tip.url);
-          else window.open(tip.url, '_blank', 'noopener');
+          openLink(tip.url);
           pill.classList.remove('visible');
           return;
         }
@@ -871,8 +870,18 @@
   }
 
   function openLink(url) {
-    if (window.tauriDesktop?.openExternal) window.tauriDesktop.openExternal(url);
-    else window.open(url, '_blank', 'noopener');
+    if (!window.tauriDesktop?.openExternal) {
+      window.open(url, '_blank', 'noopener');
+      return;
+    }
+    // The desktop shell can refuse — a URL outside the opener's scope, or no
+    // browser registered for it. Say so instead of leaving the click looking
+    // like it never registered, and put the URL where it can still be used.
+    window.tauriDesktop.openExternal(url).then((ok) => {
+      if (ok) return;
+      copyToClipboard(url);
+      showToast('Could not open that link — copied it instead', 'error');
+    });
   }
 
   function renderTermLinks(sessionId) {
@@ -1221,13 +1230,7 @@
 
     const fitAddon = new FitAddon.FitAddon();
     term.loadAddon(fitAddon);
-    const webLinksAddon = new WebLinksAddon.WebLinksAddon((e, uri) => {
-      if (window.tauriDesktop?.openExternal) {
-        window.tauriDesktop.openExternal(uri);
-      } else {
-        window.open(uri, '_blank', 'noopener');
-      }
-    });
+    const webLinksAddon = new WebLinksAddon.WebLinksAddon((e, uri) => openLink(uri));
     term.loadAddon(webLinksAddon);
 
     state.terminals[sessionId] = term;
@@ -3632,9 +3635,12 @@
         prSubmitBtn.textContent = 'Run in Terminal';
         if (msg.success) {
           prSuccess.textContent = 'PR created: ';
+          // An anchor, so the desktop shim's link handler picks it up the same
+          // way it does the ones written into the markup.
           const prLink = document.createElement('a');
           if (/^https?:\/\//i.test(msg.prUrl)) prLink.href = msg.prUrl;
           prLink.target = '_blank';
+          prLink.rel = 'noopener';
           prLink.style.color = 'var(--accent)';
           prLink.textContent = '#' + msg.prId;
           prSuccess.appendChild(prLink);
@@ -4631,15 +4637,7 @@
     card.classList.remove('hidden');
     $('#activeTaskCardText').textContent = `#${wi.id}: ${wi.title}`;
     $('#activeTaskCardBody').onclick = () => {
-      if (wi.url && /^https?:\/\//i.test(wi.url)) {
-        const a = document.createElement('a');
-        a.href = wi.url;
-        a.target = '_blank';
-        a.rel = 'noopener';
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-      }
+      if (wi.url && /^https?:\/\//i.test(wi.url)) openLink(wi.url);
     };
     const statusTask = $('#statusbarTask');
     if (statusTask) {
@@ -4647,15 +4645,7 @@
       statusTask.classList.remove('hidden');
       const link = $('#statusTaskLink');
       if (link && wi.url && /^https?:\/\//i.test(wi.url)) {
-        link.addEventListener('click', () => {
-          const a = document.createElement('a');
-          a.href = wi.url;
-          a.target = '_blank';
-          a.rel = 'noopener';
-          document.body.appendChild(a);
-          a.click();
-          a.remove();
-        });
+        link.addEventListener('click', () => openLink(wi.url));
       }
     }
   }
@@ -5867,13 +5857,7 @@
       });
       const innerFit = new FitAddon.FitAddon();
       innerTerm.loadAddon(innerFit);
-      innerTerm.loadAddon(new WebLinksAddon.WebLinksAddon((e, uri) => {
-        if (window.tauriDesktop?.openExternal) {
-          window.tauriDesktop.openExternal(uri);
-        } else {
-          window.open(uri, '_blank', 'noopener');
-        }
-      }));
+      innerTerm.loadAddon(new WebLinksAddon.WebLinksAddon((e, uri) => openLink(uri)));
       attachCopyPasteShortcuts(innerTerm, (data) => {
         ws.send(JSON.stringify({ type: 'inner-session-input', innerSessionId: msg.innerSessionId, data }));
       });
