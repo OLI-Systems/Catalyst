@@ -1277,6 +1277,28 @@
     font-size: 8.52px;
   }
   .mk-modal-note { padding: 0 14.2px 11.36px; font-size: 8.52px; line-height: 1.6; color: var(--m-muted); }
+
+  /* Focus Guard notice. Unlike the destructive dialogs it is drawn in the accent
+     rather than the danger colour — it is a rule the user set, not a warning. */
+  .mk-fg-head { display: flex; align-items: center; gap: 8.52px; padding: 14.2px 14.2px 9.94px; }
+  .mk-fg-icon {
+    flex: none; display: flex; align-items: center; justify-content: center;
+    width: 22.72px; height: 22.72px;
+    color: var(--m-accent);
+    background: color-mix(in srgb, var(--m-accent) 10%, transparent);
+    border: 1px solid color-mix(in srgb, var(--m-accent) 25%, transparent);
+  }
+  .mk-fg-icon svg { width: 11.36px; height: 11.36px; }
+  .mk-fg-title { display: block; font-size: 9.94px; font-weight: 600; color: var(--m-text); }
+  .mk-fg-count { display: block; margin-top: 1.42px; font-size: 8px; color: var(--m-muted); }
+  .mk-fg-body {
+    margin: 0 14.2px 11.36px;
+    padding: 7.1px 9.94px;
+    font-size: 8.52px; line-height: 1.65; color: var(--m-text);
+    background: color-mix(in srgb, var(--m-bg) 50%, transparent);
+    border: 1px solid var(--m-border);
+  }
+  .mk-tab-add--off { opacity: 0.35; }
   .mk-modal-top { padding: 8.52px 14.2px; border-bottom: 1px solid var(--m-border); }
   .mk-modal-top .mk-input { margin-top: 7.1px; padding: 5.68px 8.52px; }
 
@@ -2714,6 +2736,77 @@
     </div>
   </section>
 
+  <!-- ─── Focus Guard ──────────────────────────────────────────────────── -->
+  <section class="feature" id="focus">
+    <div class="wrap rise">
+      <div class="feature-copy">
+        <p class="eyebrow eyebrow--tight">Focus Guard</p>
+        <h3>The one feature that tells you no.</h3>
+        <p>
+          Every other part of Catalyst makes it easier to start another agent.
+          This is the part that doesn't. You pick a number during setup — how
+          many parallel sessions you actually want to be responsible for — and
+          the app holds you to it, at the moment you are least inclined to hold
+          yourself to it.
+        </p>
+        <p>
+          It counts what is open now, not what you have started today. Close a
+          session and the slot comes straight back. Lowering the number never
+          closes anything: work already running is yours to end.
+        </p>
+        <ul class="spec">
+          <li>Asked once during onboarding: one at a time, three, five, or no ceiling</li>
+          <li>Enforced everywhere a session can start, including tabs restored at launch</li>
+          <li>Switch it off for a day that needs the room — your number is remembered</li>
+        </ul>
+      </div>
+
+      <figure class="stage">
+        <div class="mk mk--solo" aria-hidden="true">
+          <div class="mk-bar">
+            <span class="mk-brand">
+              <span class="mk-logo"></span>
+              <span class="mk-title">CATALYST</span>
+            </span>
+            <span class="mk-tabs">
+              <span class="mk-tab is-on"><i style="--a:#d97757;--mark:var(--mk-claude)"></i>api-gateway</span>
+              <span class="mk-tab"><i style="--a:#10a37f;--mark:var(--mk-codex)"></i>web-dashboard</span>
+              <span class="mk-tab"><i style="--a:#3186ff;--mark:var(--mk-gemini)"></i>edge-cache</span>
+              <!-- Dimmed, not removed: clicking is how you find out why. -->
+              <span class="mk-tab-add mk-tab-add--off">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+              </span>
+            </span>
+          </div>
+
+          <div class="mk-scrim">
+            <div class="mk-modal mk-modal--md">
+              <div class="mk-fg-head">
+                <span class="mk-fg-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3.2"/></svg>
+                </span>
+                <span>
+                  <span class="mk-fg-title">Focus Guard</span>
+                  <span class="mk-fg-count">3 of 3 sessions open</span>
+                </span>
+              </div>
+              <div class="mk-fg-body">
+                You asked Catalyst to hold you to 3 parallel sessions. Finish one
+                and close it — the slot comes straight back.
+              </div>
+              <div class="mk-modal-foot">
+                <span class="mk-spacer"></span>
+                <span class="mk-btn-sm mk-btn-2">Settings</span>
+                <span class="mk-btn-sm">Got it</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <figcaption>The fourth tab, refused by a rule you wrote during setup</figcaption>
+      </figure>
+    </div>
+  </section>
+
   <section class="feature">
     <div class="wrap rise">
       <div class="feature-copy">
@@ -2725,7 +2818,7 @@
           prompts, slash commands, permission requests, colour and all.
         </p>
         <ul class="spec">
-          <li>One tab per session, up to eight, plus inner split terminals</li>
+          <li>One tab per session — as many as Focus Guard allows — plus inner split terminals</li>
           <li>Paste an image straight into the terminal</li>
           <li>Branch, diff and changed files in the panel beside it</li>
           <li>Pull, push and PR without leaving the session</li>
@@ -2890,6 +2983,10 @@
                   Catalyst Pilot
                 </div>
                 <div class="mk-set-item">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3.2"/></svg>
+                  Focus Guard
+                </div>
+                <div class="mk-set-item">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 22v-4a4.8 4.8 0 00-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 004 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65S8.93 17.38 9 18v4"/><path d="M9 18c-4.51 2-5-2-7-2"/></svg>
                   Integrations
                 </div>
@@ -2981,6 +3078,10 @@
                   <div class="mk-set-item">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
                     Catalyst Pilot
+                  </div>
+                  <div class="mk-set-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3.2"/></svg>
+                    Focus Guard
                   </div>
                   <div class="mk-set-item">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 22v-4a4.8 4.8 0 00-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 004 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65S8.93 17.38 9 18v4"/><path d="M9 18c-4.51 2-5-2-7-2"/></svg>
