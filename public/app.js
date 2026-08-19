@@ -2536,9 +2536,34 @@
     return next;
   }
 
-  function activeSessionCount() {
-    return state.sessions.filter(s => !s.ended).length;
+  function activeSessions() {
+    return state.sessions.filter(s => !s.ended);
   }
+
+  function activeSessionCount() {
+    return activeSessions().length;
+  }
+
+  // ─── Quit guard ───────────────────────────────────────────────────────
+  //
+  // Closing the window takes the backend down with it, and every CLI still
+  // running inside it goes too — an accidental ✕ throws away work that has no
+  // other home. The desktop shell asks here before it lets the window go.
+  //
+  // The answer lives in this file because only the page knows which sessions
+  // are live; the shell just relays the verdict. Resolves true when closing is
+  // fine: either nothing is running, or the user said go ahead.
+  window._catalystConfirmQuit = function () {
+    const live = activeSessions();
+    if (live.length === 0) return Promise.resolve(true);
+    const one = live.length === 1;
+    return showConfirm(
+      'Quit Catalyst',
+      `${live.length} ${one ? 'session is' : 'sessions are'} still running. Quitting ends ${one ? 'it' : 'them'}.`,
+      live.map(s => `${s.repo} — ${s.cli}`).join('  ·  '),
+      'Quit Anyway'
+    );
+  };
 
   // What actually applies right now — the user's number when the guard is on,
   // the hard ceiling when they have switched it off.

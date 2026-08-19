@@ -116,6 +116,41 @@
         try { await win.close(); } catch (e) { console.error(e); }
       });
     }
+
+    wireQuitGuard(win);
+  }
+
+  // Ask before the window goes when sessions are still running.
+  //
+  // Tauri v2 hands close-requested to the page and then waits: with a listener
+  // attached nothing closes until this handler calls destroy(). That is why the
+  // guard covers every route out — the ✕ button above, Alt+F4, the taskbar —
+  // rather than just the one button we own, and why the "yes, quit" path has to
+  // destroy the window explicitly.
+  function wireQuitGuard(win) {
+    let asking = false;
+
+    win.onCloseRequested(async (event) => {
+      const confirmQuit = window._catalystConfirmQuit;
+      // The page has not registered a guard yet (splash, or a reload in
+      // progress). Nothing to ask about, so let the close proceed as before.
+      if (typeof confirmQuit !== 'function') return;
+
+      event.preventDefault();
+
+      // A second ✕ while the dialog is up must not stack another one.
+      if (asking) return;
+      asking = true;
+      try {
+        if (await confirmQuit()) await win.destroy();
+      } catch (e) {
+        // A broken guard must never trap the user inside the app.
+        console.error('quit guard failed, closing anyway', e);
+        await win.destroy();
+      } finally {
+        asking = false;
+      }
+    }).catch((e) => console.error('quit guard not installed', e));
   }
 
   if (document.readyState === 'loading') {

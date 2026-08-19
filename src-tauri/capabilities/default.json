@@ -1,7 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Capabilities for the main window, including the remote local backend it navigates to. opener:allow-default-urls is what puts http/https in the opener's URL scope — allow-open-url alone permits the command but leaves the scope empty, and an empty scope allows nothing, so every external link is refused.",
+  "description": "Capabilities for the main window, including the remote local backend it navigates to. opener:allow-default-urls is what puts http/https in the opener's URL scope — allow-open-url alone permits the command but leaves the scope empty, and an empty scope allows nothing, so every external link is refused. core:window:allow-destroy is what the quit guard needs: once the page listens for close-requested, Tauri stops closing the window itself, so destroy() is the only way out.",
   "windows": ["main"],
   "remote": {
     "urls": ["http://localhost:*", "http://127.0.0.1:*"]
@@ -14,6 +14,7 @@
     "core:window:allow-toggle-maximize",
     "core:window:allow-is-maximized",
     "core:window:allow-close",
+    "core:window:allow-destroy",
     "core:window:allow-start-dragging",
     "dialog:allow-open",
     "opener:allow-open-url",
