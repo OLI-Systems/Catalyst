@@ -725,3 +725,18 @@
   font: 400 9px var(--port-font); color: var(--port-text-dim);
 }
 
+
+/* Multi-repo Recent chip — marks a workspace that reopens more than one repo */
+.welcome[data-port="v1"] .port-recent-plus {
+  margin-left: -2px;
+  padding: 1px 4px;
+  border-radius: 3px;
+  background: var(--port-border);
+  color: var(--port-text-dim);
+  font-size: 10px;
+  line-height: 1.4;
+}
+.welcome[data-port="v1"] .port-recent-chip:hover .port-recent-plus {
+  background: var(--port-border-accent);
+  color: var(--accent);
+}

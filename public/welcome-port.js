@@ -35,9 +35,23 @@
   function getRecent() {
     try { return JSON.parse(localStorage.getItem(RECENT_KEY) || '[]'); } catch { return []; }
   }
-  function pushRecent(repo, cli) {
-    const list = getRecent().filter(r => r.path !== repo.path);
-    list.unshift({ name: repo.name, path: repo.path, cli: cli || null, at: Date.now() });
+  // A Recent entry is a workspace, not just a repo: the extra repos a session
+  // was launched with are part of what the chip has to reopen. So identity
+  // includes them — keying on the primary repo alone meant a later plain-repo
+  // session overwrote the multi-repo entry, and that workspace was unrecoverable.
+  // Order-insensitive and path-normalised, since the same folder reaches us
+  // spelled differently from the scanner, the session store and here.
+  function workspaceKey(path, extras) {
+    const norm = (p) => String(p || '').replace(/[\\/]+$/, '').replace(/\\/g, '/').toLowerCase();
+    return [norm(path)].concat((extras || []).map(e => norm(e && e.path)).sort()).join('|');
+  }
+  function pushRecent(repo, cli, extras) {
+    const kept = (extras || [])
+      .filter(e => e && e.path)
+      .map(e => ({ name: e.name || '', path: e.path }));
+    const key = workspaceKey(repo.path, kept);
+    const list = getRecent().filter(r => workspaceKey(r.path, r.extras) !== key);
+    list.unshift({ name: repo.name, path: repo.path, cli: cli || null, extras: kept, at: Date.now() });
     while (list.length > RECENT_MAX) list.pop();
     localStorage.setItem(RECENT_KEY, JSON.stringify(list));
   }
@@ -69,29 +83,42 @@
       return;
     }
     wrap.classList.add('has-items');
-    wrap.querySelector('.port-recent-row').innerHTML = list.map(r => {
+    wrap.querySelector('.port-recent-row').innerHTML = list.map((r, i) => {
       const logo = r.cli && CLI_LOGOS[r.cli] ? CLI_LOGOS[r.cli] : svg('clock');
-      return `<button class="port-recent-chip" data-path="${escapeHtml(r.path)}" data-cli="${escapeHtml(r.cli)}" type="button">
+      const extras = Array.isArray(r.extras) ? r.extras : [];
+      // "+N" is what tells a multi-repo workspace apart from the plain repo of
+      // the same name; the tooltip names every repo in it.
+      const plus = extras.length ? `<span class="port-recent-plus">+${extras.length}</span>` : '';
+      const title = extras.length
+        ? [`${extras.length + 1} repos`, `${r.name} (primary)`]
+            .concat(extras.map(e => e.name || e.path)).join('\n')
+        : r.name;
+      return `<button class="port-recent-chip" data-idx="${i}" data-path="${escapeHtml(r.path)}" data-cli="${escapeHtml(r.cli)}" title="${escapeHtml(title)}" type="button">
         ${logo}
-        <span>${escapeHtml(r.name)}</span>
+        <span>${escapeHtml(r.name)}</span>${plus}
         <span class="when">· ${relTime(r.at)}</span>
         <span class="port-recent-remove" title="Remove">&times;</span>
       </button>`;
     }).join('');
     wrap.querySelectorAll('.port-recent-chip').forEach(chip => {
       chip.addEventListener('click', () => {
-        const repoPath = chip.dataset.path;
-        const repoName = chip.querySelector('span')?.textContent?.trim() || '';
-        const cli = chip.dataset.cli || 'claude';
+        // Read the entry back out of the list rather than off the DOM, so the
+        // extra repos travel with the click instead of being re-derived from
+        // whatever the picker happens to hold now.
+        const entry = list[Number(chip.dataset.idx)];
+        if (!entry) return;
+        const cli = entry.cli || 'claude';
+        const extras = Array.isArray(entry.extras) ? entry.extras : [];
         if (window._catalystOpenSession) {
-          window._catalystOpenSession(repoPath, repoName, cli);
-        } else if (repoPath && window._catalystWs && window._catalystWs.readyState === WebSocket.OPEN) {
+          window._catalystOpenSession(entry.path, entry.name, cli, extras);
+        } else if (entry.path && window._catalystWs && window._catalystWs.readyState === WebSocket.OPEN) {
           window._catalystWs.send(JSON.stringify({
             type: 'create-session',
             cli: cli,
-            repo: repoName,
-            repoPath: repoPath,
-            useWorktree: false
+            repo: entry.name,
+            repoPath: entry.path,
+            useWorktree: false,
+            extraDirs: extras.map(e => e.path)
           }));
         }
       });
@@ -100,10 +127,12 @@
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
         const chip = btn.closest('.port-recent-chip');
-        const path = chip?.dataset.path;
-        if (path) {
-          const list = getRecent().filter(r => r.path !== path);
-          localStorage.setItem(RECENT_KEY, JSON.stringify(list));
+        const entry = list[Number(chip?.dataset.idx)];
+        if (entry) {
+          // Drop this one workspace, not every entry sharing its primary repo.
+          const key = workspaceKey(entry.path, entry.extras);
+          const next = getRecent().filter(r => workspaceKey(r.path, r.extras) !== key);
+          localStorage.setItem(RECENT_KEY, JSON.stringify(next));
           renderRecent();
         }
       });

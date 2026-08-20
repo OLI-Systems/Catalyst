@@ -2686,7 +2686,10 @@
   }
 
   // Used by the Recent chips on the welcome screen (public/welcome-port.js).
-  window._catalystOpenSession = function(repoPath, repoName, cli) {
+  // `extras` is the workspace that chip recorded — [{ name, path }] — and is
+  // what makes reopening a multi-repo entry give back the same set of repos
+  // instead of the primary alone.
+  window._catalystOpenSession = function(repoPath, repoName, cli, extras) {
     cli = cli || 'claude';
     // A plain terminal has no history to offer, so it launches directly.
     if (cli === 'terminal') {
@@ -2694,7 +2697,15 @@
       wsSend({ type: 'create-session', cli, repo: repoName, repoPath, useWorktree: false });
       return;
     }
-    beginLaunch({ cli, repo: repoName, repoPath, useWorktree: false });
+    const restored = (extras || [])
+      .filter(e => e && e.path)
+      .map(e => ({ name: e.name || repoNameForPath(e.path), path: e.path }));
+    // The chip is authoritative about its own workspace: mirror it into the
+    // picker so what is on screen matches the session about to start, and so a
+    // stale selection cannot leak extra repos into a single-repo entry.
+    state.extraRepos = restored;
+    renderExtraRepos();
+    beginLaunch({ cli, repo: repoName, repoPath, useWorktree: false, extraRepos: restored });
   };
 
   // ─── Additional repos ─────────────────────────────────────────────────
@@ -2907,17 +2918,17 @@
 
   renderExtraRepos();
 
-  // Paths only — this is what the server expects and validates.
-  const extraDirPaths = () => state.extraRepos.map(r => r.path);
-
   // Called just before launching. The extras were picked without knowing which
   // agent would run, so this is where the choice is checked against that
   // agent's trust record. Returns null to abort — a session that silently
   // dropped one of the repos the user picked is worse than one that says why it
   // did not start.
-  function extraDirsForLaunch(cli) {
-    if (!state.extraRepos.length) return [];
-    const rejected = state.extraRepos.filter(r => !cliAcceptsDir(cli, r.path));
+  // `list` overrides the live picker selection — a Recent chip carries its own
+  // workspace and must not be re-derived from whatever is selected now.
+  function extraDirsForLaunch(cli, list) {
+    const picked = list || state.extraRepos;
+    if (!picked.length) return [];
+    const rejected = picked.filter(r => !cliAcceptsDir(cli, r.path));
     if (rejected.length) {
       showToast(
         `${CLI_LABELS[cli] || cli} has not been opened in ${rejected.map(r => r.name).join(', ')} yet — `
@@ -2929,7 +2940,7 @@
       requestRepoTrust();
       return null;
     }
-    return extraDirPaths();
+    return picked.map(r => r.path);
   }
 
   // ─── Sessions modal ───────────────────────────────────────────────────
@@ -2964,6 +2975,17 @@
     return norm(a) === norm(b);
   }
 
+  // Two sessions share a workspace only when they carry the same extra repos,
+  // whatever order those were picked in. Without this a multi-repo session and
+  // a plain one on the same primary repo look identical, so reopening one hands
+  // back the other. Defers to samePathish so path spelling is compared in
+  // exactly one place.
+  function sameDirSet(a, b) {
+    const x = a || [], y = b || [];
+    if (x.length !== y.length) return false;
+    return x.every(p => y.some(q => samePathish(p, q)));
+  }
+
   // The one way to start an agent session. Every entry point goes through here so
   // they all behave alike: reuse a live session for the same repo and CLI, respect
   // the tab cap, honour the extra-repo gate, and — the part that was missing —
@@ -2971,15 +2993,20 @@
   // asked; the Recent chips and the palette's Launch commands did not, so they
   // always started a new session however much history the repo had, which is what
   // made the dialog look like it had stopped working.
-  function beginLaunch({ cli, repo, repoPath, useWorktree }) {
+  function beginLaunch({ cli, repo, repoPath, useWorktree, extraRepos }) {
     if (!cli || !repoPath) return;
 
-    const existing = state.sessions.find(s => !s.ended && s.cli === cli && samePathish(s.repoPath, repoPath));
+    // Match on the whole workspace, not the primary repo alone. Compared before
+    // the trust gate runs, so switching to a session that already exists never
+    // depends on re-clearing a gate it passed when it started.
+    const wanted = (extraRepos || state.extraRepos || []).map(r => r.path);
+    const existing = state.sessions.find(s =>
+      !s.ended && s.cli === cli && samePathish(s.repoPath, repoPath) && sameDirSet(s.extraDirs, wanted));
     if (existing) { switchToSession(existing.id); return; }
 
     if (focusGuardBlocks()) return;
 
-    const extraDirs = extraDirsForLaunch(cli);
+    const extraDirs = extraDirsForLaunch(cli, extraRepos);
     if (extraDirs === null) return; // refused, and already explained in a toast
 
     state._pendingLaunch = { cli, repo, repoPath, useWorktree: !!useWorktree, extraDirs };
@@ -3545,7 +3572,11 @@
         state.sessionStatus[msg.id] = 'idle';
         state.sessionStartTime[msg.id] = Date.now();
         if (window._catalystPushRecent && msg.repo && msg.cli !== 'terminal') {
-          window._catalystPushRecent({ name: msg.repo, path: msg.repoPath }, msg.cli);
+          // Record the workspace, extras included — the server echoes back the
+          // directories the session actually started with, which is what Recent
+          // has to reopen.
+          const recentExtras = (msg.extraDirs || []).map(p => ({ name: repoNameForPath(p), path: p }));
+          window._catalystPushRecent({ name: msg.repo, path: msg.repoPath }, msg.cli, recentExtras);
           if (window._catalystRenderRecent) window._catalystRenderRecent();
         }
         updateSidebarVisibility();
