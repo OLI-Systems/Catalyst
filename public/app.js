@@ -1232,7 +1232,12 @@
       cursorBlink: false,
       cursorStyle: 'bar',
       scrollback: 5000,
-      convertEol: true,
+      // Windows: ConPTY passes bare LF through, and inside a cursor-addressed
+      // repaint a bare LF means "down one row, keep the column". Rewriting it
+      // to CRLF forces column 0, so everything the CLI writes next lands
+      // shifted, stranding fragments of other lines at the start of
+      // following lines. POSIX ptys still need the conversion.
+      convertEol: !/Windows/.test(navigator.userAgent),
       allowProposedApi: true,
       // Align xterm's line-wrap heuristics with Windows ConPTY to reduce
       // reflow garbling of the CLI's TUI on resize.
@@ -5826,7 +5831,12 @@
         theme: getXtermTheme(),
         cursorBlink: false,
         scrollback: 2000,
-        convertEol: true,
+        // Windows: ConPTY passes bare LF through, and inside a cursor-addressed
+        // repaint a bare LF means "down one row, keep the column". Rewriting it
+        // to CRLF forces column 0, so everything the CLI writes next lands
+        // shifted, stranding fragments of other lines at the start of
+        // following lines. POSIX ptys still need the conversion.
+        convertEol: !/Windows/.test(navigator.userAgent),
         rows: 12,
         cols: 60
       });
@@ -6030,7 +6040,12 @@
         cursorBlink: false,
         cursorStyle: 'bar',
         scrollback: 5000,
-        convertEol: true,
+        // Windows: ConPTY passes bare LF through, and inside a cursor-addressed
+        // repaint a bare LF means "down one row, keep the column". Rewriting it
+        // to CRLF forces column 0, so everything the CLI writes next lands
+        // shifted, stranding fragments of other lines at the start of
+        // following lines. POSIX ptys still need the conversion.
+        convertEol: !/Windows/.test(navigator.userAgent),
         allowProposedApi: true,
         windowsPty: /Windows/.test(navigator.userAgent) ? { backend: 'conpty' } : undefined,
       });
