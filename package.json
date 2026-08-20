@@ -1,6 +1,6 @@
 {
   "name": "catalyst",
-  "version": "1.5.1",
+  "version": "1.5.2",
   "description": "An IDE for the AI-first world — one desktop workspace for Claude Code, Codex and Gemini CLI across all your repositories",
   "main": "server.js",
   "scripts": {
