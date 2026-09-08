@@ -5275,6 +5275,9 @@ body.is-desktop .modal-overlay {
 .manage-btn:last-child { border-right: none; }
 .manage-btn:hover { background: var(--surface); color: var(--text); }
 .manage-btn.active { background: var(--accent); color: #fff; }
+/* Five effort levels share one row, and the right panel narrows to 200px, so the
+   default 8px side padding clips the labels. */
+#manageEffortField .manage-btn { padding: 6px 2px; }
 
 /* A control the active CLI has no command for: still visible, so its title can
    say why, but plainly not operable. */
