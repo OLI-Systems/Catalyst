@@ -448,7 +448,7 @@ dependencies = [
 
 [[package]]
 name = "catalyst"
-version = "1.5.2"
+version = "1.5.3"
 dependencies = [
  "serde",
  "serde_json",
