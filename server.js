@@ -521,8 +521,11 @@ const MODEL_CACHE_TTL = 60 * 60 * 1000;
 const _modelCache = new Map(); // cli -> { at, models, source }
 
 const FALLBACK_MODELS = {
+  // Aliases rather than dated ids, so these keep resolving to the current model
+  // in each family as Claude Code moves on. Read off `claude --model`'s own help.
   claude: [
-    { value: 'opus', label: 'Opus · most capable' },
+    { value: 'fable', label: 'Fable · most capable' },
+    { value: 'opus', label: 'Opus · agentic coding' },
     { value: 'sonnet', label: 'Sonnet · balanced' },
     { value: 'haiku', label: 'Haiku · fastest' },
   ],
@@ -530,9 +533,18 @@ const FALLBACK_MODELS = {
   // made the dropdown a decoration: a select with a single entry can never fire
   // 'change', and the empty value was skipped anyway. These are the models each
   // CLI actually ships with, so picking one does something.
+  //
+  // Codex slugs are dated, not aliased, so this list has to be refreshed when the
+  // CLI's own catalogue moves: it dropped gpt-5-codex and gpt-5 outright, and
+  // codex answers a slug it no longer knows with "Unknown model". These are the
+  // entries its bundled catalogue marks visibility:list — what /model offers.
   codex: [
-    { value: 'gpt-5-codex', label: 'GPT-5 Codex · agentic coding' },
-    { value: 'gpt-5', label: 'GPT-5 · general' },
+    { value: 'gpt-6-astra', label: 'GPT-6 Astra · most capable' },
+    { value: 'gpt-5.6-sol', label: 'GPT-5.6 Sol · frontier agentic coding' },
+    { value: 'gpt-5.6-terra', label: 'GPT-5.6 Terra · balanced everyday work' },
+    { value: 'gpt-5.6-luna', label: 'GPT-5.6 Luna · fast and affordable' },
+    { value: 'gpt-5.5', label: 'GPT-5.5 · complex coding and research' },
+    { value: 'gpt-5.2', label: 'GPT-5.2 · long-running agents' },
   ],
   gemini: [
     { value: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro · most capable' },

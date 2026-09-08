@@ -3947,14 +3947,17 @@
 
   // ─── Per-CLI capabilities ─────────────────────────────────────────────
   // Every Manage control used to be applied to all three CLIs, so two thirds of
-  // this panel typed commands that do not exist: Codex has no /effort and no
-  // /compact, Gemini has no /model and no /permissions, and a command a CLI does
-  // not know is not rejected — it lands in the prompt as literal text. One table
-  // drives both the gating below and the guard in sendToActiveSession, so a
-  // control cannot drift out of step with what its CLI understands.
+  // this panel typed commands that do not exist: Codex has no /effort (its
+  // reasoning level is chosen inside /model), Gemini has no /model and no
+  // /permissions, and a command a CLI does not know is not rejected — it lands in
+  // the prompt as literal text. One table drives both the gating below and the
+  // guard in sendToActiveSession, so a control cannot drift out of step with what
+  // its CLI understands.
   const CLI_CAPS = {
     claude: { model: '/model', effort: '/effort', compact: '/compact', perm: '/permissions', permLabel: 'Permissions…' },
-    codex: { model: '/model', effort: null, compact: null, perm: '/approvals', permLabel: 'Approvals…' },
+    // Codex grew a /compact of its own — "summarize conversation to prevent
+    // hitting the context limit" — so the button is no longer dead for it.
+    codex: { model: '/model', effort: null, compact: '/compact', perm: '/approvals', permLabel: 'Approvals…' },
     gemini: { model: null, effort: null, compact: '/compress', perm: null, permLabel: null }
   };
 
@@ -4136,9 +4139,9 @@
       if (btns.length) {
         const known = [...btns].some(b => b.dataset.effort === msg.effort);
         btns.forEach(b => b.classList.toggle('active', b.dataset.effort === msg.effort));
-        // Same caveat as the model above — and an effort the buttons don't offer
-        // (xhigh, max) would otherwise leave every button unlit with no
-        // explanation at all.
+        // Same caveat as the model above — and an effort level the buttons don't
+        // offer would otherwise leave every button unlit with no explanation at
+        // all.
         const row = btns[0].parentElement;
         if (row) row.title = `Last turn ran at ${msg.effort} effort` + (known ? '' : ' — no button for that level');
       }
@@ -4150,7 +4153,7 @@
   const SLASH_SUPPORT = {
     '/model': ['claude', 'codex'],
     '/effort': ['claude'],
-    '/compact': ['claude'],
+    '/compact': ['claude', 'codex'],
     '/compress': ['gemini'],
     '/permissions': ['claude'],
     '/approvals': ['codex']
