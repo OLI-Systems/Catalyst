@@ -530,7 +530,15 @@
           <div id="folderError" class="error-msg hidden"></div>
           <div class="repo-cli-layout" id="repoCliLayout">
             <div id="repoSection" class="hidden">
-              <div class="section-label">Git Repositories</div>
+              <div class="repo-section-head">
+                <div class="section-label">Git Repositories</div>
+                <!-- Saved collections: a named primary+extras workspace,
+                     relaunchable in one click without re-picking the repos. -->
+                <button class="btn-saved-collections" id="savedCollectionsBtn" type="button" title="Saved repo collections">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg>
+                  <span>Saved</span>
+                </button>
+              </div>
               <div class="repo-grid" id="repoGrid"></div>
               <div id="noRepos" class="no-repos hidden">No git repositories found in this folder.</div>
             </div>
@@ -584,7 +592,10 @@
             <div class="extra-repos" id="extraReposBlock">
               <div class="extra-repos-head">
                 <span class="extra-repos-label">Additional repos</span>
-                <button class="btn-add-repos" id="addReposBtn" type="button">Add repos</button>
+                <span class="extra-repos-actions">
+                  <button class="btn-add-repos" id="saveCollectionBtn" type="button" title="Save this repo and its extras as a named collection">Save as collection</button>
+                  <button class="btn-add-repos" id="addReposBtn" type="button">Add repos</button>
+                </span>
               </div>
               <div class="extra-repos-chips" id="extraReposChips"></div>
               <div class="extra-repos-note hidden" id="extraReposNote"></div>
@@ -1719,6 +1730,41 @@
   </div>
 
   <!-- Pick additional repos to hand the agent alongside the primary one. -->
+  <!-- Saved collections: name a workspace (primary repo + extra repos + CLI)
+       once, then relaunch the whole thing with one click. -->
+  <div id="collectionsModal" class="fixed inset-0 z-[200] hidden items-center justify-center">
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" id="collectionsOverlay"></div>
+    <div class="relative z-10 w-full max-w-2xl mx-4 shadow-2xl flex flex-col max-h-[85vh]" style="background:var(--bg-card);border:1px solid color-mix(in srgb, var(--accent) 20%, transparent);">
+      <div class="flex items-center justify-between px-7 py-5" style="border-bottom:1px solid var(--border);">
+        <h3 class="text-xs font-semibold uppercase tracking-[3px]" style="color:var(--text)">Saved collections</h3>
+        <button id="collectionsClose" class="hover-text-theme transition-colors" style="color:var(--text-muted)">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <div class="px-7 py-5" style="border-bottom:1px solid var(--border);">
+        <div class="collection-save-head">Save current selection</div>
+        <div class="collection-save-summary" id="collectionSaveSummary"></div>
+        <div class="collection-save-row">
+          <input type="text" id="collectionNameInput" maxlength="60" class="flex-1 px-3 py-2 text-xs font-mono outline-none focus-border-accent transition-colors" style="background:var(--input-bg);border:1px solid var(--border);color:var(--text);" placeholder="Name this collection...">
+          <select id="collectionCliSelect" class="collection-cli-select">
+            <option value="claude">Claude</option>
+            <option value="codex">Codex</option>
+            <option value="gemini">Gemini</option>
+          </select>
+          <button id="collectionSaveBtn" class="btn btn-primary btn-sm" type="button">Save</button>
+        </div>
+      </div>
+
+      <div class="flex-1 overflow-y-auto" id="collectionsList"></div>
+
+      <div class="flex items-center justify-between gap-3 px-7 py-4" style="border-top:1px solid var(--border);">
+        <span class="text-[10px] font-mono" style="color:var(--text-muted)" id="collectionsCount">No collections yet</span>
+        <button id="collectionsDone" class="btn btn-secondary btn-sm" type="button">Close</button>
+      </div>
+    </div>
+  </div>
+
   <div id="multiRepoModal" class="fixed inset-0 z-[200] hidden items-center justify-center">
     <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" id="multiRepoOverlay"></div>
     <div class="relative z-10 w-full max-w-md mx-4 shadow-2xl flex flex-col max-h-[80vh]" style="background:var(--bg-card);border:1px solid color-mix(in srgb, var(--accent) 20%, transparent);">

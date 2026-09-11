@@ -11,6 +11,7 @@ const store = require('./lib/session-store');
 const credStore = require('./lib/credential-store');
 const worktreeManager = require('./lib/worktree-manager');
 const repoStore = require('./lib/repo-store');
+const collectionStore = require('./lib/collection-store');
 const paths = require('./lib/paths');
 const conversationStore = require('./lib/conversation-store');
 const cliTrust = require('./lib/cli-trust');
@@ -2218,6 +2219,38 @@ wss.on('connection', (ws) => {
             ws.send(JSON.stringify({ type: 'repo-folders', repoPath: basePath, folders }));
           }
         })();
+        break;
+      }
+
+      // ─── Saved collections ──────────────────────────────────────────
+      // A named workspace (primary repo + extras + CLI) the user can relaunch
+      // in one click. Stored server-side so it is the same list in the desktop
+      // app and in a browser tab.
+      case 'list-collections': {
+        ws.send(JSON.stringify({ type: 'collections', collections: collectionStore.list() }));
+        break;
+      }
+
+      case 'save-collection': {
+        const result = collectionStore.save({
+          id: msg.id,
+          name: msg.name,
+          cli: msg.cli,
+          primary: msg.primary,
+          extras: msg.extras
+        });
+        ws.send(JSON.stringify({
+          type: 'collections',
+          collections: collectionStore.list(),
+          saved: result.collection || null,
+          error: result.error || null
+        }));
+        break;
+      }
+
+      case 'delete-collection': {
+        const collections = collectionStore.remove(msg.id);
+        ws.send(JSON.stringify({ type: 'collections', collections, deleted: msg.id }));
         break;
       }
 

@@ -5511,3 +5511,141 @@ body.zen-mode .main-content {
   color: var(--accent);
   font-variant-numeric: tabular-nums;
 }
+
+
+/* ─── Saved collections ─────────────────────────────────────────────────
+   A collection is a named workspace: primary repo + extras + the CLI to run.
+   The button sits with the repo list because that is where the workspace is
+   assembled; the modal both saves the current one and relaunches a saved one. */
+.repo-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.repo-section-head .section-label { margin-bottom: 16px; }
+
+.btn-saved-collections {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: inherit;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+.btn-saved-collections:hover { color: var(--text); border-color: var(--accent); }
+
+.extra-repos-actions { display: inline-flex; gap: 6px; }
+
+#collectionsList { min-height: 180px; }
+
+.collection-save-head {
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 7px;
+}
+
+.collection-save-summary {
+  font-size: 11px;
+  font-family: var(--font-mono, monospace);
+  color: var(--text-muted);
+  margin-bottom: 14px;
+  line-height: 1.6;
+}
+.collection-save-summary b { color: var(--text); font-weight: 600; }
+.collection-save-hint { font-style: italic; }
+
+.collection-save-row { display: flex; gap: 10px; align-items: stretch; }
+
+.collection-cli-select {
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+  padding: 0 10px;
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  cursor: pointer;
+}
+.collection-cli-select:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.collection-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 20px 6px 14px;
+  border-bottom: 1px solid var(--border);
+}
+.collection-row:hover { background: var(--bg-hover, var(--bg-secondary)); }
+
+/* The whole label is the launch control — one click starts the workspace. */
+.collection-open {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 10px 8px;
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+}
+.collection-name {
+  font-size: 12px;
+  font-family: var(--font-mono, monospace);
+  color: var(--text);
+}
+.collection-open:hover .collection-name { color: var(--accent); }
+.collection-meta {
+  font-size: 10px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.collection-load {
+  flex: none;
+  font-family: inherit;
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 6px 12px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+.collection-load:hover { color: var(--text); border-color: var(--accent); }
+
+.collection-del {
+  flex: none;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px;
+  line-height: 0;
+}
+.collection-del:hover { color: var(--danger); }
+
+.collection-none {
+  padding: 46px 32px;
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--text-muted);
+  text-align: center;
+}

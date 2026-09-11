@@ -112,6 +112,8 @@
     allRepos: [],
     // Additional repos handed to the agent alongside the primary one.
     extraRepos: [],
+    // Named workspaces (primary + extras + CLI), as saved on the server.
+    collections: [],
     // repoPath → { claude, codex, gemini } trust state, as reported by the
     // server reading each CLI's own config. Empty until the picker asks.
     repoTrust: {},
@@ -2814,8 +2816,15 @@
     return EXTRA_DIR_CLIS.filter(c => cliAcceptsDir(c, repoPath));
   }
 
-  function requestRepoTrust() {
+  // `extraPaths` widens the question beyond the scanned root — a saved
+  // collection can name a repo that is not in the current scan, and the server
+  // answers for every path in one reply (the client replaces its whole trust
+  // map from that reply, so they have to be asked together).
+  function requestRepoTrust(extraPaths) {
     const paths = (state.allRepos || []).map(r => r.path).filter(Boolean);
+    for (const p of (extraPaths || [])) {
+      if (p && !paths.includes(p)) paths.push(p);
+    }
     if (paths.length) wsSend({ type: 'repo-trust', paths });
   }
 
@@ -2917,6 +2926,226 @@
   });
 
   renderExtraRepos();
+
+  // ─── Saved collections ────────────────────────────────────────────────
+  // A collection is a named workspace: the primary repo, the extra repos picked
+  // alongside it, and the CLI it runs. Saved on the server (lib/collection-store)
+  // rather than in localStorage so the desktop app and a browser tab show the
+  // same list. Clicking one launches the whole workspace in a single click —
+  // through beginLaunch, so it obeys the same reuse, focus-guard and trust rules
+  // as every other entry point.
+  const collectionsModal = $('#collectionsModal');
+
+  function requestCollections() {
+    wsSend({ type: 'list-collections' });
+  }
+
+  function collectionRepoCount(c) {
+    return 1 + ((c.extras || []).length);
+  }
+
+  function collectionPaths(c) {
+    return [c.primary && c.primary.path].concat((c.extras || []).map(e => e.path)).filter(Boolean);
+  }
+
+  // The save row describes exactly what pressing Save would store, so nobody
+  // has to remember what the picker currently holds.
+  function renderCollectionSaveRow() {
+    const summary = $('#collectionSaveSummary');
+    const btn = $('#collectionSaveBtn');
+    const input = $('#collectionNameInput');
+    const select = $('#collectionCliSelect');
+    if (!summary || !btn) return;
+
+    const repo = state.selectedRepo;
+    const ready = !!repo;
+    btn.disabled = !ready;
+    if (input) input.disabled = !ready;
+    if (select) select.disabled = !ready;
+
+    if (!ready) {
+      summary.innerHTML = '<span class="collection-save-hint">Pick a repo on the welcome screen first — the selected repo becomes the collection’s primary.</span>';
+      return;
+    }
+    const extras = state.extraRepos.map(r => r.name);
+    summary.innerHTML = `<b>${escHtml(repo.name)}</b> (primary)`
+      + (extras.length ? ` · ${escHtml(extras.join(' · '))}` : ' · no additional repos');
+
+    // Codex cannot take extra directories, so offering it here would save a
+    // collection that refuses to launch.
+    const codexOpt = select && select.querySelector('option[value="codex"]');
+    if (codexOpt) {
+      const blocked = state.extraRepos.length > 0;
+      codexOpt.disabled = blocked;
+      codexOpt.textContent = blocked ? 'Codex (no extra repos)' : 'Codex';
+      if (blocked && select.value === 'codex') select.value = 'claude';
+    }
+  }
+
+  function renderCollections() {
+    const list = $('#collectionsList');
+    const count = $('#collectionsCount');
+    if (!list) return;
+
+    const rows = state.collections || [];
+    if (count) {
+      count.textContent = rows.length
+        ? `${rows.length} collection${rows.length === 1 ? '' : 's'}`
+        : 'No collections yet';
+    }
+
+    if (!rows.length) {
+      list.innerHTML = '<div class="collection-none">Nothing saved yet. Pick a repo, add the repos that go with it, then save the set with a name.</div>';
+      return;
+    }
+
+    list.innerHTML = rows.map((c, i) => {
+      const n = collectionRepoCount(c);
+      const names = [(c.primary && (c.primary.name || c.primary.path)) || '?']
+        .concat((c.extras || []).map(e => e.name || e.path));
+      const title = [`${n} repo${n === 1 ? '' : 's'} · ${CLI_LABELS[c.cli] || c.cli}`]
+        .concat(names.map((nm, idx) => idx === 0 ? `${nm} (primary)` : nm)).join('\n');
+      return `<div class="collection-row" title="${escHtml(title)}">
+        <button class="collection-open" data-open="${i}" type="button">
+          <span class="collection-name">${escHtml(c.name)}</span>
+          <span class="collection-meta">${escHtml(CLI_LABELS[c.cli] || c.cli)} · ${n} repo${n === 1 ? '' : 's'} · ${escHtml(names.join(', '))}</span>
+        </button>
+        <button class="collection-load" data-load="${i}" type="button" title="Load into the picker without starting a session">Load</button>
+        <button class="collection-del" data-del="${i}" type="button" title="Delete this collection" aria-label="Delete this collection">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>
+        </button>
+      </div>`;
+    }).join('');
+
+    list.querySelectorAll('[data-open]').forEach(b => b.addEventListener('click', () => {
+      const c = state.collections[Number(b.dataset.open)];
+      if (c) launchCollection(c);
+    }));
+    list.querySelectorAll('[data-load]').forEach(b => b.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const c = state.collections[Number(b.dataset.load)];
+      if (!c) return;
+      if (!applyCollectionToPicker(c)) return;
+      closeCollectionsModal();
+      showToast(`Loaded "${c.name}" — pick an agent to start`, 'info');
+    }));
+    list.querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const c = state.collections[Number(b.dataset.del)];
+      if (!c) return;
+      const ok = await showConfirm(
+        'Delete collection',
+        `Delete the collection "${c.name}"?`,
+        'The repos themselves are untouched — only the saved set goes.',
+        'Delete'
+      );
+      if (!ok) return;
+      wsSend({ type: 'delete-collection', id: c.id });
+    }));
+  }
+
+  // Puts a collection's workspace on screen: its primary becomes the selected
+  // repo card, its extras become the extra-repo chips. Done without going
+  // through the card's own click handler, which clears extras on a primary
+  // change and would throw away the very set being restored.
+  function applyCollectionToPicker(c) {
+    if (!c || !c.primary || !c.primary.path) return false;
+    const known = (state.allRepos || []).find(r => samePathish(r.path, c.primary.path));
+    state.selectedRepo = known || { name: c.primary.name || c.primary.path, path: c.primary.path };
+    state.extraRepos = (c.extras || [])
+      .filter(e => e && e.path)
+      .map(e => ({ name: e.name || e.path, path: e.path }));
+
+    if (repoGrid) {
+      repoGrid.querySelectorAll('.repo-card.selected').forEach(card => card.classList.remove('selected'));
+      const card = Array.from(repoGrid.querySelectorAll('.repo-card'))
+        .find(el => samePathish(el._repoPath, c.primary.path));
+      if (card) {
+        card.classList.add('selected');
+        cliSection.classList.remove('hidden');
+        $('#repoCliLayout').classList.add('has-selection');
+        $('#repoInfoName').textContent = state.selectedRepo.name;
+      }
+    }
+    renderExtraRepos();
+    return true;
+  }
+
+  function launchCollection(c) {
+    if (!applyCollectionToPicker(c)) return;
+    if (c.cli === 'codex' && state.extraRepos.length) {
+      showToast(CODEX_NO_MULTI_REPO, 'error');
+      return;
+    }
+    closeCollectionsModal();
+    beginLaunch({
+      cli: c.cli || 'claude',
+      repo: state.selectedRepo.name,
+      repoPath: state.selectedRepo.path,
+      useWorktree: false,
+      extraRepos: state.extraRepos.slice()
+    });
+  }
+
+  function saveCurrentCollection() {
+    const repo = state.selectedRepo;
+    if (!repo) {
+      showToast('Select a repo first — it becomes the collection’s primary.', 'error');
+      return;
+    }
+    const input = $('#collectionNameInput');
+    const name = (input ? input.value : '').trim();
+    if (!name) {
+      showToast('Give the collection a name.', 'error');
+      if (input) input.focus();
+      return;
+    }
+    // Saving over a name already in the list updates that collection rather
+    // than leaving two rows nobody can tell apart.
+    const existing = (state.collections || []).find(c => String(c.name).trim().toLowerCase() === name.toLowerCase());
+    wsSend({
+      type: 'save-collection',
+      id: existing ? existing.id : undefined,
+      name,
+      cli: ($('#collectionCliSelect') || {}).value || 'claude',
+      primary: { name: repo.name, path: repo.path },
+      extras: state.extraRepos.map(r => ({ name: r.name, path: r.path }))
+    });
+  }
+
+  function openCollectionsModal(focusName) {
+    if (!collectionsModal) return;
+    requestCollections();
+    // A collection can name repos outside the current scan; ask about those too
+    // so launching one is not refused for lack of a trust answer.
+    requestRepoTrust((state.collections || []).reduce((acc, c) => acc.concat(collectionPaths(c)), []));
+    renderCollectionSaveRow();
+    renderCollections();
+    collectionsModal.classList.remove('hidden');
+    collectionsModal.classList.add('flex');
+    if (focusName) setTimeout(() => { const el = $('#collectionNameInput'); if (el) el.focus(); }, 30);
+  }
+
+  function closeCollectionsModal() {
+    if (!collectionsModal) return;
+    collectionsModal.classList.add('hidden');
+    collectionsModal.classList.remove('flex');
+  }
+
+  $('#savedCollectionsBtn')?.addEventListener('click', () => openCollectionsModal(false));
+  $('#saveCollectionBtn')?.addEventListener('click', () => openCollectionsModal(true));
+  $('#collectionsClose')?.addEventListener('click', closeCollectionsModal);
+  $('#collectionsOverlay')?.addEventListener('click', closeCollectionsModal);
+  $('#collectionsDone')?.addEventListener('click', closeCollectionsModal);
+  $('#collectionSaveBtn')?.addEventListener('click', saveCurrentCollection);
+  $('#collectionNameInput')?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') saveCurrentCollection();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && collectionsModal && !collectionsModal.classList.contains('hidden')) {
+      closeCollectionsModal();
+    }
+  });
 
   // Called just before launching. The extras were picked without knowing which
   // agent would run, so this is where the choice is checked against that
@@ -3444,6 +3673,22 @@
         break;
       }
 
+      case 'collections': {
+        state.collections = msg.collections || [];
+        if (msg.error) {
+          showToast(msg.error, 'error');
+        } else if (msg.saved) {
+          showToast(`Saved collection "${msg.saved.name}"`, 'success');
+          const input = $('#collectionNameInput');
+          if (input) input.value = '';
+        } else if (msg.deleted) {
+          showToast('Collection deleted', 'info');
+        }
+        renderCollections();
+        renderCollectionSaveRow();
+        break;
+      }
+
       case 'repos': {
         const prevSelectedPath = state.selectedRepo ? state.selectedRepo.path : null;
         browseBtn.textContent = browseLabel;
@@ -3471,6 +3716,7 @@
         welcomeScreen.classList.add('has-repos');
         // Kept for the additional-repos picker, which needs the full list.
         state.allRepos = msg.repos;
+        requestCollections();
         state.repoInfoCache = state.repoInfoCache || {};
         let metaCount = 0;
         msg.repos.forEach(r => {

@@ -740,3 +740,28 @@
   background: var(--port-border-accent);
   color: var(--accent);
 }
+
+/* Saved collections button, moved into the repo-list head next to the filter. */
+.welcome[data-port="v1"] .port-head-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.welcome[data-port="v1"] #repoCliLayout.has-selection .port-head-right { width: 100%; }
+.welcome[data-port="v1"] #repoCliLayout.has-selection .port-head-right .port-filter { flex: 1; }
+.welcome[data-port="v1"] .port-head-right .btn-saved-collections {
+  flex: none;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 4px;
+  background: var(--port-surface);
+  border: 1px solid var(--port-border);
+  color: var(--port-text-2);
+  font: 500 10px var(--port-font);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.welcome[data-port="v1"] .port-head-right .btn-saved-collections:hover {
+  color: var(--port-text);
+  border-color: var(--accent);
+}

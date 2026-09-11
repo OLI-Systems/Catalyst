@@ -192,13 +192,21 @@
       head.className = 'port-section-head';
       head.innerHTML = `
         <div class="eyebrow">Git Repositories</div>
-        <label class="port-filter">
-          ${svg('search')}
-          <input id="portFilter" type="text" placeholder="Filter…" autocomplete="off" spellcheck="false" />
-          <span class="count" id="portFilterCount"></span>
-        </label>
+        <div class="port-head-right">
+          <label class="port-filter">
+            ${svg('search')}
+            <input id="portFilter" type="text" placeholder="Filter…" autocomplete="off" spellcheck="false" />
+            <span class="count" id="portFilterCount"></span>
+          </label>
+        </div>
       `;
       repoSection.insertBefore(head, repoSection.firstChild);
+      // The Saved-collections button lives in index.html next to the plain
+      // section label this head replaces. Move the node (rather than rebuild
+      // it) so the handler app.js bound to it comes along.
+      const savedBtn = document.getElementById('savedCollectionsBtn');
+      const headRight = head.querySelector('.port-head-right');
+      if (savedBtn && headRight) headRight.insertBefore(savedBtn, headRight.firstChild);
       let _portFilterTimer = null;
       head.querySelector('#portFilter').addEventListener('input', (e) => {
         clearTimeout(_portFilterTimer);
