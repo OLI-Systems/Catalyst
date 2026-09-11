@@ -151,6 +151,16 @@ no agent has accepted yet and names the agents that will take each of the rest;
 to make one eligible, start a session in it once and accept its trust prompt.
 Catalyst reads this from each CLI's own configuration and never writes to it.
 
+**Saved collections** — a set of repositories you keep coming back to can be
+saved under a name from **Saved** on the repo picker: the primary repository, the
+extra ones, and the agent to run. Clicking a saved collection starts a session
+with every repository in it, through the same path as any other launch — so it
+still reuses a live session for that workspace, respects Focus Guard, and applies
+the trust gate above. Collections live in `~/.catalyst/collections.json`, so the
+desktop app and a browser tab show the same list. Codex is not offered for a
+collection that carries extra repositories, since it has no equivalent of
+`--add-dir` to launch them with.
+
 A session started with extra repositories is labelled `<repo> +N` in the tab bar,
 and the tab's tooltip lists every repository it was started with. Clearing the
 conversation with `/clear` drops the label back to the repository name (the agent
@@ -186,6 +196,7 @@ process keeps the directories it was launched with).
 Settings live in `~/.catalyst/`:
 
 - `sessions.json` — root directory, theme, Azure org/project
+- `collections.json` — saved repo collections
 - `repos/` — per-repo build config and cached stack metadata
 
 Access tokens are **not** stored here — they go to the OS credential store
@@ -307,6 +318,7 @@ lib/
   session-manager.js   PTY session lifecycle
   session-store.js     Persistent settings
   repo-store.js        Per-repo settings and cached metadata
+  collection-store.js  Saved repo collections
   credential-store.js  PATs via OS credential store
   worktree-manager.js  Git worktree isolation
 public/                Single-page UI — app.js, style.css, desktop-shim.js
