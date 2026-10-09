@@ -1150,6 +1150,16 @@
               </div>
             </div>
             <div class="settings-hint" style="margin-top:14px">GitHub Copilot requires the <code>gh</code> CLI already on your PATH.</div>
+
+            <div class="settings-section addons-section">
+              <div class="settings-section-title">Claude Code add-ons</div>
+              <p class="addons-desc">Mods and skills Catalyst installs into Claude Code, refreshed whenever Catalyst updates. Manage or remove them with <code>/plugin</code> in any Claude session. One you uninstall stays uninstalled across updates; Reinstall puts them all back.</p>
+              <div class="addons-list" id="claudeAddonsList"></div>
+              <div class="addons-footer">
+                <span class="settings-hint" id="claudeAddonsHint"></span>
+                <button class="btn btn-sm" id="claudeAddonsInstall">Reinstall</button>
+              </div>
+            </div>
           </div>
 
           <div class="settings-section-page" id="settings-shortcuts">

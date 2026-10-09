@@ -2094,9 +2094,52 @@
       if (page) page.classList.add('active');
       if (btn.dataset.section === 'aicli') {
         ws.send(JSON.stringify({ type: 'check-cli-availability' }));
+        ws.send(JSON.stringify({ type: 'claude-addons-status' }));
       }
     });
   });
+
+  // Claude Code add-ons (lib/claude-plugins.js): what is installed, and a way
+  // to put everything back after removing it by hand.
+  const claudeAddonsInstallBtn = $('#claudeAddonsInstall');
+  if (claudeAddonsInstallBtn) {
+    claudeAddonsInstallBtn.addEventListener('click', () => {
+      claudeAddonsInstallBtn.disabled = true;
+      ws.send(JSON.stringify({ type: 'claude-addons-install' }));
+    });
+  }
+
+  function renderClaudeAddons(status) {
+    const list = $('#claudeAddonsList');
+    const hint = $('#claudeAddonsHint');
+    if (!list || !status) return;
+    list.replaceChildren(...(status.plugins || []).map((p) => {
+      const row = document.createElement('div');
+      row.className = 'addon-row';
+      const info = document.createElement('div');
+      info.className = 'addon-info';
+      const name = document.createElement('div');
+      name.className = 'addon-name';
+      name.textContent = p.name;
+      const about = document.createElement('div');
+      about.className = 'addon-about';
+      about.textContent = p.description;
+      info.append(name, about);
+      const badge = document.createElement('span');
+      const state = status.isRunning ? 'installing' : p.installed ? 'installed' : 'missing';
+      badge.className = `cli-install-status ${state}`;
+      const dot = document.createElement('span');
+      dot.className = 'cli-install-dot';
+      badge.append(dot, { installing: 'Installing', installed: 'Installed', missing: 'Not installed' }[state]);
+      row.append(info, badge);
+      return row;
+    }));
+    if (hint) {
+      hint.className = `settings-hint${status.lastError ? ' error' : ''}`;
+      hint.textContent = status.lastError ? status.lastError : status.isRunning ? 'Installing into Claude Code…' : '';
+    }
+    if (claudeAddonsInstallBtn) claudeAddonsInstallBtn.disabled = Boolean(status.isRunning);
+  }
 
   // AI CLI install buttons
   $$('.cli-install-btn').forEach(btn => {
@@ -3531,6 +3574,11 @@
           while (logEl.childNodes.length > 2000) logEl.removeChild(logEl.firstChild);
           logEl.scrollTop = logEl.scrollHeight;
         }
+        break;
+      }
+
+      case 'claude-addons-status': {
+        renderClaudeAddons(msg.status);
         break;
       }
 

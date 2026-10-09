@@ -3454,6 +3454,25 @@ body.is-desktop .modal-overlay {
 .cli-install-status.failed { color: var(--danger); }
 .cli-install-status.failed .cli-install-dot { background: var(--danger); }
 
+.addons-section { margin-top: 28px; }
+.addons-desc { color: var(--text-muted); font-size: 12px; margin: 0 0 12px; }
+.addons-list { display: flex; flex-direction: column; gap: 8px; }
+.addon-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 14px;
+  min-width: 0;
+}
+.addon-info { flex: 1; min-width: 0; }
+.addon-name { font-size: 12px; font-weight: 600; color: var(--text); }
+.addon-about { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+.addons-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 10px; }
+.addons-footer .settings-hint { margin: 0; }
+
 @keyframes cli-dot-pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.3; }

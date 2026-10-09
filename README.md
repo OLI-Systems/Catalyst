@@ -70,6 +70,27 @@ Light, Newsprint and more. Each one retints the whole window (sidebar, cards,
 terminal, status bar) rather than a subset. Font family and size are configurable
 too, under **Settings → Appearance**.
 
+## Claude Code add-ons
+
+Catalyst installs a few of its own [mods](https://code.claude.com/docs/en/plugins/mods/overview)
+and skills into Claude Code, on first launch and again whenever an update ships
+a changed set. They live in `claude-plugins/` as a plugin marketplace named
+`catalyst`, so they appear in `/plugin` like anything else you installed, in
+every Claude session and not only the ones Catalyst starts.
+
+| Plugin | What it does |
+|---|---|
+| `catalyst-guard` | Holds a destructive shell command (`rm -rf`, `Remove-Item -Recurse`, `git reset --hard`, `git clean -f`, force push, `git branch -D`, `DROP TABLE`...) and asks before running it, with the number of uncommitted or untracked files at stake. It asks in every permission mode, bypass included, which is exactly when parallel agents need it. *Allow for this session* stops the questions for that kind of command. Headless runs (`claude -p`) are left to their own permission rules. |
+| `catalyst-meter` | Context fill, session cost, rate-limit use and the turn's tool calls on the status line, plus a one-time nudge when the context window passes 80%. |
+| `catalyst-orchestrator` | The `orchestrate` skill: how to split a large task across parallel subagents (worktrees for parallel edits, Explore for research, Codex or Gemini for a second opinion), brief them, then integrate and verify. Its band above the prompt lists each running subagent with its task and elapsed time. |
+
+**Settings → AI CLI → Claude Code add-ons** shows what is installed and has a
+**Reinstall** button. Remove one with `/plugin` and it stays removed across
+updates; Reinstall puts it back. The mods need Claude Code 2.1.287 or later
+(the skill works in any version).
+
+Each plugin has tests: `claude plugin test claude-plugins/<plugin>`.
+
 ---
 
 ## How it works
@@ -321,6 +342,8 @@ lib/
   collection-store.js  Saved repo collections
   credential-store.js  PATs via OS credential store
   worktree-manager.js  Git worktree isolation
+  claude-plugins.js    Installs claude-plugins/ into Claude Code
+claude-plugins/        Claude Code mods and skills shipped with Catalyst
 public/                Single-page UI — app.js, style.css, desktop-shim.js
 src-tauri/             Tauri v2 desktop shell (Rust) + bundling config
 build/                 Sidecar staging and installer art scripts

@@ -16,6 +16,7 @@ const paths = require('./lib/paths');
 const conversationStore = require('./lib/conversation-store');
 const cliTrust = require('./lib/cli-trust');
 const sessionUsage = require('./lib/session-usage');
+const claudePlugins = require('./lib/claude-plugins');
 
 // Loose path comparison for grouping sessions by repo: case-insensitive and
 // trailing-separator agnostic, which matters on Windows.
@@ -2282,6 +2283,17 @@ wss.on('connection', (ws) => {
         break;
       }
 
+      case 'claude-addons-status': {
+        ws.send(JSON.stringify({ type: 'claude-addons-status', status: claudePlugins.status() }));
+        break;
+      }
+
+      case 'claude-addons-install': {
+        installClaudeAddons({ force: true });
+        ws.send(JSON.stringify({ type: 'claude-addons-status', status: { ...claudePlugins.status(), isRunning: true } }));
+        break;
+      }
+
       case 'install-cli': {
         (async () => {
         const cliDef = findInstallTarget(msg.cli);
@@ -2399,6 +2411,7 @@ wss.on('connection', (ws) => {
               }));
               return;
             }
+            if (msg.cli === 'claude') installClaudeAddons();
             if (!cliDef.postInstall) {
               ws.send(JSON.stringify({ type: 'install-cli-result', cli: msg.cli, success: true, exitCode, message: 'Installed and verified' }));
               return;
@@ -2727,6 +2740,24 @@ function findFreePort(start, end) {
   });
 }
 
+// Install (or update) the mods and skills Catalyst ships for Claude Code. Runs
+// in the background on every launch, does real work only when this build's
+// add-ons differ from what was installed last, and waits for Claude Code itself
+// to be installed. Broadcasts the new status so an open Settings page refreshes.
+function installClaudeAddons({ force = false } = {}) {
+  return claudePlugins.ensureInstalled({
+    env: sessionManager.enrichEnv(),
+    force,
+    isClaudeInstalled: () => sessionManager.checkCliInstalled('claude'),
+  }).then((status) => {
+    const payload = JSON.stringify({ type: 'claude-addons-status', status });
+    for (const client of clients) {
+      if (client.readyState === 1) client.send(payload);
+    }
+    return status;
+  }).catch(() => claudePlugins.status());
+}
+
 function startServer(preferredPort = 4200) {
   // Warm the caches that would otherwise cost a blocking process spawn on the
   // first request (PAT loads via PowerShell, npm global prefix, verify PATH).
@@ -2741,6 +2772,8 @@ function startServer(preferredPort = 4200) {
         server.removeAllListeners('error');
         const url = `http://localhost:${port}`;
         console.log(`Catalyst running at ${url}`);
+        // Off the startup path: the window should not wait on `claude plugin`.
+        setTimeout(() => { installClaudeAddons(); }, 5000);
         resolve({ server, port, url });
       });
     });

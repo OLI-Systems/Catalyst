@@ -1,0 +1,7 @@
+{
+  "name": "catalyst-guard",
+  "version": "1.0.0",
+  "description": "Holds destructive shell commands until you confirm them, in every permission mode.",
+  "author": { "name": "OLI Systems" },
+  "keywords": ["mods", "safety", "git", "catalyst"]
+}

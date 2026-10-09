@@ -1,0 +1,24 @@
+{
+  "name": "catalyst",
+  "owner": { "name": "OLI Systems" },
+  "metadata": {
+    "description": "Mods and skills that ship with Catalyst and are installed into Claude Code when Catalyst is installed or updated."
+  },
+  "plugins": [
+    {
+      "name": "catalyst-guard",
+      "source": "./catalyst-guard",
+      "description": "Holds destructive shell commands (rm -rf, Remove-Item -Recurse, git reset --hard, force push...) until you confirm them."
+    },
+    {
+      "name": "catalyst-meter",
+      "source": "./catalyst-meter",
+      "description": "Context fill, session cost, rate-limit use and tool calls on the status line, with a nudge before the window fills."
+    },
+    {
+      "name": "catalyst-orchestrator",
+      "source": "./catalyst-orchestrator",
+      "description": "The orchestrate skill for splitting work across parallel subagents, and a live band of the agents running."
+    }
+  ]
+}

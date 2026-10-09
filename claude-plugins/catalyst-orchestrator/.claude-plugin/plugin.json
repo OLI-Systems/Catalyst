@@ -1,0 +1,8 @@
+{
+  "name": "catalyst-orchestrator",
+  "version": "1.0.0",
+  "description": "The orchestrate skill for splitting work across parallel subagents, and a live band of the agents running.",
+  "author": { "name": "OLI Systems" },
+  "keywords": ["mods", "skills", "agents", "orchestration", "catalyst"],
+  "types": "./types/index.d.ts"
+}
