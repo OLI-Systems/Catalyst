@@ -1,0 +1,10 @@
+{
+  "name": "snippet-shelf",
+  "version": "1.0.0",
+  "description": "Save and copy short code or command snippets.",
+  "author": {
+    "name": "Yash Thakker"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/whyashthakker/awesome-claude-code-mods"
+}

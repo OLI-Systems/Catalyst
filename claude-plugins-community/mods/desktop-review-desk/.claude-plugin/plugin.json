@@ -1,0 +1,10 @@
+{
+  "name": "desktop-review-desk",
+  "version": "1.0.0",
+  "description": "Switch between Git status, staged diff, and unstaged diff.",
+  "author": {
+    "name": "Yash Thakker"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/whyashthakker/awesome-claude-code-mods"
+}

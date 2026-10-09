@@ -1,0 +1,10 @@
+{
+  "name": "regex-lab",
+  "version": "1.0.0",
+  "description": "Test a regular expression against text and see matched ranges.",
+  "author": {
+    "name": "Yash Thakker"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/whyashthakker/awesome-claude-code-mods"
+}

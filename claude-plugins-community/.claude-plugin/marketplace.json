@@ -1,0 +1,502 @@
+{
+  "name": "catalyst-community",
+  "owner": {
+    "name": "Yash Thakker and contributors (vendored by Catalyst)"
+  },
+  "metadata": {
+    "description": "awesome-claude-code-mods by Yash Thakker and contributors (MIT), pinned at c53a70b and shipped with Catalyst. Installed only when chosen in Catalyst Settings.",
+    "version": "1.1.0"
+  },
+  "plugins": [
+    {
+      "name": "context-meter",
+      "source": "./mods/context-meter",
+      "description": "See the current context window fill and remaining tokens.",
+      "version": "1.0.0",
+      "category": "session"
+    },
+    {
+      "name": "quota-watch",
+      "source": "./mods/quota-watch",
+      "description": "Inspect reported plan windows and their reset times.",
+      "version": "1.0.0",
+      "category": "session"
+    },
+    {
+      "name": "cache-inspector",
+      "source": "./mods/cache-inspector",
+      "description": "Track API cache reads, writes, and uncached input by request.",
+      "version": "1.0.0",
+      "category": "session"
+    },
+    {
+      "name": "tool-timing",
+      "source": "./mods/tool-timing",
+      "description": "Measure observed tool latency, call counts, and failures.",
+      "version": "1.0.0",
+      "category": "session"
+    },
+    {
+      "name": "error-inbox",
+      "source": "./mods/error-inbox",
+      "description": "Keep the last 30 failed or refused tool calls in one pane.",
+      "version": "1.0.0",
+      "category": "session"
+    },
+    {
+      "name": "edit-heatmap",
+      "source": "./mods/edit-heatmap",
+      "description": "Count successful Edit and Write calls by path.",
+      "version": "1.0.0",
+      "category": "session"
+    },
+    {
+      "name": "turn-timeline",
+      "source": "./mods/turn-timeline",
+      "description": "Show duration, token totals, and interruption state per turn.",
+      "version": "1.0.0",
+      "category": "session"
+    },
+    {
+      "name": "agent-board",
+      "source": "./mods/agent-board",
+      "description": "Inspect the subagents reported by the session.",
+      "version": "1.0.0",
+      "category": "session"
+    },
+    {
+      "name": "branch-board",
+      "source": "./mods/branch-board",
+      "description": "Inspect local branches, upstreams, and dirty files.",
+      "version": "1.0.0",
+      "category": "git"
+    },
+    {
+      "name": "staged-review",
+      "source": "./mods/staged-review",
+      "description": "Review the staged diff before committing.",
+      "version": "1.0.0",
+      "category": "git"
+    },
+    {
+      "name": "commit-browser",
+      "source": "./mods/commit-browser",
+      "description": "Browse the latest 20 commits with author and subject.",
+      "version": "1.0.0",
+      "category": "git"
+    },
+    {
+      "name": "stash-browser",
+      "source": "./mods/stash-browser",
+      "description": "List stashes and inspect a selected stash diff.",
+      "version": "1.0.0",
+      "category": "git"
+    },
+    {
+      "name": "worktree-map",
+      "source": "./mods/worktree-map",
+      "description": "List worktree paths, branches, and locked states.",
+      "version": "1.0.0",
+      "category": "git"
+    },
+    {
+      "name": "conflict-radar",
+      "source": "./mods/conflict-radar",
+      "description": "List unresolved paths and count conflict markers in tracked files.",
+      "version": "1.0.0",
+      "category": "git"
+    },
+    {
+      "name": "blame-view",
+      "source": "./mods/blame-view",
+      "description": "Read authorship for the first 80 lines of a chosen tracked file.",
+      "version": "1.0.0",
+      "category": "git"
+    },
+    {
+      "name": "ignore-check",
+      "source": "./mods/ignore-check",
+      "description": "Explain which Git ignore rule matches a path.",
+      "version": "1.0.0",
+      "category": "git"
+    },
+    {
+      "name": "file-tree",
+      "source": "./mods/file-tree",
+      "description": "Browse one directory at a time with clickable folders.",
+      "version": "1.0.0",
+      "category": "repository"
+    },
+    {
+      "name": "package-scripts",
+      "source": "./mods/package-scripts",
+      "description": "List npm scripts and package identity without running them.",
+      "version": "1.0.0",
+      "category": "repository"
+    },
+    {
+      "name": "dependency-table",
+      "source": "./mods/dependency-table",
+      "description": "Inspect dependency groups from a package manifest.",
+      "version": "1.0.0",
+      "category": "repository"
+    },
+    {
+      "name": "todo-finder",
+      "source": "./mods/todo-finder",
+      "description": "Find TODO, FIXME, and HACK notes in tracked files.",
+      "version": "1.0.0",
+      "category": "repository"
+    },
+    {
+      "name": "markdown-map",
+      "source": "./mods/markdown-map",
+      "description": "Build a heading outline with source line numbers.",
+      "version": "1.0.0",
+      "category": "repository"
+    },
+    {
+      "name": "json-browser",
+      "source": "./mods/json-browser",
+      "description": "Summarize top-level JSON keys with types and a formatted preview.",
+      "version": "1.0.0",
+      "category": "repository"
+    },
+    {
+      "name": "csv-table",
+      "source": "./mods/csv-table",
+      "description": "Preview quoted CSV fields, row counts, and column headers.",
+      "version": "1.0.0",
+      "category": "repository"
+    },
+    {
+      "name": "log-viewer",
+      "source": "./mods/log-viewer",
+      "description": "Show the last 60 lines of a small local log with an optional filter.",
+      "version": "1.0.0",
+      "category": "repository"
+    },
+    {
+      "name": "env-example",
+      "source": "./mods/env-example",
+      "description": "List variable names and missing placeholders in an example env file.",
+      "version": "1.0.0",
+      "category": "repository"
+    },
+    {
+      "name": "file-compare",
+      "source": "./mods/file-compare",
+      "description": "Compare two small text files by line without editing either.",
+      "version": "1.0.0",
+      "category": "repository"
+    },
+    {
+      "name": "scratchpad",
+      "source": "./mods/scratchpad",
+      "description": "Save short notes beside your conversation.",
+      "version": "1.0.0",
+      "category": "workspace"
+    },
+    {
+      "name": "task-board",
+      "source": "./mods/task-board",
+      "description": "Add tasks and toggle done status.",
+      "version": "1.0.0",
+      "category": "workspace"
+    },
+    {
+      "name": "decision-log",
+      "source": "./mods/decision-log",
+      "description": "Record dated engineering decisions.",
+      "version": "1.0.0",
+      "category": "workspace"
+    },
+    {
+      "name": "snippet-shelf",
+      "source": "./mods/snippet-shelf",
+      "description": "Save and copy short code or command snippets.",
+      "version": "1.0.0",
+      "category": "workspace"
+    },
+    {
+      "name": "link-shelf",
+      "source": "./mods/link-shelf",
+      "description": "Save labeled HTTP and HTTPS reference links.",
+      "version": "1.0.0",
+      "category": "workspace"
+    },
+    {
+      "name": "prompt-shelf",
+      "source": "./mods/prompt-shelf",
+      "description": "Save reusable prompts and put one into the composer as a draft.",
+      "version": "1.0.0",
+      "category": "workspace"
+    },
+    {
+      "name": "release-checklist",
+      "source": "./mods/release-checklist",
+      "description": "Keep a persistent checklist for a release.",
+      "version": "1.0.0",
+      "category": "workspace"
+    },
+    {
+      "name": "handoff-notes",
+      "source": "./mods/handoff-notes",
+      "description": "Keep a dated list of progress and next steps, then copy it.",
+      "version": "1.0.0",
+      "category": "workspace"
+    },
+    {
+      "name": "regex-lab",
+      "source": "./mods/regex-lab",
+      "description": "Test a regular expression against text and see matched ranges.",
+      "version": "1.0.0",
+      "category": "utilities"
+    },
+    {
+      "name": "json-format",
+      "source": "./mods/json-format",
+      "description": "Validate and pretty-print JSON without touching a file.",
+      "version": "1.0.0",
+      "category": "utilities"
+    },
+    {
+      "name": "url-lab",
+      "source": "./mods/url-lab",
+      "description": "Inspect URL components and decoded query parameters locally.",
+      "version": "1.0.0",
+      "category": "utilities"
+    },
+    {
+      "name": "base64-lab",
+      "source": "./mods/base64-lab",
+      "description": "Encode UTF-8 text or decode strict Base64.",
+      "version": "1.0.0",
+      "category": "utilities"
+    },
+    {
+      "name": "time-lab",
+      "source": "./mods/time-lab",
+      "description": "Convert Unix seconds, milliseconds, or an ISO date to UTC.",
+      "version": "1.0.0",
+      "category": "utilities"
+    },
+    {
+      "name": "hash-lab",
+      "source": "./mods/hash-lab",
+      "description": "Calculate SHA-256, SHA-384, or SHA-512 for UTF-8 text.",
+      "version": "1.0.0",
+      "category": "utilities"
+    },
+    {
+      "name": "color-lab",
+      "source": "./mods/color-lab",
+      "description": "Convert hex colors and measure contrast against a background.",
+      "version": "1.0.0",
+      "category": "utilities"
+    },
+    {
+      "name": "uuid-lab",
+      "source": "./mods/uuid-lab",
+      "description": "Generate up to 20 random UUID v4 values locally.",
+      "version": "1.0.0",
+      "category": "utilities"
+    },
+    {
+      "name": "text-counter",
+      "source": "./mods/text-counter",
+      "description": "Count words, lines, Unicode code points, and UTF-8 bytes.",
+      "version": "1.0.0",
+      "category": "utilities"
+    },
+    {
+      "name": "ascii-flipbook",
+      "source": "./mods/ascii-flipbook",
+      "description": "Play a local text animation whose frames are separated by a form feed.",
+      "version": "1.0.0",
+      "category": "utilities"
+    },
+    {
+      "name": "focus-clock",
+      "source": "./mods/focus-clock",
+      "description": "Run a 25-minute focus countdown with pause, reset, and a toast.",
+      "version": "1.0.0",
+      "category": "workflow"
+    },
+    {
+      "name": "stopwatch",
+      "source": "./mods/stopwatch",
+      "description": "Time a task with start, pause, and lap markers.",
+      "version": "1.0.0",
+      "category": "workflow"
+    },
+    {
+      "name": "test-ledger",
+      "source": "./mods/test-ledger",
+      "description": "Record likely test, lint, and build commands and their tool status.",
+      "version": "1.0.0",
+      "category": "workflow"
+    },
+    {
+      "name": "command-history",
+      "source": "./mods/command-history",
+      "description": "Keep the last 40 Bash command strings and copy one for reuse.",
+      "version": "1.0.0",
+      "category": "workflow"
+    },
+    {
+      "name": "scope-watch",
+      "source": "./mods/scope-watch",
+      "description": "Warn when observed file edits leave a chosen path prefix.",
+      "version": "1.0.0",
+      "category": "workflow"
+    },
+    {
+      "name": "read-only-mode",
+      "source": "./mods/read-only-mode",
+      "description": "Toggle a reminder guard that refuses built-in mutating tools and Bash.",
+      "version": "1.0.0",
+      "category": "workflow"
+    },
+    {
+      "name": "desktop-usage-strip",
+      "source": "./mods/desktop-usage-strip",
+      "description": "Show quota, reset countdowns, tokens, and cost in a composer strip.",
+      "version": "1.0.0",
+      "category": "productivity"
+    },
+    {
+      "name": "desktop-context-map",
+      "source": "./mods/desktop-context-map",
+      "description": "Chart context headroom and sampled window growth.",
+      "version": "1.0.0",
+      "category": "productivity"
+    },
+    {
+      "name": "desktop-quota-clock",
+      "source": "./mods/desktop-quota-clock",
+      "description": "Chart reported plan windows with live reset countdowns.",
+      "version": "1.0.0",
+      "category": "productivity"
+    },
+    {
+      "name": "desktop-cost-watch",
+      "source": "./mods/desktop-cost-watch",
+      "description": "Set a local budget reminder against reported session USD.",
+      "version": "1.0.0",
+      "category": "productivity"
+    },
+    {
+      "name": "desktop-token-flow",
+      "source": "./mods/desktop-token-flow",
+      "description": "Chart uncached input, output, cache reads, and cache writes.",
+      "version": "1.0.0",
+      "category": "productivity"
+    },
+    {
+      "name": "desktop-tool-pulse",
+      "source": "./mods/desktop-tool-pulse",
+      "description": "Chart completed tool latency and failures by tool.",
+      "version": "1.0.0",
+      "category": "productivity"
+    },
+    {
+      "name": "desktop-turn-chart",
+      "source": "./mods/desktop-turn-chart",
+      "description": "Chart turn durations with interruption labels.",
+      "version": "1.0.0",
+      "category": "productivity"
+    },
+    {
+      "name": "desktop-edit-map",
+      "source": "./mods/desktop-edit-map",
+      "description": "Chart successful built-in edits grouped by file path.",
+      "version": "1.0.0",
+      "category": "productivity"
+    },
+    {
+      "name": "desktop-agent-desk",
+      "source": "./mods/desktop-agent-desk",
+      "description": "Filter reported agents and copy a status snapshot.",
+      "version": "1.0.0",
+      "category": "productivity"
+    },
+    {
+      "name": "desktop-review-desk",
+      "source": "./mods/desktop-review-desk",
+      "description": "Switch between Git status, staged diff, and unstaged diff.",
+      "version": "1.0.0",
+      "category": "productivity"
+    },
+    {
+      "name": "desktop-file-desk",
+      "source": "./mods/desktop-file-desk",
+      "description": "Read a bounded text file with line filtering and path drafting.",
+      "version": "1.0.0",
+      "category": "productivity"
+    },
+    {
+      "name": "desktop-markdown-reader",
+      "source": "./mods/desktop-markdown-reader",
+      "description": "Render a local Markdown document with a source tab.",
+      "version": "1.0.0",
+      "category": "productivity"
+    },
+    {
+      "name": "desktop-compare-desk",
+      "source": "./mods/desktop-compare-desk",
+      "description": "Compare two local text files in responsive side-by-side columns.",
+      "version": "1.0.0",
+      "category": "productivity"
+    },
+    {
+      "name": "desktop-prompt-builder",
+      "source": "./mods/desktop-prompt-builder",
+      "description": "Build a saved prompt from goal, constraints, and acceptance criteria.",
+      "version": "1.0.0",
+      "category": "productivity"
+    },
+    {
+      "name": "desktop-session-brief",
+      "source": "./mods/desktop-session-brief",
+      "description": "Combine observed tool and turn counts with a manual handoff note.",
+      "version": "1.0.0",
+      "category": "productivity"
+    },
+    {
+      "name": "desktop-bookmark-dock",
+      "source": "./mods/desktop-bookmark-dock",
+      "description": "Keep labeled web references with copy and delete controls.",
+      "version": "1.0.0",
+      "category": "productivity"
+    },
+    {
+      "name": "desktop-checklist-desk",
+      "source": "./mods/desktop-checklist-desk",
+      "description": "Move saved work items through To do, Doing, and Done columns.",
+      "version": "1.0.0",
+      "category": "productivity"
+    },
+    {
+      "name": "desktop-workspace-home",
+      "source": "./mods/desktop-workspace-home",
+      "description": "Show the current workspace, Git state, and session usage together.",
+      "version": "1.0.0",
+      "category": "productivity"
+    },
+    {
+      "name": "desktop-break-bell",
+      "source": "./mods/desktop-break-bell",
+      "description": "Set an adjustable countdown with a visual progress chart and toast.",
+      "version": "1.0.0",
+      "category": "productivity"
+    },
+    {
+      "name": "desktop-json-desk",
+      "source": "./mods/desktop-json-desk",
+      "description": "Validate pasted JSON with a searchable key summary and formatted preview.",
+      "version": "1.0.0",
+      "category": "productivity"
+    }
+  ]
+}

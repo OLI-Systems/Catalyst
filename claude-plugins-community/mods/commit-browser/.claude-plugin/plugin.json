@@ -1,0 +1,10 @@
+{
+  "name": "commit-browser",
+  "version": "1.0.0",
+  "description": "Browse the latest 20 commits with author and subject.",
+  "author": {
+    "name": "Yash Thakker"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/whyashthakker/awesome-claude-code-mods"
+}

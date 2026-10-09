@@ -1,0 +1,10 @@
+{
+  "name": "desktop-workspace-home",
+  "version": "1.0.0",
+  "description": "Show the current workspace, Git state, and session usage together.",
+  "author": {
+    "name": "Yash Thakker"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/whyashthakker/awesome-claude-code-mods"
+}

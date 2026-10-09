@@ -1,0 +1,10 @@
+{
+  "name": "prompt-shelf",
+  "version": "1.0.0",
+  "description": "Save reusable prompts and put one into the composer as a draft.",
+  "author": {
+    "name": "Yash Thakker"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/whyashthakker/awesome-claude-code-mods"
+}

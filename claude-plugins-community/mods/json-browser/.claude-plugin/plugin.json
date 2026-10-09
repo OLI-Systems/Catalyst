@@ -1,0 +1,10 @@
+{
+  "name": "json-browser",
+  "version": "1.0.0",
+  "description": "Summarize top-level JSON keys with types and a formatted preview.",
+  "author": {
+    "name": "Yash Thakker"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/whyashthakker/awesome-claude-code-mods"
+}

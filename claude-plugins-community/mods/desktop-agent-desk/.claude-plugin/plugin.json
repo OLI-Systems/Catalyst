@@ -1,0 +1,10 @@
+{
+  "name": "desktop-agent-desk",
+  "version": "1.0.0",
+  "description": "Filter reported agents and copy a status snapshot.",
+  "author": {
+    "name": "Yash Thakker"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/whyashthakker/awesome-claude-code-mods"
+}

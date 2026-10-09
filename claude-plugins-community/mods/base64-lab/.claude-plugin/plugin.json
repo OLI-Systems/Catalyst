@@ -1,0 +1,10 @@
+{
+  "name": "base64-lab",
+  "version": "1.0.0",
+  "description": "Encode UTF-8 text or decode strict Base64.",
+  "author": {
+    "name": "Yash Thakker"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/whyashthakker/awesome-claude-code-mods"
+}

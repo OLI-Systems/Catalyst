@@ -1,0 +1,10 @@
+{
+  "name": "task-board",
+  "version": "1.0.0",
+  "description": "Add tasks and toggle done status.",
+  "author": {
+    "name": "Yash Thakker"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/whyashthakker/awesome-claude-code-mods"
+}

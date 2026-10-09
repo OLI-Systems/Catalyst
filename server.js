@@ -2283,14 +2283,27 @@ wss.on('connection', (ws) => {
         break;
       }
 
-      case 'claude-addons-status': {
-        ws.send(JSON.stringify({ type: 'claude-addons-status', status: claudePlugins.status() }));
+      // Settings → Mods (lib/claude-plugins.js).
+      case 'mods-list': {
+        sendModsList(ws);
         break;
       }
 
-      case 'claude-addons-install': {
+      case 'mods-set': {
+        const id = String(msg.id || '');
+        claudePlugins.setPlugin({ env: sessionManager.enrichEnv(), id, enabled: Boolean(msg.enabled) })
+          .then((result) => {
+            if (!result.ok && ws.readyState === 1) {
+              ws.send(JSON.stringify({ type: 'mods-error', id, error: result.error }));
+            }
+            broadcastModsList();
+          });
+        break;
+      }
+
+      case 'mods-reinstall': {
         installClaudeAddons({ force: true });
-        ws.send(JSON.stringify({ type: 'claude-addons-status', status: { ...claudePlugins.status(), isRunning: true } }));
+        broadcastModsList();
         break;
       }
 
@@ -2742,20 +2755,24 @@ function findFreePort(start, end) {
 
 // Install (or update) the mods and skills Catalyst ships for Claude Code. Runs
 // in the background on every launch, does real work only when this build's
-// add-ons differ from what was installed last, and waits for Claude Code itself
-// to be installed. Broadcasts the new status so an open Settings page refreshes.
+// mods differ from what was registered last, and waits for Claude Code itself
+// to be installed. Tells any open Settings page once it is done.
 function installClaudeAddons({ force = false } = {}) {
   return claudePlugins.ensureInstalled({
     env: sessionManager.enrichEnv(),
     force,
     isClaudeInstalled: () => sessionManager.checkCliInstalled('claude'),
-  }).then((status) => {
-    const payload = JSON.stringify({ type: 'claude-addons-status', status });
-    for (const client of clients) {
-      if (client.readyState === 1) client.send(payload);
-    }
-    return status;
-  }).catch(() => claudePlugins.status());
+  }).catch(() => {}).then(() => { if (clients.size) broadcastModsList(); });
+}
+
+function sendModsList(ws) {
+  claudePlugins.listMods({ env: sessionManager.enrichEnv() })
+    .then((data) => { if (ws.readyState === 1) ws.send(JSON.stringify({ type: 'mods-list', data })); })
+    .catch(() => {});
+}
+
+function broadcastModsList() {
+  for (const client of clients) sendModsList(client);
 }
 
 function startServer(preferredPort = 4200) {

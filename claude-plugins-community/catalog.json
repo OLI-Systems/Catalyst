@@ -1,0 +1,652 @@
+[
+  {
+    "id": "context-meter",
+    "title": "Context Meter",
+    "category": "Session",
+    "description": "See the current context window fill and remaining tokens.",
+    "use": "Check headroom before a large refactor.",
+    "access": "Reads session usage. No files, processes, network, or persistence.",
+    "sample": ""
+  },
+  {
+    "id": "quota-watch",
+    "title": "Quota Watch",
+    "category": "Session",
+    "description": "Inspect reported plan windows and their reset times.",
+    "use": "Plan work around the limits your session reports.",
+    "access": "Reads session usage only.",
+    "sample": ""
+  },
+  {
+    "id": "cache-inspector",
+    "title": "Cache Inspector",
+    "category": "Session",
+    "description": "Track API cache reads, writes, and uncached input by request.",
+    "use": "Check whether repeated turns are using the prompt cache.",
+    "access": "Observes request token counts and model names in memory. No model calls.",
+    "sample": ""
+  },
+  {
+    "id": "tool-timing",
+    "title": "Tool Timing",
+    "category": "Session",
+    "description": "Measure observed tool latency, call counts, and failures.",
+    "use": "Find tools that slow down a session.",
+    "access": "Observes tool names, results, and clock; does not store arguments.",
+    "sample": ""
+  },
+  {
+    "id": "error-inbox",
+    "title": "Error Inbox",
+    "category": "Session",
+    "description": "Keep the last 30 failed or refused tool calls in one pane.",
+    "use": "Revisit failures without searching the transcript.",
+    "access": "Keeps truncated tool error text in memory; may contain sensitive output.",
+    "sample": ""
+  },
+  {
+    "id": "edit-heatmap",
+    "title": "Edit Heatmap",
+    "category": "Session",
+    "description": "Count successful Edit and Write calls by path.",
+    "use": "See which files receive the most attention.",
+    "access": "Observes edited file paths; no content reads or persistence.",
+    "sample": ""
+  },
+  {
+    "id": "turn-timeline",
+    "title": "Turn Timeline",
+    "category": "Session",
+    "description": "Show duration, token totals, and interruption state per turn.",
+    "use": "Compare long and short turns.",
+    "access": "Observes turn durations and counts only; no answer storage.",
+    "sample": ""
+  },
+  {
+    "id": "agent-board",
+    "title": "Agent Board",
+    "category": "Session",
+    "description": "Inspect the subagents reported by the session.",
+    "use": "Keep track of delegated work without messaging anyone.",
+    "access": "Reads agent metadata only. Does not spawn or message agents.",
+    "sample": ""
+  },
+  {
+    "id": "branch-board",
+    "title": "Branch Board",
+    "category": "Git",
+    "description": "Inspect local branches, upstreams, and dirty files.",
+    "use": "Choose a branch with current work in view.",
+    "access": "Runs read-only Git commands only when opened or refreshed. Git must be on PATH. No network, writes, or persistence.",
+    "sample": ""
+  },
+  {
+    "id": "staged-review",
+    "title": "Staged Review",
+    "category": "Git",
+    "description": "Review the staged diff before committing.",
+    "use": "Check exactly what would go into your next commit.",
+    "access": "Runs read-only Git commands only when opened or refreshed. Git must be on PATH. No network, writes, or persistence.",
+    "sample": ""
+  },
+  {
+    "id": "commit-browser",
+    "title": "Commit Browser",
+    "category": "Git",
+    "description": "Browse the latest 20 commits with author and subject.",
+    "use": "Find a recent change without leaving Claude Code.",
+    "access": "Runs read-only Git commands only when opened or refreshed. Git must be on PATH. No network, writes, or persistence.",
+    "sample": ""
+  },
+  {
+    "id": "stash-browser",
+    "title": "Stash Browser",
+    "category": "Git",
+    "description": "List stashes and inspect a selected stash diff.",
+    "use": "Recover the context of parked work without applying it.",
+    "access": "Runs read-only Git commands only when opened or refreshed. Git must be on PATH. No network, writes, or persistence.",
+    "sample": "stash@{0}"
+  },
+  {
+    "id": "worktree-map",
+    "title": "Worktree Map",
+    "category": "Git",
+    "description": "List worktree paths, branches, and locked states.",
+    "use": "See where parallel work lives.",
+    "access": "Runs read-only Git commands only when opened or refreshed. Git must be on PATH. No network, writes, or persistence.",
+    "sample": ""
+  },
+  {
+    "id": "conflict-radar",
+    "title": "Conflict Radar",
+    "category": "Git",
+    "description": "List unresolved paths and count conflict markers in tracked files.",
+    "use": "Find remaining merge conflicts.",
+    "access": "Runs read-only Git commands only when opened or refreshed. Git must be on PATH. No network, writes, or persistence.",
+    "sample": ""
+  },
+  {
+    "id": "blame-view",
+    "title": "Blame View",
+    "category": "Git",
+    "description": "Read authorship for the first 80 lines of a chosen tracked file.",
+    "use": "Understand who last changed a line.",
+    "access": "Runs read-only Git commands only when opened or refreshed. Git must be on PATH. No network, writes, or persistence.",
+    "sample": "README.md"
+  },
+  {
+    "id": "ignore-check",
+    "title": "Ignore Check",
+    "category": "Git",
+    "description": "Explain which Git ignore rule matches a path.",
+    "use": "Debug an unexpectedly ignored file.",
+    "access": "Runs read-only Git commands only when opened or refreshed. Git must be on PATH. No network, writes, or persistence.",
+    "sample": "dist/bundle.js"
+  },
+  {
+    "id": "file-tree",
+    "title": "File Tree",
+    "category": "Repository",
+    "description": "Browse one directory at a time with clickable folders.",
+    "use": "Explore a project without flooding the transcript.",
+    "access": "Lists the directory the user chooses. Does not recursively walk or read file content.",
+    "sample": "."
+  },
+  {
+    "id": "package-scripts",
+    "title": "Package Scripts",
+    "category": "Repository",
+    "description": "List npm scripts and package identity without running them.",
+    "use": "Find available project commands.",
+    "access": "Reads the chosen file (up to 256 KiB) on request. No writes, processes, network, or persistence.",
+    "sample": "package.json"
+  },
+  {
+    "id": "dependency-table",
+    "title": "Dependency Table",
+    "category": "Repository",
+    "description": "Inspect dependency groups from a package manifest.",
+    "use": "Check declared versions before upgrading.",
+    "access": "Reads the chosen file (up to 256 KiB) on request. No writes, processes, network, or persistence.",
+    "sample": "package.json"
+  },
+  {
+    "id": "todo-finder",
+    "title": "TODO Finder",
+    "category": "Repository",
+    "description": "Find TODO, FIXME, and HACK notes in tracked files.",
+    "use": "Build a quick backlog from the code already in your repo.",
+    "access": "Runs read-only git grep on request. Tracked files only; requires Git.",
+    "sample": ""
+  },
+  {
+    "id": "markdown-map",
+    "title": "Markdown Map",
+    "category": "Repository",
+    "description": "Build a heading outline with source line numbers.",
+    "use": "Navigate a long README or design document.",
+    "access": "Reads the chosen file (up to 256 KiB) on request. No writes, processes, network, or persistence.",
+    "sample": "README.md"
+  },
+  {
+    "id": "json-browser",
+    "title": "JSON Browser",
+    "category": "Repository",
+    "description": "Summarize top-level JSON keys with types and a formatted preview.",
+    "use": "Inspect a local API response or configuration.",
+    "access": "Reads the chosen file (up to 256 KiB) on request. No writes, processes, network, or persistence.",
+    "sample": "package.json"
+  },
+  {
+    "id": "csv-table",
+    "title": "CSV Table",
+    "category": "Repository",
+    "description": "Preview quoted CSV fields, row counts, and column headers.",
+    "use": "Read an exported dataset without launching a spreadsheet.",
+    "access": "Reads the chosen file (up to 256 KiB) on request. No writes, processes, network, or persistence.",
+    "sample": "data.csv"
+  },
+  {
+    "id": "log-viewer",
+    "title": "Log Viewer",
+    "category": "Repository",
+    "description": "Show the last 60 lines of a small local log with an optional filter.",
+    "use": "Inspect a development log on demand.",
+    "access": "Reads the chosen file (up to 256 KiB) on request. No writes, processes, network, or persistence.",
+    "sample": "app.log"
+  },
+  {
+    "id": "env-example",
+    "title": "Env Example",
+    "category": "Repository",
+    "description": "List variable names and missing placeholders in an example env file.",
+    "use": "Review setup requirements without reading your real .env.",
+    "access": "Reads only paths named env example, sample, or template (up to 256 KiB). Displays variable names and placeholder presence; no values.",
+    "sample": ".env.example"
+  },
+  {
+    "id": "file-compare",
+    "title": "File Compare",
+    "category": "Repository",
+    "description": "Compare two small text files by line without editing either.",
+    "use": "Check config or fixture differences.",
+    "access": "Reads two explicitly chosen text files up to 64 KiB each. Positional comparison, not an edit-distance diff.",
+    "sample": ""
+  },
+  {
+    "id": "scratchpad",
+    "title": "Scratchpad",
+    "category": "Workspace",
+    "description": "Save short notes beside your conversation.",
+    "use": "Keep temporary findings out of your prompt.",
+    "access": "Stores user-entered items in this plugin\u2019s local store, partitioned by workspace path. Each item has a separate key. No file writes or network.",
+    "sample": "Remember to verify keyboard navigation"
+  },
+  {
+    "id": "task-board",
+    "title": "Task Board",
+    "category": "Workspace",
+    "description": "Add tasks and toggle done status.",
+    "use": "Track the small jobs that appear during a session.",
+    "access": "Stores user-entered items in this plugin\u2019s local store, partitioned by workspace path. Each item has a separate key. No file writes or network.",
+    "sample": "Verify empty states on mobile"
+  },
+  {
+    "id": "decision-log",
+    "title": "Decision Log",
+    "category": "Workspace",
+    "description": "Record dated engineering decisions.",
+    "use": "Remember why you chose an approach.",
+    "access": "Stores user-entered items in this plugin\u2019s local store, partitioned by workspace path. Each item has a separate key. No file writes or network.",
+    "sample": "Keep all analytics collection opt-in"
+  },
+  {
+    "id": "snippet-shelf",
+    "title": "Snippet Shelf",
+    "category": "Workspace",
+    "description": "Save and copy short code or command snippets.",
+    "use": "Keep useful one-liners at hand.",
+    "access": "Stores user-entered items in this plugin\u2019s local store, partitioned by workspace path. Each item has a separate key. No file writes or network. Uses the clipboard.",
+    "sample": "git log --oneline -10"
+  },
+  {
+    "id": "link-shelf",
+    "title": "Link Shelf",
+    "category": "Workspace",
+    "description": "Save labeled HTTP and HTTPS reference links.",
+    "use": "Keep docs for the current project visible.",
+    "access": "Stores user-entered items in this plugin\u2019s local store, partitioned by workspace path. Each item has a separate key. No file writes or network.",
+    "sample": "Mods docs | https://code.claude.com/docs/en/plugins/mods/overview"
+  },
+  {
+    "id": "prompt-shelf",
+    "title": "Prompt Shelf",
+    "category": "Workspace",
+    "description": "Save reusable prompts and put one into the composer as a draft.",
+    "use": "Reuse a review or debugging prompt without auto-submitting it.",
+    "access": "Stores user-entered items in this plugin\u2019s local store, partitioned by workspace path. Each item has a separate key. No file writes or network. Fills a draft in the composer on button press; does not submit a prompt.",
+    "sample": "Review this patch for accessibility and edge cases"
+  },
+  {
+    "id": "release-checklist",
+    "title": "Release Checklist",
+    "category": "Workspace",
+    "description": "Keep a persistent checklist for a release.",
+    "use": "Track review, checks, and release tasks in one place.",
+    "access": "Stores user-entered items in this plugin\u2019s local store, partitioned by workspace path. Each item has a separate key. No file writes or network.",
+    "sample": "Confirm build passes on a clean checkout"
+  },
+  {
+    "id": "handoff-notes",
+    "title": "Handoff Notes",
+    "category": "Workspace",
+    "description": "Keep a dated list of progress and next steps, then copy it.",
+    "use": "Leave a useful handoff for the next session.",
+    "access": "Stores user-entered items in this plugin\u2019s local store, partitioned by workspace path. Each item has a separate key. No file writes or network. Uses the clipboard.",
+    "sample": "Done: API parser. Next: verify empty responses."
+  },
+  {
+    "id": "regex-lab",
+    "title": "Regex Lab",
+    "category": "Utilities",
+    "description": "Test a regular expression against text and see matched ranges.",
+    "use": "Debug a pattern before putting it in code.",
+    "access": "Works on the text you enter, in memory. Uses the clipboard on request. No files, processes, network, persistence, or model calls.",
+    "sample": ""
+  },
+  {
+    "id": "json-format",
+    "title": "JSON Format",
+    "category": "Utilities",
+    "description": "Validate and pretty-print JSON without touching a file.",
+    "use": "Clean up a copied API response.",
+    "access": "Works on the text you enter, in memory. Uses the clipboard on request. No files, processes, network, persistence, or model calls.",
+    "sample": ""
+  },
+  {
+    "id": "url-lab",
+    "title": "URL Lab",
+    "category": "Utilities",
+    "description": "Inspect URL components and decoded query parameters locally.",
+    "use": "Debug a callback URL without visiting it.",
+    "access": "Works on the text you enter, in memory. Uses the clipboard on request. No files, processes, network, persistence, or model calls.",
+    "sample": ""
+  },
+  {
+    "id": "base64-lab",
+    "title": "Base64 Lab",
+    "category": "Utilities",
+    "description": "Encode UTF-8 text or decode strict Base64.",
+    "use": "Inspect a payload without sending it anywhere.",
+    "access": "Works on the text you enter, in memory. Uses the clipboard on request. No files, processes, network, persistence, or model calls.",
+    "sample": ""
+  },
+  {
+    "id": "time-lab",
+    "title": "Time Lab",
+    "category": "Utilities",
+    "description": "Convert Unix seconds, milliseconds, or an ISO date to UTC.",
+    "use": "Compare timestamps from logs and APIs.",
+    "access": "Works on the text you enter, in memory. Uses the clipboard on request. No files, processes, network, persistence, or model calls.",
+    "sample": ""
+  },
+  {
+    "id": "hash-lab",
+    "title": "Hash Lab",
+    "category": "Utilities",
+    "description": "Calculate SHA-256, SHA-384, or SHA-512 for UTF-8 text.",
+    "use": "Compare a checksum for a short string.",
+    "access": "Works on the text you enter, in memory. Uses the clipboard on request. No files, processes, network, persistence, or model calls.",
+    "sample": ""
+  },
+  {
+    "id": "color-lab",
+    "title": "Color Lab",
+    "category": "Utilities",
+    "description": "Convert hex colors and measure contrast against a background.",
+    "use": "Check a foreground and background pair while designing.",
+    "access": "Works on the text you enter, in memory. Uses the clipboard on request. No files, processes, network, persistence, or model calls.",
+    "sample": ""
+  },
+  {
+    "id": "uuid-lab",
+    "title": "UUID Lab",
+    "category": "Utilities",
+    "description": "Generate up to 20 random UUID v4 values locally.",
+    "use": "Make IDs for fixtures and examples.",
+    "access": "Works on the text you enter, in memory. Uses the clipboard on request. No files, processes, network, persistence, or model calls.",
+    "sample": ""
+  },
+  {
+    "id": "text-counter",
+    "title": "Text Counter",
+    "category": "Utilities",
+    "description": "Count words, lines, Unicode code points, and UTF-8 bytes.",
+    "use": "Check text lengths before publishing or sending a payload.",
+    "access": "Works on the text you enter, in memory. Uses the clipboard on request. No files, processes, network, persistence, or model calls.",
+    "sample": ""
+  },
+  {
+    "id": "ascii-flipbook",
+    "title": "ASCII Flipbook",
+    "category": "Utilities",
+    "description": "Play a local text animation whose frames are separated by a form feed.",
+    "use": "Preview ASCII storyboards in a pane without a video decoder.",
+    "access": "Reads a chosen text animation (up to 128 KiB), uses a 2 fps timer. No ffmpeg, audio, video decoding, or network.",
+    "sample": "animation.txt"
+  },
+  {
+    "id": "focus-clock",
+    "title": "Focus Clock",
+    "category": "Workflow",
+    "description": "Run a 25-minute focus countdown with pause, reset, and a toast.",
+    "use": "Keep a work interval visible during a long task.",
+    "access": "Uses a local clock and a completion toast. No files, network, or persistence.",
+    "sample": ""
+  },
+  {
+    "id": "stopwatch",
+    "title": "Stopwatch",
+    "category": "Workflow",
+    "description": "Time a task with start, pause, and lap markers.",
+    "use": "Measure a manual debugging or review session.",
+    "access": "Uses a local clock; laps live in memory.",
+    "sample": ""
+  },
+  {
+    "id": "test-ledger",
+    "title": "Test Ledger",
+    "category": "Workflow",
+    "description": "Record likely test, lint, and build commands and their tool status.",
+    "use": "Keep validation attempts in view, with honest evidence boundaries.",
+    "access": "Observes Bash command strings and tool status in memory. Does not execute commands.",
+    "sample": ""
+  },
+  {
+    "id": "command-history",
+    "title": "Command History",
+    "category": "Workflow",
+    "description": "Keep the last 40 Bash command strings and copy one for reuse.",
+    "use": "Find a command Claude ran earlier in this session.",
+    "access": "Observes Bash command arguments in memory; may include secrets. Clipboard only on request. No persistence.",
+    "sample": ""
+  },
+  {
+    "id": "scope-watch",
+    "title": "Scope Watch",
+    "category": "Workflow",
+    "description": "Warn when observed file edits leave a chosen path prefix.",
+    "use": "Notice scope creep during a focused change.",
+    "access": "Observes Edit/Write paths, reads session cwd, and toasts on out-of-prefix edits. Does not block calls.",
+    "sample": ""
+  },
+  {
+    "id": "read-only-mode",
+    "title": "Read-only Mode",
+    "category": "Workflow",
+    "description": "Toggle a reminder guard that refuses built-in mutating tools and Bash.",
+    "use": "Use a session for inspection with an extra visible guard.",
+    "access": "Refuses selected tool.call events when manually enabled. No permission approvals. Not a security boundary; other tools/mods can write.",
+    "sample": ""
+  },
+  {
+    "id": "desktop-usage-strip",
+    "title": "Desktop Usage Strip",
+    "category": "Desktop",
+    "description": "Show quota, reset countdowns, tokens, and cost in a composer strip.",
+    "use": "Keep the reference image\u2019s usage information beside your prompt.",
+    "access": "Reads reported session usage; missing figures remain labeled not reported. No pricing guesses or subscription billing calculation. Observes the latest 30 API requests in memory. Draws a composable AbovePrompt band on Desktop where the host exposes it; the command pane always offers the full display. Refreshes countdowns every minute.",
+    "sample": "",
+    "surface": "desktop"
+  },
+  {
+    "id": "desktop-context-map",
+    "title": "Desktop Context Map",
+    "category": "Desktop",
+    "description": "Chart context headroom and sampled window growth.",
+    "use": "Spot a filling context window visually.",
+    "access": "Reads reported session usage; missing figures remain labeled not reported. No pricing guesses or subscription billing calculation. Samples after observed completed turns; latest 12 samples, reset on reload.",
+    "sample": "",
+    "surface": "desktop"
+  },
+  {
+    "id": "desktop-quota-clock",
+    "title": "Desktop Quota Clock",
+    "category": "Desktop",
+    "description": "Chart reported plan windows with live reset countdowns.",
+    "use": "See when each quota window is due to reset.",
+    "access": "Reads reported session usage; missing figures remain labeled not reported. No pricing guesses or subscription billing calculation. Clock redraws once per minute; reaching zero does not invent a new quota reading.",
+    "sample": "",
+    "surface": "desktop"
+  },
+  {
+    "id": "desktop-cost-watch",
+    "title": "Desktop Cost Watch",
+    "category": "Desktop",
+    "description": "Set a local budget reminder against reported session USD.",
+    "use": "Keep a session cost target visible without changing tool permissions.",
+    "access": "Reads reported session usage; missing figures remain labeled not reported. No pricing guesses or subscription billing calculation. Saves a user-entered budget per workspace in the local plugin store. Does not enforce a spending limit.",
+    "sample": "",
+    "surface": "desktop"
+  },
+  {
+    "id": "desktop-token-flow",
+    "title": "Desktop Token Flow",
+    "category": "Desktop",
+    "description": "Chart uncached input, output, cache reads, and cache writes.",
+    "use": "Compare token sources across observed requests.",
+    "access": "Observes API usage from the latest 30 completed requests in memory; includes any agent requests routed through the session. No model calls.",
+    "sample": "",
+    "surface": "desktop"
+  },
+  {
+    "id": "desktop-tool-pulse",
+    "title": "Desktop Tool Pulse",
+    "category": "Desktop",
+    "description": "Chart completed tool latency and failures by tool.",
+    "use": "See which observed tools take time or fail.",
+    "access": "Observes tool names, completion/refusal/error state and local clock durations for the latest 100 calls. Does not save command arguments or tool results.",
+    "sample": "",
+    "surface": "desktop"
+  },
+  {
+    "id": "desktop-turn-chart",
+    "title": "Desktop Turn Chart",
+    "category": "Desktop",
+    "description": "Chart turn durations with interruption labels.",
+    "use": "Compare the duration of your latest turns.",
+    "access": "Observes durations, agent IDs and interruption flags for the latest 12 completed turns; memory only.",
+    "sample": "",
+    "surface": "desktop"
+  },
+  {
+    "id": "desktop-edit-map",
+    "title": "Desktop Edit Map",
+    "category": "Desktop",
+    "description": "Chart successful built-in edits grouped by file path.",
+    "use": "See which files Claude has touched this session.",
+    "access": "Observes successful Edit/Write file paths only, latest 100 calls in memory. Does not read file contents; not a full filesystem audit.",
+    "sample": "",
+    "surface": "desktop"
+  },
+  {
+    "id": "desktop-agent-desk",
+    "title": "Desktop Agent Desk",
+    "category": "Desktop",
+    "description": "Filter reported agents and copy a status snapshot.",
+    "use": "Keep a readable agent roster next to the conversation.",
+    "access": "Reads engine-reported agent metadata on refresh. No spawning, messages, transcript reads, or agent control. Clipboard on button press.",
+    "sample": "",
+    "surface": "desktop"
+  },
+  {
+    "id": "desktop-review-desk",
+    "title": "Desktop Review Desk",
+    "category": "Desktop",
+    "description": "Switch between Git status, staged diff, and unstaged diff.",
+    "use": "Inspect a change from one desktop review pane.",
+    "access": "Runs read-only Git argv commands in session cwd only when opened or refreshed. External diff and textconv disabled. Output truncated to 9,000 characters. Clipboard only on press.",
+    "sample": "",
+    "surface": "desktop"
+  },
+  {
+    "id": "desktop-file-desk",
+    "title": "Desktop File Desk",
+    "category": "Desktop",
+    "description": "Read a bounded text file with line filtering and path drafting.",
+    "use": "Inspect a file while preparing a precise question about it.",
+    "access": "Reads a user-chosen regular text file up to 128 KiB on input submission; no automatic reads. Symlinks/binary files refused, preview truncated to 9,000 characters and 100 matching lines. Paths may point to private files. Fills a composer draft on press; never submits it.",
+    "sample": "",
+    "surface": "desktop"
+  },
+  {
+    "id": "desktop-markdown-reader",
+    "title": "Desktop Markdown Reader",
+    "category": "Desktop",
+    "description": "Render a local Markdown document with a source tab.",
+    "use": "Read project documentation in a desktop pane.",
+    "access": "Reads a chosen .md file up to 128 KiB, refuses symlinks, renders at most 9,000 characters. Markdown links behave like normal links when clicked; mod makes no network requests. Clipboard on press.",
+    "sample": "",
+    "surface": "desktop"
+  },
+  {
+    "id": "desktop-compare-desk",
+    "title": "Desktop Compare Desk",
+    "category": "Desktop",
+    "description": "Compare two local text files in responsive side-by-side columns.",
+    "use": "Check two versions without switching windows.",
+    "access": "Reads two user-chosen regular non-symlink text files up to 128 KiB each on Compare. No writes. Line positions compare truncated previews; insertions shift subsequent positions.",
+    "sample": "",
+    "surface": "desktop"
+  },
+  {
+    "id": "desktop-prompt-builder",
+    "title": "Desktop Prompt Builder",
+    "category": "Desktop",
+    "description": "Build a saved prompt from goal, constraints, and acceptance criteria.",
+    "use": "Prepare a clear request before filling the composer.",
+    "access": "Saves up to 2,000 characters per field in a workspace-partitioned local store. Copy/fill only on press. Fill replaces the composer draft without submitting a prompt.",
+    "sample": "",
+    "surface": "desktop"
+  },
+  {
+    "id": "desktop-session-brief",
+    "title": "Desktop Session Brief",
+    "category": "Desktop",
+    "description": "Combine observed tool and turn counts with a manual handoff note.",
+    "use": "Copy a factual session summary with your next step.",
+    "access": "Observes tool status and turn completion counts in memory; reads cwd. Does not read messages or tool outputs. User note and counters reset on reload; clipboard on press.",
+    "sample": "",
+    "surface": "desktop"
+  },
+  {
+    "id": "desktop-bookmark-dock",
+    "title": "Desktop Bookmark Dock",
+    "category": "Desktop",
+    "description": "Keep labeled web references with copy and delete controls.",
+    "use": "Put project references one click away.",
+    "access": "Stores up to 100 user-entered HTTP/HTTPS bookmarks per workspace; credential URLs refused. Clipboard on press. Clicking a link uses the host browser. Mod makes no network requests.",
+    "sample": "",
+    "surface": "desktop"
+  },
+  {
+    "id": "desktop-checklist-desk",
+    "title": "Desktop Checklist Desk",
+    "category": "Desktop",
+    "description": "Move saved work items through To do, Doing, and Done columns.",
+    "use": "Track a small workflow on the desktop.",
+    "access": "Stores up to 100 user-entered work items per workspace. Move/delete only on press; reload sees other sessions. Same-item concurrent changes are last-write-wins. Responsive columns stack in narrow panes.",
+    "sample": "",
+    "surface": "desktop"
+  },
+  {
+    "id": "desktop-workspace-home",
+    "title": "Desktop Workspace Home",
+    "category": "Desktop",
+    "description": "Show the current workspace, Git state, and session usage together.",
+    "use": "Orient yourself when switching between desktop sessions.",
+    "access": "Reads cwd and reported usage; runs read-only git status argv on open/reload, bounded to 9,000 characters. Clipboard on press. No filesystem writes.",
+    "sample": "",
+    "surface": "desktop"
+  },
+  {
+    "id": "desktop-break-bell",
+    "title": "Desktop Break Bell",
+    "category": "Desktop",
+    "description": "Set an adjustable countdown with a visual progress chart and toast.",
+    "use": "Remember a break during a long desktop session.",
+    "access": "Uses a local one-second clock and one completion toast; memory only, reset on reload. Does not play audio or send an OS notification.",
+    "sample": "",
+    "surface": "desktop"
+  },
+  {
+    "id": "desktop-json-desk",
+    "title": "Desktop JSON Desk",
+    "category": "Desktop",
+    "description": "Validate pasted JSON with a searchable key summary and formatted preview.",
+    "use": "Inspect an API response visually without a file or network request.",
+    "access": "Parses pasted JSON locally, input up to 9,000 characters, first 50 matching top-level keys, display capped at 9,000 characters. Clipboard on press (up to 30,000 characters). No files or persistence.",
+    "sample": "",
+    "surface": "desktop"
+  }
+]

@@ -1,0 +1,10 @@
+{
+  "name": "focus-clock",
+  "version": "1.0.0",
+  "description": "Run a 25-minute focus countdown with pause, reset, and a toast.",
+  "author": {
+    "name": "Yash Thakker"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/whyashthakker/awesome-claude-code-mods"
+}

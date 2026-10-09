@@ -1,0 +1,10 @@
+{
+  "name": "uuid-lab",
+  "version": "1.0.0",
+  "description": "Generate up to 20 random UUID v4 values locally.",
+  "author": {
+    "name": "Yash Thakker"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/whyashthakker/awesome-claude-code-mods"
+}

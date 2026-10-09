@@ -1,0 +1,10 @@
+{
+  "name": "desktop-quota-clock",
+  "version": "1.0.0",
+  "description": "Chart reported plan windows with live reset countdowns.",
+  "author": {
+    "name": "Yash Thakker"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/whyashthakker/awesome-claude-code-mods"
+}

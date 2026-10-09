@@ -1,0 +1,10 @@
+{
+  "name": "package-scripts",
+  "version": "1.0.0",
+  "description": "List npm scripts and package identity without running them.",
+  "author": {
+    "name": "Yash Thakker"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/whyashthakker/awesome-claude-code-mods"
+}

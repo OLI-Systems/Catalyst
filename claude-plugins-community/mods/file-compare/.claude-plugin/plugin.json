@@ -1,0 +1,10 @@
+{
+  "name": "file-compare",
+  "version": "1.0.0",
+  "description": "Compare two small text files by line without editing either.",
+  "author": {
+    "name": "Yash Thakker"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/whyashthakker/awesome-claude-code-mods"
+}

@@ -1,0 +1,10 @@
+{
+  "name": "env-example",
+  "version": "1.0.0",
+  "description": "List variable names and missing placeholders in an example env file.",
+  "author": {
+    "name": "Yash Thakker"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/whyashthakker/awesome-claude-code-mods"
+}

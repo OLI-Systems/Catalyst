@@ -1,0 +1,10 @@
+{
+  "name": "desktop-compare-desk",
+  "version": "1.0.0",
+  "description": "Compare two local text files in responsive side-by-side columns.",
+  "author": {
+    "name": "Yash Thakker"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/whyashthakker/awesome-claude-code-mods"
+}

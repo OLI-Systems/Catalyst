@@ -1,0 +1,10 @@
+{
+  "name": "desktop-tool-pulse",
+  "version": "1.0.0",
+  "description": "Chart completed tool latency and failures by tool.",
+  "author": {
+    "name": "Yash Thakker"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/whyashthakker/awesome-claude-code-mods"
+}

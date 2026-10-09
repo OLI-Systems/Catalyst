@@ -1,0 +1,10 @@
+{
+  "name": "turn-timeline",
+  "version": "1.0.0",
+  "description": "Show duration, token totals, and interruption state per turn.",
+  "author": {
+    "name": "Yash Thakker"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/whyashthakker/awesome-claude-code-mods"
+}

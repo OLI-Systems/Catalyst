@@ -1,0 +1,10 @@
+{
+  "name": "desktop-file-desk",
+  "version": "1.0.0",
+  "description": "Read a bounded text file with line filtering and path drafting.",
+  "author": {
+    "name": "Yash Thakker"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/whyashthakker/awesome-claude-code-mods"
+}

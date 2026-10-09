@@ -1,0 +1,10 @@
+{
+  "name": "csv-table",
+  "version": "1.0.0",
+  "description": "Preview quoted CSV fields, row counts, and column headers.",
+  "author": {
+    "name": "Yash Thakker"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/whyashthakker/awesome-claude-code-mods"
+}

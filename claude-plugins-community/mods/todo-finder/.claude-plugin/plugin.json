@@ -1,0 +1,10 @@
+{
+  "name": "todo-finder",
+  "version": "1.0.0",
+  "description": "Find TODO, FIXME, and HACK notes in tracked files.",
+  "author": {
+    "name": "Yash Thakker"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/whyashthakker/awesome-claude-code-mods"
+}

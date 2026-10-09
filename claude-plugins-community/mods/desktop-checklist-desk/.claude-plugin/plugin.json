@@ -1,0 +1,10 @@
+{
+  "name": "desktop-checklist-desk",
+  "version": "1.0.0",
+  "description": "Move saved work items through To do, Doing, and Done columns.",
+  "author": {
+    "name": "Yash Thakker"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/whyashthakker/awesome-claude-code-mods"
+}

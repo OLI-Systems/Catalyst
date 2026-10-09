@@ -1,0 +1,10 @@
+{
+  "name": "dependency-table",
+  "version": "1.0.0",
+  "description": "Inspect dependency groups from a package manifest.",
+  "author": {
+    "name": "Yash Thakker"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/whyashthakker/awesome-claude-code-mods"
+}

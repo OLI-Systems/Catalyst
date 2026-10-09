@@ -1,0 +1,10 @@
+{
+  "name": "file-tree",
+  "version": "1.0.0",
+  "description": "Browse one directory at a time with clickable folders.",
+  "author": {
+    "name": "Yash Thakker"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/whyashthakker/awesome-claude-code-mods"
+}

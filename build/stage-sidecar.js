@@ -33,12 +33,15 @@ fs.mkdirSync(stage, { recursive: true });
 fs.copyFileSync(path.join(root, 'server.js'), path.join(stage, 'server.js'));
 fs.cpSync(path.join(root, 'lib'), path.join(stage, 'lib'), { recursive: true });
 fs.cpSync(path.join(root, 'public'), path.join(stage, 'public'), { recursive: true });
-// The Claude Code mods and skills installed on first run (lib/claude-plugins.js).
-// Their tests stay behind: they run under `claude plugin test`, not in the app.
-fs.cpSync(path.join(root, 'claude-plugins'), path.join(stage, 'claude-plugins'), {
-  recursive: true,
-  filter: (src) => !/[\\/]tests([\\/]|$)/.test(path.relative(root, src)),
-});
+// The Claude Code mods and skills (lib/claude-plugins.js): Catalyst's own, and
+// the community set the user picks from in Settings → Mods. Their tests stay
+// behind: they run under `claude plugin test`, not in the app.
+for (const dir of ['claude-plugins', 'claude-plugins-community']) {
+  fs.cpSync(path.join(root, dir), path.join(stage, dir), {
+    recursive: true,
+    filter: (src) => !/[\\/]tests([\\/]|$)/.test(path.relative(root, src)),
+  });
+}
 
 // 2. A minimal package.json pinned to the versions already resolved at the repo
 //    root, so the staged install matches what was tested.

@@ -2094,51 +2094,136 @@
       if (page) page.classList.add('active');
       if (btn.dataset.section === 'aicli') {
         ws.send(JSON.stringify({ type: 'check-cli-availability' }));
-        ws.send(JSON.stringify({ type: 'claude-addons-status' }));
+      }
+      if (btn.dataset.section === 'mods') {
+        ws.send(JSON.stringify({ type: 'mods-list' }));
       }
     });
   });
 
-  // Claude Code add-ons (lib/claude-plugins.js): what is installed, and a way
-  // to put everything back after removing it by hand.
-  const claudeAddonsInstallBtn = $('#claudeAddonsInstall');
-  if (claudeAddonsInstallBtn) {
-    claudeAddonsInstallBtn.addEventListener('click', () => {
-      claudeAddonsInstallBtn.disabled = true;
-      ws.send(JSON.stringify({ type: 'claude-addons-install' }));
+  // Settings → Mods (lib/claude-plugins.js): every mod Catalyst ships, each
+  // switched on or off here. The server answers each switch with a fresh list,
+  // which is the only thing that clears a row's pending state.
+  const modsUi = { data: null, pending: new Set(), errors: new Map() };
+  const modsListEl = $('#modsList');
+  const modsSearchEl = $('#modsSearch');
+  const modsFilterEl = $('#modsFilter');
+  const modsReinstallBtn = $('#modsReinstall');
+
+  if (modsSearchEl) modsSearchEl.addEventListener('input', () => renderMods());
+  if (modsFilterEl) modsFilterEl.addEventListener('change', () => renderMods());
+  if (modsReinstallBtn) {
+    modsReinstallBtn.addEventListener('click', () => {
+      modsReinstallBtn.disabled = true;
+      const hint = $('#modsHint');
+      if (hint) { hint.className = 'settings-hint'; hint.textContent = 'Reinstalling Catalyst mods…'; }
+      ws.send(JSON.stringify({ type: 'mods-reinstall' }));
     });
   }
 
-  function renderClaudeAddons(status) {
-    const list = $('#claudeAddonsList');
-    const hint = $('#claudeAddonsHint');
-    if (!list || !status) return;
-    list.replaceChildren(...(status.plugins || []).map((p) => {
-      const row = document.createElement('div');
-      row.className = 'addon-row';
-      const info = document.createElement('div');
-      info.className = 'addon-info';
-      const name = document.createElement('div');
-      name.className = 'addon-name';
-      name.textContent = p.name;
-      const about = document.createElement('div');
-      about.className = 'addon-about';
-      about.textContent = p.description;
-      info.append(name, about);
-      const badge = document.createElement('span');
-      const state = status.isRunning ? 'installing' : p.installed ? 'installed' : 'missing';
-      badge.className = `cli-install-status ${state}`;
-      const dot = document.createElement('span');
-      dot.className = 'cli-install-dot';
-      badge.append(dot, { installing: 'Installing', installed: 'Installed', missing: 'Not installed' }[state]);
-      row.append(info, badge);
-      return row;
-    }));
-    if (hint) {
-      hint.className = `settings-hint${status.lastError ? ' error' : ''}`;
-      hint.textContent = status.lastError ? status.lastError : status.isRunning ? 'Installing into Claude Code…' : '';
+  function setMod(id, enabled) {
+    modsUi.pending.add(id);
+    modsUi.errors.delete(id);
+    renderMods();
+    ws.send(JSON.stringify({ type: 'mods-set', id, enabled }));
+  }
+
+  function modMatches(p, query, filter) {
+    if (filter === 'on' && !p.enabled) return false;
+    if (filter === 'off' && p.enabled) return false;
+    if (filter === 'terminal' && p.surface === 'desktop') return false;
+    if (!query) return true;
+    return [p.title, p.name, p.description, p.category, p.access].join(' ').toLowerCase().includes(query);
+  }
+
+  function el(tag, className, text) {
+    const node = document.createElement(tag);
+    if (className) node.className = className;
+    if (text !== undefined) node.textContent = text;
+    return node;
+  }
+
+  function modRow(p) {
+    const row = el('div', 'mod-row');
+    const isPending = modsUi.pending.has(p.id);
+    if (isPending) row.classList.add('pending');
+
+    const info = el('div', 'mod-info');
+    const name = el('div', 'mod-name');
+    name.append(el('span', '', p.title));
+    if (p.title !== p.name) name.append(el('span', 'mod-id', p.name));
+    if (p.surface === 'desktop') {
+      const tag = el('span', 'mod-tag', 'Desktop app');
+      tag.title = "Draws only in the Claude Desktop app's Code tab. In Catalyst's terminal it shows a notice instead.";
+      name.append(tag);
     }
-    if (claudeAddonsInstallBtn) claudeAddonsInstallBtn.disabled = Boolean(status.isRunning);
+    if (p.installed && !p.enabled) name.append(el('span', 'mod-tag', 'Disabled'));
+    info.append(name, el('div', 'mod-desc', p.description));
+    if (p.access) info.append(el('div', 'mod-access', p.access));
+    const error = modsUi.errors.get(p.id);
+    if (error) info.append(el('div', 'mod-error', error));
+
+    const toggle = el('label', 'ob-toggle-switch');
+    toggle.title = p.enabled ? 'Switch off' : 'Switch on';
+    const input = document.createElement('input');
+    input.type = 'checkbox';
+    input.checked = p.enabled;
+    input.disabled = isPending;
+    input.setAttribute('aria-label', `${p.title}: ${p.enabled ? 'on' : 'off'}`);
+    input.addEventListener('change', () => setMod(p.id, input.checked));
+    toggle.append(input, el('span', 'ob-toggle-track'));
+
+    row.append(info, toggle);
+    return row;
+  }
+
+  function renderMods() {
+    const data = modsUi.data;
+    if (!modsListEl || !data) return;
+    const query = (modsSearchEl && modsSearchEl.value || '').trim().toLowerCase();
+    const filter = modsFilterEl ? modsFilterEl.value : 'all';
+    const nodes = [];
+    let shown = 0;
+    let total = 0;
+    let on = 0;
+    for (const market of data.marketplaces) {
+      total += market.plugins.length;
+      on += market.plugins.filter((p) => p.enabled).length;
+      const matches = market.plugins.filter((p) => modMatches(p, query, filter));
+      if (!matches.length) continue;
+      shown += matches.length;
+      nodes.push(el('div', 'mods-group-title', market.title), el('div', 'mods-group-desc', market.description));
+      // Catalyst's own set reads as one list; the community set by category,
+      // with the Desktop-only mods last.
+      const categories = [...new Set(matches.map((p) => p.category))]
+        .sort((a, b) => (a === 'Desktop') - (b === 'Desktop'));
+      for (const category of categories) {
+        if (categories.length > 1 || market.name !== 'catalyst') nodes.push(el('div', 'mods-category', category));
+        for (const p of matches.filter((m) => m.category === category)) nodes.push(modRow(p));
+      }
+    }
+    if (!shown) nodes.push(el('div', 'mods-empty', data.isListed ? 'No mods match.' : 'Could not read the installed mods from Claude Code.'));
+    modsListEl.replaceChildren(...nodes);
+
+    const count = $('#modsCount');
+    if (count) count.textContent = `${on} of ${total} on`;
+
+    const warning = $('#modsWarning');
+    if (warning) {
+      const text = data.canLoadMods === false
+        ? `Claude Code ${data.claudeVersion} is installed. Mods load from ${data.modsMinVersion}: update it from AI CLI (Reinstall on Claude Code) or with npm i -g @anthropic-ai/claude-code. Skills already work.`
+        : data.claudeVersion === null && data.isListed === false
+          ? 'Claude Code was not found. Install it from AI CLI first.'
+          : '';
+      warning.textContent = text;
+      warning.classList.toggle('hidden', !text);
+    }
+    const hint = $('#modsHint');
+    if (hint) {
+      hint.className = `settings-hint${data.lastError ? ' error' : ''}`;
+      hint.textContent = data.lastError ? data.lastError : data.isBusy ? 'Working…' : '';
+    }
+    if (modsReinstallBtn) modsReinstallBtn.disabled = Boolean(data.isBusy);
   }
 
   // AI CLI install buttons
@@ -3577,8 +3662,17 @@
         break;
       }
 
-      case 'claude-addons-status': {
-        renderClaudeAddons(msg.status);
+      case 'mods-list': {
+        modsUi.data = msg.data;
+        // A fresh list settles every switch that was waiting on one.
+        modsUi.pending.clear();
+        renderMods();
+        break;
+      }
+
+      case 'mods-error': {
+        modsUi.errors.set(msg.id, msg.error || 'That did not work.');
+        renderMods();
         break;
       }
 

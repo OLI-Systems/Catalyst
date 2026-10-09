@@ -1,0 +1,10 @@
+{
+  "name": "branch-board",
+  "version": "1.0.0",
+  "description": "Inspect local branches, upstreams, and dirty files.",
+  "author": {
+    "name": "Yash Thakker"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/whyashthakker/awesome-claude-code-mods"
+}

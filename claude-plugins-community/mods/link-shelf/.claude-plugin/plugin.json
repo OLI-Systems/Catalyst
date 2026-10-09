@@ -1,0 +1,10 @@
+{
+  "name": "link-shelf",
+  "version": "1.0.0",
+  "description": "Save labeled HTTP and HTTPS reference links.",
+  "author": {
+    "name": "Yash Thakker"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/whyashthakker/awesome-claude-code-mods"
+}

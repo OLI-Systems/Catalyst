@@ -1,0 +1,10 @@
+{
+  "name": "ascii-flipbook",
+  "version": "1.0.0",
+  "description": "Play a local text animation whose frames are separated by a form feed.",
+  "author": {
+    "name": "Yash Thakker"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/whyashthakker/awesome-claude-code-mods"
+}

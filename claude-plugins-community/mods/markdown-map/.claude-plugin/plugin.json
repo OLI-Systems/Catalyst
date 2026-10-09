@@ -1,0 +1,10 @@
+{
+  "name": "markdown-map",
+  "version": "1.0.0",
+  "description": "Build a heading outline with source line numbers.",
+  "author": {
+    "name": "Yash Thakker"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/whyashthakker/awesome-claude-code-mods"
+}

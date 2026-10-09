@@ -1,0 +1,10 @@
+{
+  "name": "url-lab",
+  "version": "1.0.0",
+  "description": "Inspect URL components and decoded query parameters locally.",
+  "author": {
+    "name": "Yash Thakker"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/whyashthakker/awesome-claude-code-mods"
+}

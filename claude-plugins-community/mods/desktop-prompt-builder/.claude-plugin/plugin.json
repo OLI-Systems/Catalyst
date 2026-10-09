@@ -1,0 +1,10 @@
+{
+  "name": "desktop-prompt-builder",
+  "version": "1.0.0",
+  "description": "Build a saved prompt from goal, constraints, and acceptance criteria.",
+  "author": {
+    "name": "Yash Thakker"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/whyashthakker/awesome-claude-code-mods"
+}

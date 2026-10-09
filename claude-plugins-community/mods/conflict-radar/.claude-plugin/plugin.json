@@ -1,0 +1,10 @@
+{
+  "name": "conflict-radar",
+  "version": "1.0.0",
+  "description": "List unresolved paths and count conflict markers in tracked files.",
+  "author": {
+    "name": "Yash Thakker"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/whyashthakker/awesome-claude-code-mods"
+}

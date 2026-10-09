@@ -1,0 +1,10 @@
+{
+  "name": "decision-log",
+  "version": "1.0.0",
+  "description": "Record dated engineering decisions.",
+  "author": {
+    "name": "Yash Thakker"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/whyashthakker/awesome-claude-code-mods"
+}

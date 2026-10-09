@@ -1,0 +1,10 @@
+{
+  "name": "handoff-notes",
+  "version": "1.0.0",
+  "description": "Keep a dated list of progress and next steps, then copy it.",
+  "author": {
+    "name": "Yash Thakker"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/whyashthakker/awesome-claude-code-mods"
+}

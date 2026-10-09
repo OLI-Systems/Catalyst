@@ -1,0 +1,10 @@
+{
+  "name": "desktop-json-desk",
+  "version": "1.0.0",
+  "description": "Validate pasted JSON with a searchable key summary and formatted preview.",
+  "author": {
+    "name": "Yash Thakker"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/whyashthakker/awesome-claude-code-mods"
+}

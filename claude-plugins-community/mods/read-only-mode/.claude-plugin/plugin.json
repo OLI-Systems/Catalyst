@@ -1,0 +1,10 @@
+{
+  "name": "read-only-mode",
+  "version": "1.0.0",
+  "description": "Toggle a reminder guard that refuses built-in mutating tools and Bash.",
+  "author": {
+    "name": "Yash Thakker"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/whyashthakker/awesome-claude-code-mods"
+}

@@ -1,0 +1,10 @@
+{
+  "name": "desktop-context-map",
+  "version": "1.0.0",
+  "description": "Chart context headroom and sampled window growth.",
+  "author": {
+    "name": "Yash Thakker"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/whyashthakker/awesome-claude-code-mods"
+}

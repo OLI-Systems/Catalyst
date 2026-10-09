@@ -1,0 +1,10 @@
+{
+  "name": "ignore-check",
+  "version": "1.0.0",
+  "description": "Explain which Git ignore rule matches a path.",
+  "author": {
+    "name": "Yash Thakker"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/whyashthakker/awesome-claude-code-mods"
+}

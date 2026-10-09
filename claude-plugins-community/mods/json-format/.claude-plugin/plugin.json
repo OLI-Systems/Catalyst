@@ -1,0 +1,10 @@
+{
+  "name": "json-format",
+  "version": "1.0.0",
+  "description": "Validate and pretty-print JSON without touching a file.",
+  "author": {
+    "name": "Yash Thakker"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/whyashthakker/awesome-claude-code-mods"
+}

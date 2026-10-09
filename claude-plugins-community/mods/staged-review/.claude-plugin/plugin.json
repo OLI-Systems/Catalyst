@@ -1,0 +1,10 @@
+{
+  "name": "staged-review",
+  "version": "1.0.0",
+  "description": "Review the staged diff before committing.",
+  "author": {
+    "name": "Yash Thakker"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/whyashthakker/awesome-claude-code-mods"
+}

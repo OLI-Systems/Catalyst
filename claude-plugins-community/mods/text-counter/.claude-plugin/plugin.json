@@ -1,0 +1,10 @@
+{
+  "name": "text-counter",
+  "version": "1.0.0",
+  "description": "Count words, lines, Unicode code points, and UTF-8 bytes.",
+  "author": {
+    "name": "Yash Thakker"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/whyashthakker/awesome-claude-code-mods"
+}

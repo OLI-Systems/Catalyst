@@ -1,0 +1,10 @@
+{
+  "name": "hash-lab",
+  "version": "1.0.0",
+  "description": "Calculate SHA-256, SHA-384, or SHA-512 for UTF-8 text.",
+  "author": {
+    "name": "Yash Thakker"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/whyashthakker/awesome-claude-code-mods"
+}

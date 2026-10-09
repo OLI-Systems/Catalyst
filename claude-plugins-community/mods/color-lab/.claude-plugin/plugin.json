@@ -1,0 +1,10 @@
+{
+  "name": "color-lab",
+  "version": "1.0.0",
+  "description": "Convert hex colors and measure contrast against a background.",
+  "author": {
+    "name": "Yash Thakker"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/whyashthakker/awesome-claude-code-mods"
+}

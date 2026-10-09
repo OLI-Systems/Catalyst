@@ -1,0 +1,10 @@
+{
+  "name": "stash-browser",
+  "version": "1.0.0",
+  "description": "List stashes and inspect a selected stash diff.",
+  "author": {
+    "name": "Yash Thakker"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/whyashthakker/awesome-claude-code-mods"
+}

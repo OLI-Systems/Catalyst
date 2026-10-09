@@ -1,0 +1,10 @@
+{
+  "name": "log-viewer",
+  "version": "1.0.0",
+  "description": "Show the last 60 lines of a small local log with an optional filter.",
+  "author": {
+    "name": "Yash Thakker"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/whyashthakker/awesome-claude-code-mods"
+}

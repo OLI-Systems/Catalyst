@@ -1,0 +1,10 @@
+{
+  "name": "scratchpad",
+  "version": "1.0.0",
+  "description": "Save short notes beside your conversation.",
+  "author": {
+    "name": "Yash Thakker"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/whyashthakker/awesome-claude-code-mods"
+}

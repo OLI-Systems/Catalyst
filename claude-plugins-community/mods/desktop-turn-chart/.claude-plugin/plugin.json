@@ -1,0 +1,10 @@
+{
+  "name": "desktop-turn-chart",
+  "version": "1.0.0",
+  "description": "Chart turn durations with interruption labels.",
+  "author": {
+    "name": "Yash Thakker"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/whyashthakker/awesome-claude-code-mods"
+}

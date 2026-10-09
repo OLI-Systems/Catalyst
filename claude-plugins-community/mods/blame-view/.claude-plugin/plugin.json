@@ -1,0 +1,10 @@
+{
+  "name": "blame-view",
+  "version": "1.0.0",
+  "description": "Read authorship for the first 80 lines of a chosen tracked file.",
+  "author": {
+    "name": "Yash Thakker"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/whyashthakker/awesome-claude-code-mods"
+}

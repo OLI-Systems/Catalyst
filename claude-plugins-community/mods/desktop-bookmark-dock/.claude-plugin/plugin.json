@@ -1,0 +1,10 @@
+{
+  "name": "desktop-bookmark-dock",
+  "version": "1.0.0",
+  "description": "Keep labeled web references with copy and delete controls.",
+  "author": {
+    "name": "Yash Thakker"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/whyashthakker/awesome-claude-code-mods"
+}

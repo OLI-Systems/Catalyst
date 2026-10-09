@@ -70,26 +70,40 @@ Light, Newsprint and more. Each one retints the whole window (sidebar, cards,
 terminal, status bar) rather than a subset. Font family and size are configurable
 too, under **Settings → Appearance**.
 
-## Claude Code add-ons
+## Mods
 
-Catalyst installs a few of its own [mods](https://code.claude.com/docs/en/plugins/mods/overview)
-and skills into Claude Code, on first launch and again whenever an update ships
-a changed set. They live in `claude-plugins/` as a plugin marketplace named
-`catalyst`, so they appear in `/plugin` like anything else you installed, in
-every Claude session and not only the ones Catalyst starts.
+Catalyst ships [Claude Code mods](https://code.claude.com/docs/en/plugins/mods/overview)
+and lets you choose them in **Settings → Mods**: one switch per mod, with what it
+does and what it can access. A mod you switch on is installed into your Claude
+Code, so it runs in every Claude session, not only the ones Catalyst starts.
+Switching one off disables it and keeps anything it saved.
 
-| Plugin | What it does |
+**Catalyst's own** (`claude-plugins/`, on by default, refreshed with every update):
+
+| Mod | What it does |
 |---|---|
-| `catalyst-guard` | Holds a destructive shell command (`rm -rf`, `Remove-Item -Recurse`, `git reset --hard`, `git clean -f`, force push, `git branch -D`, `DROP TABLE`...) and asks before running it, with the number of uncommitted or untracked files at stake. It asks in every permission mode, bypass included, which is exactly when parallel agents need it. *Allow for this session* stops the questions for that kind of command. Headless runs (`claude -p`) are left to their own permission rules. |
-| `catalyst-meter` | Context fill, session cost, rate-limit use and the turn's tool calls on the status line, plus a one-time nudge when the context window passes 80%. |
-| `catalyst-orchestrator` | The `orchestrate` skill: how to split a large task across parallel subagents (worktrees for parallel edits, Explore for research, Codex or Gemini for a second opinion), brief them, then integrate and verify. Its band above the prompt lists each running subagent with its task and elapsed time. |
+| Guard | Holds a destructive shell command (`rm -rf`, `Remove-Item -Recurse`, `git reset --hard`, `git clean -f`, force push, `git branch -D`, `DROP TABLE`...) and asks before running it, with the number of uncommitted or untracked files at stake. It asks in every permission mode, bypass included, which is exactly when parallel agents need it. Headless runs (`claude -p`) are left to their own permission rules. |
+| Meter | Context fill, session cost, rate-limit use and the turn's tool calls on the status line, plus a one-time nudge when the context window passes 80%. |
+| Orchestrator | The `orchestrate` skill: how to split a large task across parallel subagents (worktrees for parallel edits, Explore for research, Codex or Gemini for a second opinion), brief them, then integrate and verify. Its band above the prompt lists each running subagent with its task and elapsed time. |
 
-**Settings → AI CLI → Claude Code add-ons** shows what is installed and has a
-**Reinstall** button. Remove one with `/plugin` and it stays removed across
-updates; Reinstall puts it back. The mods need Claude Code 2.1.287 or later
-(the skill works in any version).
+**Community** (`claude-plugins-community/`, off until you switch them on): the 70
+mods of [awesome-claude-code-mods](https://github.com/whyashthakker/awesome-claude-code-mods)
+by Yash Thakker and contributors (MIT), pinned at a reviewed commit: panes for
+git (branch board, commit browser, blame, stash, staged review, worktrees),
+the repository (file tree, TODO finder, package scripts, dependencies), the
+session (context, quota, cache, tool timing, error inbox, edit heatmap),
+workspace notes (scratchpad, task board, decision log, snippets) and small
+utilities (regex, JSON, base64, hashes, UUIDs). The 20 marked *Desktop app*
+draw only in the Claude Desktop app's Code tab. What was checked before
+vendoring is in `claude-plugins-community/README.md`.
 
-Each plugin has tests: `claude plugin test claude-plugins/<plugin>`.
+Both sets are registered as plugin marketplaces (`catalyst` and
+`catalyst-community`), so they also appear in `/plugin`. A Catalyst mod you
+uninstall there stays uninstalled across updates; **Reinstall Catalyst mods** in
+Settings puts them back. Mods need Claude Code 2.1.287 or later, and Settings
+says so when yours is older; skills work in any version.
+
+Catalyst's mods have tests: `claude plugin test claude-plugins/<plugin>`.
 
 ---
 
@@ -342,8 +356,9 @@ lib/
   collection-store.js  Saved repo collections
   credential-store.js  PATs via OS credential store
   worktree-manager.js  Git worktree isolation
-  claude-plugins.js    Installs claude-plugins/ into Claude Code
-claude-plugins/        Claude Code mods and skills shipped with Catalyst
+  claude-plugins.js    Registers the mod marketplaces, Settings → Mods switches
+claude-plugins/        Catalyst's own Claude Code mods and skills
+claude-plugins-community/  Pinned community mods (awesome-claude-code-mods)
 public/                Single-page UI — app.js, style.css, desktop-shim.js
 src-tauri/             Tauri v2 desktop shell (Rust) + bundling config
 build/                 Sidecar staging and installer art scripts

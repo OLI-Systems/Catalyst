@@ -1,0 +1,10 @@
+{
+  "name": "edit-heatmap",
+  "version": "1.0.0",
+  "description": "Count successful Edit and Write calls by path.",
+  "author": {
+    "name": "Yash Thakker"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/whyashthakker/awesome-claude-code-mods"
+}

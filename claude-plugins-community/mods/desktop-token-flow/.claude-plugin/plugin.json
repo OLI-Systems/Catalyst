@@ -1,0 +1,10 @@
+{
+  "name": "desktop-token-flow",
+  "version": "1.0.0",
+  "description": "Chart uncached input, output, cache reads, and cache writes.",
+  "author": {
+    "name": "Yash Thakker"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/whyashthakker/awesome-claude-code-mods"
+}

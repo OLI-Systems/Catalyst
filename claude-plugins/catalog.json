@@ -1,0 +1,23 @@
+[
+  {
+    "id": "catalyst-guard",
+    "title": "Guard",
+    "category": "Catalyst",
+    "description": "Holds destructive shell commands (rm -rf, Remove-Item -Recurse, git reset --hard, git clean -f, force push, branch -D, DROP TABLE) until you confirm them, in every permission mode.",
+    "access": "Reads each Bash and PowerShell command Claude runs. Runs git status to count what a reset or clean would lose. Refuses a command you decline. No network or model calls."
+  },
+  {
+    "id": "catalyst-meter",
+    "title": "Meter",
+    "category": "Catalyst",
+    "description": "Context fill, session cost, rate-limit use and tool calls on the status line, with a nudge past 80% context.",
+    "access": "Reads session usage and counts tool calls in memory. No files, processes, network or persistence."
+  },
+  {
+    "id": "catalyst-orchestrator",
+    "title": "Orchestrator",
+    "category": "Catalyst",
+    "description": "The orchestrate skill for splitting work across parallel subagents, and a band above the prompt listing the agents running.",
+    "access": "Observes subagent starts and finishes and the session's agent list. No files, processes, network or persistence."
+  }
+]

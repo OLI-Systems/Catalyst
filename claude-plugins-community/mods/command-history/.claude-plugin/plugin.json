@@ -1,0 +1,10 @@
+{
+  "name": "command-history",
+  "version": "1.0.0",
+  "description": "Keep the last 40 Bash command strings and copy one for reuse.",
+  "author": {
+    "name": "Yash Thakker"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/whyashthakker/awesome-claude-code-mods"
+}

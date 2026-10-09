@@ -1,0 +1,10 @@
+{
+  "name": "scope-watch",
+  "version": "1.0.0",
+  "description": "Warn when observed file edits leave a chosen path prefix.",
+  "author": {
+    "name": "Yash Thakker"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/whyashthakker/awesome-claude-code-mods"
+}
