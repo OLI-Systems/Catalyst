@@ -2095,11 +2095,123 @@
       if (btn.dataset.section === 'aicli') {
         ws.send(JSON.stringify({ type: 'check-cli-availability' }));
       }
+      if (btn.dataset.section === 'azure') {
+        ws.send(JSON.stringify({ type: 'jev-status' }));
+      }
       if (btn.dataset.section === 'mods') {
         ws.send(JSON.stringify({ type: 'mods-list' }));
       }
     });
   });
+
+  // Settings → Integrations → TypeSafe Jev (lib/jev.js). The key goes to the
+  // server once, on save; the page only ever learns whether one is stored.
+  const jevKeyInput = $('#jevKey');
+  const jevKeyStatus = $('#jevKeyStatus');
+  const jevSaveBtn = $('#jevSave');
+  const jevVerifyBtn = $('#jevVerify');
+  const jevRemoveBtn = $('#jevRemove');
+  const jevProvideInput = $('#jevProvide');
+  let jevHasKey = false;
+
+  function setJevHint(text, tone) {
+    if (!jevKeyStatus) return;
+    jevKeyStatus.textContent = text;
+    jevKeyStatus.className = `ob-field-hint${tone ? ' ' + tone : ''}`;
+  }
+
+  const toggleJevKey = $('#toggleJevKey');
+  if (toggleJevKey && jevKeyInput) {
+    toggleJevKey.addEventListener('click', () => {
+      const isPassword = jevKeyInput.type === 'password';
+      jevKeyInput.type = isPassword ? 'text' : 'password';
+      toggleJevKey.textContent = isPassword ? 'Hide' : 'Show';
+    });
+  }
+  if (jevSaveBtn && jevKeyInput) {
+    const save = () => {
+      const key = jevKeyInput.value.trim();
+      if (!key) { setJevHint('Paste a key first.', 'error'); return; }
+      jevSaveBtn.disabled = true;
+      setJevHint('Checking the key with TypeSafe…');
+      ws.send(JSON.stringify({ type: 'jev-save', key }));
+    };
+    jevSaveBtn.addEventListener('click', save);
+    jevKeyInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') save(); });
+  }
+  if (jevVerifyBtn) {
+    jevVerifyBtn.addEventListener('click', () => {
+      jevVerifyBtn.disabled = true;
+      setJevHint('Checking the saved key with TypeSafe…');
+      ws.send(JSON.stringify({ type: 'jev-verify' }));
+    });
+  }
+  if (jevRemoveBtn) {
+    jevRemoveBtn.addEventListener('click', () => {
+      jevRemoveBtn.disabled = true;
+      ws.send(JSON.stringify({ type: 'jev-remove' }));
+    });
+  }
+  if (jevProvideInput) {
+    jevProvideInput.addEventListener('change', () => {
+      ws.send(JSON.stringify({ type: 'jev-set-provide', enabled: jevProvideInput.checked }));
+    });
+  }
+
+  function renderJevStatus(status) {
+    jevHasKey = Boolean(status.hasKey);
+    if (jevVerifyBtn) jevVerifyBtn.disabled = !jevHasKey;
+    if (jevRemoveBtn) jevRemoveBtn.disabled = !jevHasKey;
+    if (jevSaveBtn) jevSaveBtn.disabled = false;
+    if (jevKeyInput) jevKeyInput.placeholder = jevHasKey ? 'A key is saved. Paste a new one to replace it.' : 'Paste your TypeSafe API key';
+    if (jevProvideInput) jevProvideInput.checked = Boolean(status.provideKey);
+    if (!jevKeyStatus || !jevKeyStatus.dataset.sticky) {
+      setJevHint(jevHasKey ? 'A key is saved in your system credential store.' : 'No key saved.', jevHasKey ? 'success' : '');
+    }
+    if (jevKeyStatus) delete jevKeyStatus.dataset.sticky;
+
+    const box = $('#jevKitStatus');
+    if (!box) return;
+    const kit = status.kit || {};
+    const line = (label, value, tone) => {
+      const row = document.createElement('div');
+      const strong = document.createElement('strong');
+      strong.textContent = `${label}: `;
+      const span = document.createElement('span');
+      span.textContent = value;
+      if (tone) span.className = tone;
+      row.append(strong, span);
+      return row;
+    };
+    const rows = [];
+    if (!kit.isInstalled) {
+      rows.push(line('jev-kit', 'not installed on this machine', 'jev-warn'));
+      const how = document.createElement('div');
+      how.append('The key does nothing until jev-kit is installed. Follow ');
+      const a = document.createElement('a');
+      a.href = kit.installDoc || 'https://github.com/jonathanavis96/jev-kit';
+      a.target = '_blank';
+      a.textContent = 'its install guide';
+      how.append(a, '; its installer asks before it changes your Claude Code settings.');
+      rows.push(how);
+    } else {
+      rows.push(line('jev-kit', 'installed', 'jev-ok'));
+      rows.push(line('Claude Code hook', kit.isWired ? 'wired into settings.json' : 'not wired yet (run the installer with --wire)', kit.isWired ? 'jev-ok' : 'jev-warn'));
+      const modes = {
+        shadow: 'shadow: judges and logs, blocks nothing',
+        enforce: 'enforce: a deny blocks the call',
+        off: 'off',
+        disabled: 'disabled by its kill switch',
+      };
+      rows.push(line('Guard mode', modes[kit.mode] || 'unknown', kit.mode === 'enforce' ? 'jev-ok' : ''));
+    }
+    if (kit.hasKeyFile) {
+      rows.push(line('Key file', jevHasKey && status.provideKey
+        ? 'jev-kit also has its own key file; sessions Catalyst starts use the key saved here instead'
+        : 'jev-kit has its own key file, which it uses when no key is given to the session', ''));
+    }
+    box.replaceChildren(...rows);
+  }
 
   // Settings → Mods (lib/claude-plugins.js): every mod Catalyst ships, each
   // switched on or off here. The server answers each switch with a fresh list,
@@ -3659,6 +3771,31 @@
           while (logEl.childNodes.length > 2000) logEl.removeChild(logEl.firstChild);
           logEl.scrollTop = logEl.scrollHeight;
         }
+        break;
+      }
+
+      case 'jev-status': {
+        renderJevStatus(msg.status || {});
+        break;
+      }
+
+      case 'jev-saved': {
+        if (msg.ok && jevKeyInput) {
+          jevKeyInput.value = '';
+          jevKeyInput.type = 'password';
+          const t = $('#toggleJevKey');
+          if (t) t.textContent = 'Show';
+        }
+        setJevHint(msg.ok ? msg.detail : msg.error, msg.ok ? 'success' : 'error');
+        // The status that follows must not overwrite what the save said.
+        if (jevKeyStatus) jevKeyStatus.dataset.sticky = '1';
+        if (jevSaveBtn) jevSaveBtn.disabled = false;
+        break;
+      }
+
+      case 'jev-verified': {
+        setJevHint(msg.detail, msg.status === 'valid' ? 'success' : msg.status === 'invalid' ? 'error' : '');
+        if (jevVerifyBtn) jevVerifyBtn.disabled = !jevHasKey;
         break;
       }
 

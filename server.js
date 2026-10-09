@@ -17,6 +17,7 @@ const conversationStore = require('./lib/conversation-store');
 const cliTrust = require('./lib/cli-trust');
 const sessionUsage = require('./lib/session-usage');
 const claudePlugins = require('./lib/claude-plugins');
+const jev = require('./lib/jev');
 
 // Loose path comparison for grouping sessions by repo: case-insensitive and
 // trailing-separator agnostic, which matters on Windows.
@@ -2283,6 +2284,51 @@ wss.on('connection', (ws) => {
         break;
       }
 
+      // Settings → Integrations → TypeSafe Jev (lib/jev.js). The key arrives
+      // once, on save, and never goes back to the page.
+      case 'jev-status': {
+        sendJevStatus(ws);
+        break;
+      }
+
+      case 'jev-save': {
+        const key = String(msg.key || '').trim();
+        (async () => {
+          if (!jev.looksLikeKey(key)) {
+            return { ok: false, error: 'That does not look like an API key.' };
+          }
+          const check = await jev.verifyKey(key);
+          if (check.status === 'invalid') return { ok: false, error: check.detail };
+          await credStore.saveTypesafeKey(key);
+          return { ok: true, detail: check.status === 'valid' ? 'Saved. TypeSafe accepted the key.' : `Saved. ${check.detail}` };
+        })().catch(() => ({ ok: false, error: 'Could not save the key to the credential store.' }))
+          .then((result) => {
+            if (ws.readyState === 1) ws.send(JSON.stringify({ type: 'jev-saved', ...result }));
+            sendJevStatus(ws);
+          });
+        break;
+      }
+
+      case 'jev-verify': {
+        const key = credStore.loadTypesafeKey();
+        (key ? jev.verifyKey(key) : Promise.resolve({ status: 'invalid', detail: 'No key is saved.' }))
+          .then((check) => { if (ws.readyState === 1) ws.send(JSON.stringify({ type: 'jev-verified', ...check })); });
+        break;
+      }
+
+      case 'jev-remove': {
+        credStore.deleteTypesafeKey()
+          .catch(() => {})
+          .then(() => sendJevStatus(ws));
+        break;
+      }
+
+      case 'jev-set-provide': {
+        store.saveSettings({ jevProvideKey: Boolean(msg.enabled) });
+        sendJevStatus(ws);
+        break;
+      }
+
       // Settings → Mods (lib/claude-plugins.js).
       case 'mods-list': {
         sendModsList(ws);
@@ -2763,6 +2809,18 @@ function installClaudeAddons({ force = false } = {}) {
     force,
     isClaudeInstalled: () => sessionManager.checkCliInstalled('claude'),
   }).catch(() => {}).then(() => { if (clients.size) broadcastModsList(); });
+}
+
+function sendJevStatus(ws) {
+  let hasKey = false;
+  try { hasKey = credStore.hasTypesafeKey(); } catch {}
+  const settings = store.getSettings() || {};
+  const status = {
+    hasKey,
+    provideKey: settings.jevProvideKey !== false,
+    kit: jev.kitStatus(),
+  };
+  if (ws.readyState === 1) ws.send(JSON.stringify({ type: 'jev-status', status }));
 }
 
 function sendModsList(ws) {

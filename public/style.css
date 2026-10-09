@@ -3514,6 +3514,15 @@ body.is-desktop .modal-overlay {
 .mod-desc { font-size: 11px; color: var(--text); margin-top: 3px; line-height: 1.5; }
 .mod-access { font-size: 10.5px; color: var(--text-muted); margin-top: 3px; line-height: 1.5; }
 .mod-error { font-size: 10.5px; color: var(--danger); margin-top: 3px; }
+.jev-section { margin-top: 28px; }
+.jev-section .mods-intro a { color: var(--accent); }
+.jev-actions { display: flex; gap: 8px; flex-wrap: wrap; margin: 4px 0 16px; }
+.jev-provide-row { display: flex; align-items: center; gap: 14px; padding: 12px 0; border-top: 1px solid var(--border); }
+.jev-kit { font-size: 11px; color: var(--text-muted); line-height: 1.6; padding-top: 12px; border-top: 1px solid var(--border); }
+.jev-kit strong { color: var(--text); font-weight: 600; }
+.jev-kit a { color: var(--accent); }
+.jev-kit .jev-ok { color: var(--success); }
+.jev-kit .jev-warn { color: var(--warning, #f59e0b); }
 .mods-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 14px; }
 .mods-footer .settings-hint { margin: 0; }
 

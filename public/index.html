@@ -1086,6 +1086,32 @@
               </div>
               <pre class="cli-install-log hidden" id="integToolLog" data-log></pre>
             </div>
+
+            <div class="settings-section jev-section">
+              <div class="settings-section-title">TypeSafe Jev</div>
+              <p class="mods-intro">For <a href="https://github.com/jonathanavis96/jev-kit" target="_blank">jev-kit</a>, which wires TypeSafe's Jev model into Claude Code: it judges risky tool calls, checks the sub-agent each task gets, and sends unverified work back to be checked. Save your TypeSafe API key here. Catalyst keeps it in your system's credential store and gives it to the sessions it starts as <code>TYPESAFE_API_KEY</code>, which every part of jev-kit reads first. It is never written to a file and never shown here again.</p>
+              <div class="ob-field">
+                <label class="ob-field-label" for="jevKey">API key</label>
+                <div class="ob-pat-row">
+                  <input type="password" class="ob-field-input" id="jevKey" placeholder="Paste your TypeSafe API key" autocomplete="off" spellcheck="false">
+                  <button class="ob-pat-toggle" id="toggleJevKey" type="button">Show</button>
+                </div>
+                <div class="ob-field-hint" id="jevKeyStatus"></div>
+              </div>
+              <div class="jev-actions">
+                <button class="btn btn-primary btn-sm" id="jevSave">Save key</button>
+                <button class="btn btn-sm" id="jevVerify" disabled>Check key</button>
+                <button class="btn btn-sm" id="jevRemove" disabled>Remove key</button>
+              </div>
+              <div class="jev-provide-row">
+                <div class="ob-toggle-info">
+                  <div class="ob-toggle-title">Give the key to sessions</div>
+                  <div class="ob-toggle-desc">Sessions started after a change pick it up; running ones keep what they started with.</div>
+                </div>
+                <label class="ob-toggle-switch"><input type="checkbox" id="jevProvide" checked><span class="ob-toggle-track"></span></label>
+              </div>
+              <div class="jev-kit" id="jevKitStatus"></div>
+            </div>
           </div>
 
           <div class="settings-section-page" id="settings-aicli">

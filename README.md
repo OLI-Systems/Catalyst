@@ -105,6 +105,28 @@ says so when yours is older; skills work in any version.
 
 Catalyst's mods have tests: `claude plugin test claude-plugins/<plugin>`.
 
+## TypeSafe Jev (jev-kit)
+
+[jev-kit](https://github.com/jonathanavis96/jev-kit) wires TypeSafe's Jev model
+into Claude Code: it judges risky tool calls, checks which sub-agent a task
+gets, and sends unverified work back to be checked. Every part of it reads one
+`TYPESAFE_API_KEY`.
+
+Save that key in **Settings → Integrations → TypeSafe Jev**. Catalyst:
+
+- checks it with TypeSafe before keeping it (an empty request, so no model runs
+  and nothing is billed: a bad key is refused, a good one fails validation);
+- keeps it in the system credential store (Windows Credential Manager, macOS
+  Keychain, libsecret on Linux), never in a file and never back on the page;
+- gives it to the sessions it starts as `TYPESAFE_API_KEY`. jev-kit reads the
+  environment before any key file, and Claude Code's hooks inherit it, so the
+  kit's plaintext key file is not needed. A switch turns this off.
+
+The same card says whether jev-kit is installed, whether its hook is wired into
+Claude Code, and which mode the guard is in. Catalyst does not install jev-kit
+itself: its installer changes Claude Code's settings and runs a background
+daemon, so it is linked rather than run.
+
 ---
 
 ## How it works
