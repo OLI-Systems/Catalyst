@@ -478,8 +478,7 @@
         e.stopPropagation();
         const sel = getActiveSelection(term);
         if (sel) {
-          copyToClipboard(sel);
-          showToast('Copied ' + sel.length + ' chars', 'success');
+          copyWithToast(sel);
         } else {
           showToast('Hold Shift + drag to select text first', 'info');
         }
@@ -491,10 +490,9 @@
         e.stopPropagation();
         const sel = getLiveSelection(term);
         if (sel) {
-          copyToClipboard(sel);
+          copyWithToast(sel);
           try { term.clearSelection(); } catch {}
           try { window.getSelection()?.removeAllRanges(); } catch {}
-          showToast('Copied ' + sel.length + ' chars', 'success');
           return false;
         }
         // No selection: on Win/Linux Ctrl+C sends SIGINT. On macOS, SIGINT is
@@ -526,9 +524,14 @@
         if (s) return s;
       }
     } catch {}
+    // The page's own selection counts only when it lies inside this terminal. A
+    // drag that the program in the terminal captured (Claude Code's full-screen
+    // view takes the mouse) leaves xterm with no selection, and falling through to
+    // whatever else the page had selected copied text from somewhere else entirely.
     try {
       const win = window.getSelection();
-      if (win && win.toString) {
+      const el = term && term.element;
+      if (win && win.rangeCount && el && el.contains(win.anchorNode) && el.contains(win.focusNode)) {
         const t = win.toString();
         if (t && t.trim()) return t;
       }
@@ -559,17 +562,41 @@
     return '';
   }
 
-  // navigator.clipboard isn't always available in PWA contexts (insecure
-  // origin, locked permission). Fall back to the legacy execCommand path.
+  // Resolves true once the text is really on the clipboard.
+  //
+  // Under the desktop shell this goes through Tauri's native clipboard. The web
+  // routes are not dependable inside WebView2: navigator.clipboard refuses
+  // whenever the document is not focused, and execCommand('copy') there returns
+  // true while leaving the clipboard untouched, so a failed copy used to report
+  // "Copied" with the old contents still in place. In a browser tab the web
+  // routes are all there is; execCommand stays as the last resort for an
+  // insecure origin.
   function copyToClipboard(text) {
-    if (!text) return false;
+    if (!text) return Promise.resolve(false);
+    const T = window.__TAURI__;
+    if (T && T.core && T.core.invoke) {
+      return T.core.invoke('plugin:clipboard-manager|write_text', { text })
+        .then(() => true, () => webCopy(text));
+    }
+    return webCopy(text);
+  }
+
+  function webCopy(text) {
     try {
       if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(text).catch(() => execCopyFallback(text));
-        return true;
+        return navigator.clipboard.writeText(text).then(() => true, () => execCopyFallback(text));
       }
     } catch {}
-    return execCopyFallback(text);
+    return Promise.resolve(execCopyFallback(text));
+  }
+
+  // Copy and say how it went: the toast reports what happened, not what was meant.
+  function copyWithToast(text, what) {
+    return copyToClipboard(text).then((ok) => {
+      if (ok) showToast(`Copied ${what || text.length + ' chars'}`, 'success');
+      else showToast('Could not copy to the clipboard', 'error');
+      return ok;
+    });
   }
 
   function execCopyFallback(text) {
@@ -871,6 +898,47 @@
     }
   }
 
+  // ─── Links and copies inside a terminal ─────────────────────────────────
+  // One click, one owner. A full-screen TUI (Claude Code's own view among them)
+  // turns on mouse reporting, and from then on a click is reported to it as well
+  // as seen by xterm. Claude Code opens a link it drew on that click itself, so
+  // when Catalyst opened it too, every click opened the browser twice. While the
+  // program has the mouse, a plain click is the program's; Shift+click, which
+  // xterm never reports to the program, opens the link through Catalyst.
+  function activateTerminalLink(term, event, uri) {
+    if (!/^https?:\/\//i.test(uri || '')) return;
+    const programHasMouse = term.modes && term.modes.mouseTrackingMode && term.modes.mouseTrackingMode !== 'none';
+    if (programHasMouse && !(event && event.shiftKey)) return;
+    openLink(uri);
+  }
+
+  function wireTerminalLinks(term) {
+    // OSC 8 hyperlinks, which Claude Code prints. Left to xterm's default they
+    // ask window.confirm, which the desktop shell answers asynchronously (so the
+    // Promise reads as "yes" before anyone has answered), then window.open, which
+    // the webview blocks: a dialog and no link.
+    term.options.linkHandler = { activate: (e, uri) => activateTerminalLink(term, e, uri) };
+    // Plain URLs in the output.
+    term.loadAddon(new WebLinksAddon.WebLinksAddon((e, uri) => activateTerminalLink(term, e, uri)));
+    // OSC 52: a program asking the terminal to copy. Claude Code sends it when
+    // you drag across text in its full-screen view, and so do editors and
+    // anything over SSH, where the program has no other way to reach this
+    // machine's clipboard. Only writes are honoured: a read ("?") would hand the
+    // clipboard to whatever is printing, so it is ignored.
+    term.parser.registerOscHandler(52, (data) => {
+      const sep = data.indexOf(';');
+      const payload = sep >= 0 ? data.slice(sep + 1) : '';
+      if (!payload || payload === '?' || payload.length > 4 * 1024 * 1024) return true;
+      let text = '';
+      try {
+        const bytes = Uint8Array.from(atob(payload), (c) => c.charCodeAt(0));
+        text = new TextDecoder('utf-8').decode(bytes);
+      } catch { return true; }
+      if (text) copyWithToast(text);
+      return true;
+    });
+  }
+
   function openLink(url) {
     if (!window.tauriDesktop?.openExternal) {
       window.open(url, '_blank', 'noopener');
@@ -881,8 +949,9 @@
     // like it never registered, and put the URL where it can still be used.
     window.tauriDesktop.openExternal(url).then((ok) => {
       if (ok) return;
-      copyToClipboard(url);
-      showToast('Could not open that link — copied it instead', 'error');
+      copyToClipboard(url).then((copied) => showToast(copied
+        ? 'Could not open that link — copied it instead'
+        : 'Could not open that link', 'error'));
     });
   }
 
@@ -1248,8 +1317,7 @@
 
     const fitAddon = new FitAddon.FitAddon();
     term.loadAddon(fitAddon);
-    const webLinksAddon = new WebLinksAddon.WebLinksAddon((e, uri) => openLink(uri));
-    term.loadAddon(webLinksAddon);
+    wireTerminalLinks(term);
 
     state.terminals[sessionId] = term;
     state.terminals[sessionId]._fitAddon = fitAddon;
@@ -1276,8 +1344,7 @@
           e.stopPropagation();
           const sel = getActiveSelection(term);
           if (sel) {
-            copyToClipboard(sel);
-            showToast('Copied ' + sel.length + ' chars', 'success');
+            copyWithToast(sel);
           } else {
             showToast('Hold Shift + drag to select text first', 'info');
           }
@@ -1291,10 +1358,9 @@
           e.stopPropagation();
           const sel = getLiveSelection(term);
           if (sel) {
-            copyToClipboard(sel);
+            copyWithToast(sel);
             try { term.clearSelection(); } catch {}
             try { window.getSelection()?.removeAllRanges(); } catch {}
-            showToast('Copied ' + sel.length + ' chars', 'success');
             return false;
           }
           if (!IS_MAC) {
@@ -6399,6 +6465,7 @@
         rows: 12,
         cols: 60
       });
+      wireTerminalLinks(term);
       attachCopyPasteShortcuts(term, null);
       term.open(termDiv);
       cmdTerminals[msg.cmdId] = term;
@@ -6610,7 +6677,7 @@
       });
       const innerFit = new FitAddon.FitAddon();
       innerTerm.loadAddon(innerFit);
-      innerTerm.loadAddon(new WebLinksAddon.WebLinksAddon((e, uri) => openLink(uri)));
+      wireTerminalLinks(innerTerm);
       attachCopyPasteShortcuts(innerTerm, (data) => {
         ws.send(JSON.stringify({ type: 'inner-session-input', innerSessionId: msg.innerSessionId, data }));
       });
