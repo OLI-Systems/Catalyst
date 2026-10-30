@@ -630,6 +630,37 @@ body.theme-newsprint {
 }
 
 /* ═══════════════════════════════════════════
+   THEME: PORCELAIN (clean white, indigo accent)
+   ═══════════════════════════════════════════ */
+body.theme-porcelain {
+  --bg:            #ffffff;
+  --bg-secondary:  #fafafa;
+  --bg-card:       #ffffff;
+  --sidebar-bg:    #f7f7f8;
+  --surface:       #f1f1f3;
+  --tab-bg:        #f4f4f5;
+  --tab-active-bg: #ffffff;
+  --border:        rgba(24, 24, 27, 0.08);
+  --border-bright: rgba(24, 24, 27, 0.15);
+  --hover-bg:      rgba(24, 24, 27, 0.035);
+  --accent:        #4f46e5;
+  --accent-hover:  #4338ca;
+  --accent-glow:   rgba(79, 70, 229, 0.12);
+  --accent-subtle: rgba(79, 70, 229, 0.07);
+  --text:          #18181b;
+  --text-muted:    #71717a;
+  --text-output:   #27272a;
+  --input-bg:      #ffffff;
+  --scrollbar:     rgba(24, 24, 27, 0.12);
+  --success:       #15803d;
+  --danger:        #dc2626;
+  --grid-line:     rgba(24, 24, 27, 0.02);
+  --xterm-bg:      #fcfcfc;
+  --xterm-fg:      #18181b;
+  --btn-primary-text: #ffffff;
+}
+
+/* ═══════════════════════════════════════════
    SMARTPILL
    ═══════════════════════════════════════════ */
 .smartpill {
@@ -762,7 +793,9 @@ body.theme-arctic .welcome-logo-icon,
 body.theme-silver .logo-icon,
 body.theme-silver .welcome-logo-icon,
 body.theme-newsprint .logo-icon,
-body.theme-newsprint .welcome-logo-icon {
+body.theme-newsprint .welcome-logo-icon,
+body.theme-porcelain .logo-icon,
+body.theme-porcelain .welcome-logo-icon {
   color: #0284c7;
 }
 

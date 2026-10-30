@@ -179,8 +179,8 @@
   if (window.tauriDesktop?.isDesktop) document.body.classList.add('is-desktop');
 
   // Theme
-  const allThemes = ['midnight', 'rose', 'ocean', 'forest', 'sunset', 'lavender', 'nord', 'monokai', 'dracula', 'ember', 'void', 'copper', 'sand', 'arctic', 'vsdark', 'vslight', 'bluepill', 'silver', 'graphite', 'newsprint'];
-  const lightThemes = ['rose', 'lavender', 'sand', 'arctic', 'vslight', 'silver', 'newsprint'];
+  const allThemes = ['midnight', 'rose', 'ocean', 'forest', 'sunset', 'lavender', 'nord', 'monokai', 'dracula', 'ember', 'void', 'copper', 'sand', 'arctic', 'vsdark', 'vslight', 'bluepill', 'silver', 'graphite', 'newsprint', 'porcelain'];
+  const lightThemes = ['rose', 'lavender', 'sand', 'arctic', 'vslight', 'silver', 'newsprint', 'porcelain'];
   // Fresh install, nothing saved yet: start on a random theme rather than the
   // same one for everybody. It puts the theme set in front of the user on day
   // one, and Settings → Appearance changes it in a click. applyTheme persists

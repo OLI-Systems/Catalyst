@@ -65,8 +65,8 @@ checks: the signature is verified before anything is installed either way.
 
 ## Themes
 
-Twenty themes, light and dark — Midnight, Nord, Dracula, Monokai, Rosé, Sand, VS
-Light, Newsprint and more. Each one retints the whole window (sidebar, cards,
+Twenty-one themes, light and dark — Midnight, Nord, Dracula, Monokai, Rosé, Sand, VS
+Light, Newsprint, Porcelain and more. Each one retints the whole window (sidebar, cards,
 terminal, status bar) rather than a subset. Font family and size are configurable
 too, under **Settings → Appearance**.
 
